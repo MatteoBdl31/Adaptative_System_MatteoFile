@@ -1,0 +1,7 @@
+[
+  {"id": 1, "question": "Comment dit-on 'chien' en anglais ?", "choices": ["Cat", "Dog", "Bird"], "answer": "Dog"},
+  {"id": 2, "question": "Traduisez : 'Bonjour' en anglais.", "choices": ["Hello", "Goodbye", "Thanks"], "answer": "Hello"},
+  {"id": 3, "question": "Quel est le féminin de 'actor' en anglais ?", "choices": ["Actress", "Actorine", "Actoress"], "answer": "Actress"},
+  {"id": 4, "question": "Comment dit-on 'merci' en espagnol ?", "choices": ["Gracias", "Merci", "Danke"], "answer": "Gracias"},
+  {"id": 5, "question": "Quel est le pluriel de 'mouse' en anglais ?", "choices": ["Mouses", "Mices", "Mice"], "answer": "Mice"}
+]

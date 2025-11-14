@@ -1,0 +1,7 @@
+[
+  {"id": 1, "question": "En quelle année a commencé la Révolution française ?", "choices": ["1789", "1815", "1848"], "answer": "1789"},
+  {"id": 2, "question": "Qui était le premier empereur romain ?", "choices": ["César", "Auguste", "Néron"], "answer": "Auguste"},
+  {"id": 3, "question": "Quel roi de France a été surnommé le Roi Soleil ?", "choices": ["Louis XIV", "Louis XVI", "François Ier"], "answer": "Louis XIV"},
+  {"id": 4, "question": "Quelle guerre a eu lieu entre 1914 et 1918 ?", "choices": ["Guerre de Cent Ans", "Première Guerre mondiale", "Seconde Guerre mondiale"], "answer": "Première Guerre mondiale"},
+  {"id": 5, "question": "Qui a découvert l’Amérique en 1492 ?", "choices": ["Christophe Colomb", "Vasco de Gama", "Magellan"], "answer": "Christophe Colomb"}
+]

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ user.name }} - Quiz</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .question { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .choices label { display: block; margin: 5px 0; }
+        button { margin-top: 10px; padding: 8px 15px; }
+    </style>
+    <script>
+        function checkAnswer(questionId, correctAnswer) {
+            let selected = document.querySelector('input[name="q' + questionId + '"]:checked');
+            if (!selected) {
+                alert("Veuillez choisir une réponse !");
+                return;
+            }
+            if (selected.value === correctAnswer) {
+                alert("✅ Bonne réponse !");
+            } else {
+                alert("❌ Mauvaise réponse. La bonne réponse était : " + correctAnswer);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Quiz pour {{ user.name }}</h1>
+
+    {% for q in questions %}
+        <div class="question">
+            <p><b>{{ q.id }}. {{ q.question }}</b></p>
+            <div class="choices">
+                {% for choice in q.choices %}
+                    <label>
+                        <input type="radio" name="q{{ q.id }}" value="{{ choice }}"> {{ choice }}
+                    </label>
+                {% endfor %}
+            </div>
+            <button onclick="checkAnswer({{ q.id }}, '{{ q.answer }}')">Valider</button>
+        </div>
+    {% endfor %}
+
+    <a href="{{ url_for('index') }}">⬅ Retour</a>
+</body>
+</html>

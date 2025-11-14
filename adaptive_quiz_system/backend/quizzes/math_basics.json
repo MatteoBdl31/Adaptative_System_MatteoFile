@@ -1,0 +1,7 @@
+[
+  {"id": 1, "question": "Combien font 3 + 5 ?", "choices": ["6", "7", "8"], "answer": "8"},
+  {"id": 2, "question": "Combien font 9 - 4 ?", "choices": ["3", "4", "5"], "answer": "5"},
+  {"id": 3, "question": "Combien font 2 × 6 ?", "choices": ["10", "12", "14"], "answer": "12"},
+  {"id": 4, "question": "Quel est le résultat de 15 ÷ 3 ?", "choices": ["3", "5", "6"], "answer": "5"},
+  {"id": 5, "question": "Combien font 7 + 2 ?", "choices": ["8", "9", "10"], "answer": "9"}
+]
