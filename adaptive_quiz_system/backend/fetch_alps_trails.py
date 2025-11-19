@@ -10,7 +10,7 @@ import sqlite3
 import os
 import math
 import re
-from datetime import datetime
+import sys
 
 try:
     import shapefile  # type: ignore
@@ -34,6 +34,88 @@ OVERPASS_API = "https://overpass-api.de/api/interpreter"
 # "https://overpass.kumi.systems/api/interpreter"
 # "https://overpass.openstreetmap.fr/api/interpreter"
 
+
+def _verify_shapefile_components(shapefile_path: str):
+    """
+    Ensure the shapefile (.shp) and its companion files exist before reading.
+    """
+    base, ext = os.path.splitext(shapefile_path)
+    if ext.lower() != ".shp":
+        raise ValueError(f"Expected a .shp file, got: {shapefile_path}")
+
+    required_suffixes = [".shp", ".dbf", ".shx"]
+    missing = []
+    for suffix in required_suffixes:
+        candidate = base + suffix
+        if not os.path.exists(candidate):
+            missing.append(candidate)
+
+    if missing:
+        guidance = (
+            "Missing Shapefile component(s).\n"
+            "Download the full dataset (all .shp/.shx/.dbf/.prj files) and place them in "
+            "the adaptive_quiz_system directory, as described in README.md."
+        )
+        raise FileNotFoundError(
+            "Required files not found:\n  " + "\n  ".join(missing) + f"\n\n{guidance}"
+        )
+
+
+def get_elevation_profile(coordinates, max_points=100):
+    """
+    Get elevation profile for trail coordinates using Open Elevation API.
+    Samples coordinates if there are too many points to avoid API limits.
+    """
+    if not requests:
+        return None, None, None
+
+    if not coordinates or len(coordinates) < 2:
+        return None, None, None
+
+    if len(coordinates) > max_points:
+        step = len(coordinates) / max_points
+        sampled_coords = [coordinates[int(i * step)] for i in range(max_points)]
+        if sampled_coords[-1] != coordinates[-1]:
+            sampled_coords[-1] = coordinates[-1]
+    else:
+        sampled_coords = coordinates
+
+    locations = [{"latitude": lat, "longitude": lon} for lon, lat in sampled_coords]
+    url = "https://api.open-elevation.com/api/v1/lookup"
+
+    try:
+        response = requests.post(url, json={"locations": locations}, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        if "results" not in data:
+            return None, None, None
+
+        elevations = [result["elevation"] for result in data["results"]]
+        elevation_gain = 0
+        elevation_loss = 0
+        for i in range(1, len(elevations)):
+            diff = elevations[i] - elevations[i - 1]
+            if diff > 0:
+                elevation_gain += diff
+            else:
+                elevation_loss += abs(diff)
+
+        return elevations, int(round(elevation_gain)), int(round(elevation_loss))
+
+    except Exception as e:
+        print(f"Warning: Could not fetch elevation data: {e}")
+        return None, None, None
+
+
+def _coerce_to_str(value):
+    """Convert shapefile property values to string safely."""
+    if isinstance(value, str):
+        return value
+    if value is None:
+        return ""
+    return str(value)
+
 def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
     """
     Fetch hiking trails from a local Shapefile
@@ -55,7 +137,9 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
         if not os.path.exists(shapefile_path):
             print(f"Shapefile not found at {shapefile_path}")
             return []
-        
+
+        _verify_shapefile_components(shapefile_path)
+
         print(f"Reading trails from Shapefile: {shapefile_path}")
         
         # Open the Shapefile with encoding handling
@@ -79,6 +163,8 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
         
         trails = []
         checked = 0
+        elevation_fetch_limit = 5
+        elevation_requests = 0
         
         for i, (shape, record) in enumerate(zip(shapes, records)):
             try:
@@ -89,11 +175,14 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
                 if checked % 1000 == 0:
                     print(f"Processed {checked} features, found {len(trails)} trails so far...")
                 
+                if shape is None or record is None:
+                    continue
+
                 # Create a dict from record fields
                 props = dict(zip(fields, record))
                 
                 # Filter for hiking/foot routes
-                route_type = props.get('route', '')
+                route_type = _coerce_to_str(props.get('route'))
                 if route_type not in ['hiking', 'foot']:
                     continue
                 
@@ -103,9 +192,9 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
                 
                 # Convert coordinates from EPSG:3857 to WGS84
                 coordinates = []
-                for part in shape.parts:
-                    part_coords = shape.points[part:part + (shape.parts[shape.parts.index(part) + 1] if shape.parts.index(part) + 1 < len(shape.parts) else len(shape.points))]
-                    for point in part_coords:
+                for part_index, part_start in enumerate(shape.parts):
+                    part_end = shape.parts[part_index + 1] if part_index + 1 < len(shape.parts) else len(shape.points)
+                    for point in shape.points[part_start:part_end]:
                         lon, lat = mercator_to_wgs84(point[0], point[1])
                         coordinates.append([lon, lat])
                 
@@ -130,47 +219,57 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
                 
                 # Extract trail information - ensure name is never empty
                 # Try multiple name fields in order of preference
-                name = (props.get('name', '') or 
-                       props.get('short_name', '') or 
-                       props.get('ref', ''))
+                name_candidates = [
+                    _coerce_to_str(props.get('name')),
+                    _coerce_to_str(props.get('short_name')),
+                    _coerce_to_str(props.get('ref')),
+                ]
+                name = next((candidate for candidate in name_candidates if candidate.strip()), "")
                 
                 # If still no name, create a descriptive name from available fields
                 if not name or name.strip() == '':
-                    name_parts = []
                     # Use location-based name if available
-                    if props.get('from') and props.get('to'):
-                        name = f"Trail: {props.get('from')} to {props.get('to')}"
-                    elif props.get('from'):
-                        name = f"Trail from {props.get('from')}"
-                    elif props.get('to'):
-                        name = f"Trail to {props.get('to')}"
+                    from_value = _coerce_to_str(props.get('from'))
+                    to_value = _coerce_to_str(props.get('to'))
+                    network_value = _coerce_to_str(props.get('network'))
+                    colour_value = _coerce_to_str(props.get('colour'))
+                    if from_value and to_value:
+                        name = f"Trail: {from_value} to {to_value}"
+                    elif from_value:
+                        name = f"Trail from {from_value}"
+                    elif to_value:
+                        name = f"Trail to {to_value}"
                     # Use network and colour if available
-                    elif props.get('network') and props.get('colour'):
-                        name = f"{props.get('network', '').upper()} {props.get('colour', '').title()} Trail"
-                    elif props.get('network'):
+                    elif network_value and colour_value:
+                        name = f"{network_value.upper()} {colour_value.title()} Trail"
+                    elif network_value:
                         # Include approximate location in name
                         location_hint = f"near {center_lat:.2f}°N, {center_lon:.2f}°E"
-                        name = f"{props.get('network', '').upper()} Trail {location_hint}"
+                        name = f"{network_value.upper()} Trail {location_hint}"
                     else:
                         # Fallback: use location coordinates
                         name = f"Hiking Trail ({center_lat:.3f}°N, {center_lon:.3f}°E)"
                 
                 # Build description from multiple sources
                 description_parts = []
-                if props.get('descriptio'):
-                    description_parts.append(props.get('descriptio'))
-                if props.get('note'):
-                    description_parts.append(props.get('note'))
-                if props.get('network'):
-                    description_parts.append(f"Part of {props.get('network')} network")
-                if props.get('operator'):
-                    description_parts.append(f"Operated by {props.get('operator')}")
+                description_text = _coerce_to_str(props.get('descriptio'))
+                if description_text:
+                    description_parts.append(description_text)
+                note_text = _coerce_to_str(props.get('note'))
+                if note_text:
+                    description_parts.append(note_text)
+                network_text = _coerce_to_str(props.get('network'))
+                if network_text:
+                    description_parts.append(f"Part of {network_text} network")
+                operator_text = _coerce_to_str(props.get('operator'))
+                if operator_text:
+                    description_parts.append(f"Operated by {operator_text}")
                 
                 description = ' '.join(description_parts) if description_parts else f"Hiking trail in French Alps: {name}"
                 
                 # Extract distance - calculate from coordinates if not provided
                 distance = None
-                distance_str = props.get('distance', '')
+                distance_str = _coerce_to_str(props.get('distance', ''))
                 if distance_str:
                     try:
                         # Try to parse distance string (might be "5 km", "5000 m", "5.2", etc.)
@@ -215,7 +314,7 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
                 
                 # Extract duration - parse ISO 8601 format (PT2H30M) or other formats
                 duration = None
-                duration_str = props.get('duration', '')
+                duration_str = _coerce_to_str(props.get('duration', ''))
                 if duration_str:
                     try:
                         # Try ISO 8601 format (PT2H30M, PT1H, PT30M, etc.)
@@ -245,17 +344,16 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
                 # Extract landscapes - use network/colour from shapefile if available
                 landscapes = _parse_landscapes(props)
                 # Enhance with shapefile-specific fields
-                if props.get('network'):
-                    # network field might indicate trail network type
-                    network = props.get('network', '').lower()
-                    if 'lwn' in network or 'local' in network:
+                network_value = _coerce_to_str(props.get('network'))
+                if network_value:
+                    network_lower = network_value.lower()
+                    if 'lwn' in network_lower or 'local' in network_lower:
                         if 'alpine' not in landscapes.lower():
                             landscapes = landscapes + ',alpine' if landscapes else 'alpine'
-                if props.get('colour'):
-                    # Colour might indicate trail marking
-                    colour = props.get('colour', '').lower()
-                    if 'blue' in colour or 'yellow' in colour or 'red' in colour:
-                        # Marked trails often indicate alpine/mountain areas
+                colour_value = _coerce_to_str(props.get('colour'))
+                if colour_value:
+                    colour_lower = colour_value.lower()
+                    if any(token in colour_lower for token in ['blue', 'yellow', 'red']):
                         if 'alpine' not in landscapes.lower():
                             landscapes = landscapes + ',alpine' if landscapes else 'alpine'
                 
@@ -264,6 +362,13 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
                 
                 # Extract accessibility
                 accessibility = _parse_accessibility(props)
+
+                elevation_gain = None
+                if elevation_requests < elevation_fetch_limit:
+                    _, elevation_from_api, _ = get_elevation_profile(coordinates)
+                    if elevation_from_api is not None:
+                        elevation_gain = elevation_from_api
+                        elevation_requests += 1
                 
                 # Create GeoJSON LineString for storage
                 geojson_storage = {
@@ -281,7 +386,7 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
                     'distance': distance,
                     'difficulty': difficulty,
                     'duration': duration,
-                    'elevation_gain': None,  # Not in Shapefile
+                    'elevation_gain': elevation_gain,
                     'trail_type': trail_type,
                     'landscapes': landscapes,
                     'popularity': 7.0,
@@ -299,6 +404,8 @@ def fetch_trails_from_shapefile(shapefile_path=None, limit=20, bbox=None):
         print(f"Parsed {len(trails)} hiking trails from Shapefile")
         return trails
         
+    except FileNotFoundError:
+        raise
     except Exception as e:
         print(f"Error reading Shapefile: {e}")
         return []
@@ -995,7 +1102,16 @@ if __name__ == "__main__":
     print("\n1. Trying local Shapefile (if available)...")
     # French Alps bounding box: approximately 5.0°E-7.5°E, 44.0°N-46.5°N
     # Using Chamonix area as example: 6.8°E-7.0°E, 45.9°N-46.0°N
-    trails = fetch_trails_from_shapefile(limit=20, bbox=(6.8, 45.9, 7.0, 46.0))
+    try:
+        trails = fetch_trails_from_shapefile(limit=20, bbox=(6.8, 45.9, 7.0, 46.0))
+    except FileNotFoundError as exc:
+        print("\nERROR: Required Shapefile components are missing.")
+        print(str(exc))
+        sys.exit(1)
+    except Exception as exc:  # Catch unexpected shapefile parsing issues
+        print("\nERROR: Unable to read the Shapefile.")
+        print(str(exc))
+        sys.exit(1)
     
     # If Shapefile didn't work, try data.gouv.fr API
     if not trails:

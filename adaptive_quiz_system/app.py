@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-<<<<<<< HEAD
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from backend.db import (
     get_all_users, get_user, get_trail, get_all_trails,
@@ -8,25 +7,16 @@ from backend.db import (
 )
 from adapt_trails import adapt_trails
 import json
-=======
-from flask import Flask, render_template, request, redirect, url_for
-from backend.db import get_all_users, get_user, load_quiz
-from adapt_quiz import adapt_quiz
->>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 
 app = Flask(__name__)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-<<<<<<< HEAD
     """Home page - user selection and context input"""
-=======
->>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
     users = get_all_users()
 
     if request.method == "POST":
         user_id = int(request.form["user_id"])
-<<<<<<< HEAD
         time_available = int(request.form.get("time_available", 60))
         device = request.form.get("device", "desktop")
         weather = request.form.get("weather", "sunny")
@@ -49,22 +39,10 @@ def index():
 @app.route("/recommendations/<int:user_id>")
 def recommendations(user_id):
     """Adaptive trail recommendations page"""
-=======
-        time_available = int(request.form.get("time_available", 15))
-        device = request.form.get("device", "desktop")
-
-        return redirect(url_for("show_quiz", user_id=user_id, time_available=time_available, device=device))
-
-    return render_template("index.html", users=users)
-
-@app.route("/quiz/<int:user_id>")
-def show_quiz(user_id):
->>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
     user = get_user(user_id)
     if not user:
         return "User not found", 404
 
-<<<<<<< HEAD
     time_available = int(request.args.get("time_available", 60))
     device = request.args.get("device", "desktop")
     weather = request.args.get("weather", "sunny")
@@ -96,33 +74,10 @@ def show_quiz(user_id):
 @app.route("/trail/<int:user_id>/<trail_id>")
 def trail_detail(user_id, trail_id):
     """Trail detail page"""
-=======
-    time_available = int(request.args.get("time_available", 15))
-    device = request.args.get("device", "desktop")
-
-    context = {"time_available": time_available, "device": device}
-    quiz_settings, allowed_quizzes = adapt_quiz(user, context)
-
-    quizzes = []
-    for q in allowed_quizzes:
-        quizzes.append({"file": q + ".json", "title": q.replace("_", " ").title()})
-
-    return render_template(
-        "quiz.html",
-        user=user,
-        context=context,
-        quiz_settings=quiz_settings,
-        quizzes=quizzes
-    )
-
-@app.route("/quiz/<int:user_id>/<quiz_file>")
-def play_quiz(user_id, quiz_file):
->>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
     user = get_user(user_id)
     if not user:
         return "User not found", 404
 
-<<<<<<< HEAD
     trail = get_trail(trail_id)
     if not trail:
         return "Trail not found", 404
@@ -225,10 +180,6 @@ def all_trails():
     """Page showing all available trails in list and map views"""
     trails = get_all_trails()
     return render_template("all_trails.html", trails=trails)
-=======
-    questions = load_quiz(quiz_file)
-    return render_template("play_quiz.html", user=user, questions=questions)
->>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 
 if __name__ == "__main__":
     app.run(debug=True)
