@@ -3,12 +3,19 @@
 import sqlite3
 import json
 import os
+<<<<<<< HEAD
 from datetime import datetime
+=======
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 
 BASE_DIR = os.path.dirname(__file__)
 USERS_DB = os.path.join(BASE_DIR, "users.db")
 RULES_DB = os.path.join(BASE_DIR, "rules.db")
+<<<<<<< HEAD
 TRAILS_DB = os.path.join(BASE_DIR, "trails.db")
+=======
+QUIZZES_DIR = os.path.join(BASE_DIR, "quizzes")
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 
 # --- Users ---
 def get_all_users():
@@ -17,15 +24,22 @@ def get_all_users():
     cur = conn.cursor()
     cur.execute("SELECT * FROM users")
     users = [dict(row) for row in cur.fetchall()]
+<<<<<<< HEAD
+=======
+    # ajouter préférences et performance
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
     for user in users:
         cur.execute("SELECT preference FROM preferences WHERE user_id=?", (user["id"],))
         user["preferences"] = [row["preference"] for row in cur.fetchall()]
         cur.execute("SELECT * FROM performance WHERE user_id=?", (user["id"],))
         perf = cur.fetchone()
         user["performance"] = dict(perf) if perf else {}
+<<<<<<< HEAD
         # Get completed trails
         cur.execute("SELECT trail_id, completion_date, rating FROM completed_trails WHERE user_id=? ORDER BY completion_date DESC", (user["id"],))
         user["completed_trails"] = [dict(row) for row in cur.fetchall()]
+=======
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
     conn.close()
     return users
 
@@ -43,6 +57,7 @@ def get_user(user_id):
     cur.execute("SELECT * FROM performance WHERE user_id=?", (user_id,))
     perf = cur.fetchone()
     user["performance"] = dict(perf) if perf else {}
+<<<<<<< HEAD
     # Get completed trails
     cur.execute("SELECT trail_id, completion_date, rating FROM completed_trails WHERE user_id=? ORDER BY completion_date DESC", (user_id,))
     user["completed_trails"] = [dict(row) for row in cur.fetchall()]
@@ -71,6 +86,11 @@ def record_trail_completion(user_id, trail_id, actual_duration, rating):
     conn.commit()
     conn.close()
 
+=======
+    conn.close()
+    return user
+
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 # --- Rules ---
 def get_rules():
     conn = sqlite3.connect(RULES_DB)
@@ -81,6 +101,7 @@ def get_rules():
     conn.close()
     return rules
 
+<<<<<<< HEAD
 # --- Trails ---
 def get_all_trails():
     conn = sqlite3.connect(TRAILS_DB)
@@ -147,3 +168,13 @@ def filter_trails(filters):
     trails = [dict(row) for row in cur.fetchall()]
     conn.close()
     return trails
+=======
+# --- Quiz files ---
+def get_all_quizzes():
+    return [f for f in os.listdir(QUIZZES_DIR) if f.endswith(".json")]
+
+def load_quiz(quiz_file):
+    path = os.path.join(QUIZZES_DIR, quiz_file)
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635

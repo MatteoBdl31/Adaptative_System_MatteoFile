@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 import os
+<<<<<<< HEAD
 import json
+=======
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 
 BASE_DIR = os.path.dirname(__file__)
 USERS_DB = os.path.join(BASE_DIR, "users.db")
 RULES_DB = os.path.join(BASE_DIR, "rules.db")
+<<<<<<< HEAD
 TRAILS_DB = os.path.join(BASE_DIR, "trails.db")
 TRAILS_DIR = os.path.join(BASE_DIR, "trails")
+=======
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 
 # ----------------- Rules -----------------
 conn = sqlite3.connect(RULES_DB)
@@ -17,12 +23,17 @@ cur.execute("""
 CREATE TABLE rules (
     rule_id INTEGER PRIMARY KEY,
     condition TEXT NOT NULL,
+<<<<<<< HEAD
     adaptation TEXT NOT NULL,
     description TEXT
+=======
+    adaptation TEXT NOT NULL
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 )
 """)
 
 rules = [
+<<<<<<< HEAD
     ("experience=Beginner AND time_available<=60",
      "max_difficulty=easy;max_distance=5;max_elevation=200",
      "Beginner with limited time: easy, short trails"),
@@ -59,6 +70,20 @@ cur.executemany("INSERT INTO rules (condition, adaptation, description) VALUES (
 conn.commit()
 conn.close()
 print("rules.db initialized with hiking rules")
+=======
+    ("level=Beginner AND time_available<=10",
+     "difficulty=easy;questions=5;allowed_quizzes=math_basics,culture_general"),
+    ("level=Master AND performance.avg_score>=70",
+     "difficulty=hard;questions=15;timer=true;allowed_quizzes=math_advanced,culture_pop,history"),
+    ("level=Intermediate",
+     "difficulty=medium;questions=10;allowed_quizzes=science,languages")
+]
+
+cur.executemany("INSERT INTO rules (condition, adaptation) VALUES (?, ?)", rules)
+conn.commit()
+conn.close()
+print("rules.db initialized")
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 
 # ----------------- Users -----------------
 conn = sqlite3.connect(USERS_DB)
@@ -66,17 +91,24 @@ cur = conn.cursor()
 cur.execute("DROP TABLE IF EXISTS users")
 cur.execute("DROP TABLE IF EXISTS preferences")
 cur.execute("DROP TABLE IF EXISTS performance")
+<<<<<<< HEAD
 cur.execute("DROP TABLE IF EXISTS completed_trails")
 cur.execute("DROP TABLE IF EXISTS trail_history")
+=======
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 
 cur.execute("""
 CREATE TABLE users (
     id INTEGER PRIMARY KEY,
     name TEXT,
+<<<<<<< HEAD
     experience TEXT,
     fitness_level TEXT,
     fear_of_heights INTEGER,
     health_constraints TEXT
+=======
+    level TEXT
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 )
 """)
 cur.execute("""
@@ -90,6 +122,7 @@ CREATE TABLE preferences (
 cur.execute("""
 CREATE TABLE performance (
     user_id INTEGER PRIMARY KEY,
+<<<<<<< HEAD
     trails_completed INTEGER,
     avg_difficulty_completed REAL,
     persistence_score REAL,
@@ -117,11 +150,17 @@ CREATE TABLE trail_history (
     trail_id TEXT,
     viewed_at TEXT,
     abandoned INTEGER,
+=======
+    avg_score REAL,
+    attempts INTEGER,
+    success_rate REAL,
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
     FOREIGN KEY(user_id) REFERENCES users(id)
 )
 """)
 
 users = [
+<<<<<<< HEAD
     (101, "Alice", "Advanced", "High", 0, None),
     (102, "Bob", "Beginner", "Medium", 1, None),
     (103, "Carol", "Intermediate", "High", 0, "Knee issues"),
@@ -156,10 +195,23 @@ preferences = [
     (113, "urban"), (113, "forest"),
     (114, "peaks"), (114, "alpine"), (114, "mountain"),
     (115, "lake"), (115, "peaks")
+=======
+    (101, "Alice", "Master"),
+    (102, "Bob", "Beginner"),
+    (103, "Carol", "Intermediate")
+]
+cur.executemany("INSERT INTO users (id, name, level) VALUES (?, ?, ?)", users)
+
+preferences = [
+    (101, "video"), (101, "quiz"),
+    (102, "reading"),
+    (103, "quiz"), (103, "audio")
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 ]
 cur.executemany("INSERT INTO preferences (user_id, preference) VALUES (?, ?)", preferences)
 
 performance = [
+<<<<<<< HEAD
     (101, 15, 7.5, 0.9, 0.8, 120, 8),
     (102, 3, 3.0, 0.4, 0.6, 45, 2),
     (103, 8, 5.5, 0.7, 0.7, 90, 5),
@@ -268,3 +320,14 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 conn.commit()
 conn.close()
 print("trails.db initialized with sample trails")
+=======
+    (101, 72, 3, 0.65),
+    (102, 40, 5, 0.30),
+    (103, 85, 10, 0.80)
+]
+cur.executemany("INSERT INTO performance (user_id, avg_score, attempts, success_rate) VALUES (?, ?, ?, ?)", performance)
+
+conn.commit()
+conn.close()
+print("users.db initialized with sample users")
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<<<<<<< HEAD
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -93,5 +94,38 @@
             </div>
         </main>
     </div>
+=======
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Système de Quiz Adaptatifs</title>
+</head>
+<body>
+    <h1>Choisir un utilisateur et un contexte</h1>
+
+    <form method="post">
+        <label for="user_id">Utilisateur :</label>
+        <select name="user_id" id="user_id" required>
+            {% for user in users %}
+                <option value="{{ user.id }}">{{ user.name }} ({{ user.level }})</option>
+            {% endfor %}
+        </select>
+        <br><br>
+
+        <label for="time_available">Temps disponible (minutes) :</label>
+        <input type="number" name="time_available" id="time_available" value="15">
+        <br><br>
+
+        <label for="device">Appareil :</label>
+        <select name="device" id="device">
+            <option value="desktop">Ordinateur</option>
+            <option value="mobile">Mobile</option>
+            <option value="tablet">Tablette</option>
+        </select>
+        <br><br>
+
+        <button type="submit">Voir le Quiz Adapté</button>
+    </form>
+>>>>>>> d04b8f65898e6e31c37e1228d779449922fdd635
 </body>
 </html>
