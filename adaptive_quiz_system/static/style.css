@@ -1,0 +1,916 @@
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    padding: 30px;
+    margin-bottom: 20px;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #667eea;
+}
+
+header h1 {
+    color: #667eea;
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 1.1em;
+}
+
+/* Navigation */
+.nav-links {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.nav-links a {
+    color: #667eea;
+    text-decoration: none;
+    padding: 8px 16px;
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+
+.nav-links a:hover {
+    background: #667eea;
+    color: white;
+}
+
+/* Forms */
+.context-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.form-section h2 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin: 20px auto;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.3s;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+/* Context Info */
+.context-info {
+    background: #e7f3ff;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.context-info h3 {
+    margin-bottom: 15px;
+    color: #667eea;
+}
+
+.context-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    background: #667eea;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+}
+
+.badge-beginner { background: #28a745; }
+.badge-intermediate { background: #ffc107; color: #333; }
+.badge-advanced { background: #dc3545; }
+
+/* Rules Info */
+.rules-info {
+    background: #fff3cd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #ffc107;
+}
+
+.rules-info h3 {
+    margin-bottom: 10px;
+    color: #856404;
+}
+
+.rules-info ul {
+    margin-left: 20px;
+}
+
+.rules-info li {
+    margin-bottom: 5px;
+    color: #856404;
+}
+
+/* Trail Cards */
+.trails-container {
+    margin-top: 30px;
+}
+
+.trails-container h2 {
+    color: #667eea;
+    margin-bottom: 20px;
+}
+
+.trails-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.trails-container.compact .trails-grid {
+    grid-template-columns: 1fr;
+}
+
+.trail-card {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.trail-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+.trail-image-placeholder {
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4em;
+}
+
+.trail-content {
+    padding: 20px;
+}
+
+.trail-content h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.trail-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.difficulty-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.85em;
+}
+
+.difficulty-easy {
+    background: #28a745;
+    color: white;
+}
+
+.difficulty-medium {
+    background: #ffc107;
+    color: #333;
+}
+
+.difficulty-hard {
+    background: #dc3545;
+    color: white;
+}
+
+.difficulty-badge-large {
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1.2em;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+
+.trail-description {
+    color: #666;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.trail-features {
+    margin-bottom: 15px;
+}
+
+.landscapes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.landscape-tag {
+    background: #e7f3ff;
+    color: #667eea;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    border: 1px solid #667eea;
+}
+
+.access-tag {
+    background: #d4edda;
+    color: #155724;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+}
+
+.recommendation-reasons {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.recommendation-reasons ul {
+    margin-left: 20px;
+    margin-top: 8px;
+}
+
+.recommendation-reasons li {
+    color: #666;
+    margin-bottom: 4px;
+}
+
+/* Recommendations and Suggestions Sections */
+.recommendations-section {
+    margin-bottom: 40px;
+}
+
+.suggestions-section {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #e0e0e0;
+}
+
+.section-description {
+    color: #666;
+    font-size: 0.95em;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+/* Trail Card Variants */
+.trail-card.recommended {
+    border-color: #28a745;
+    border-width: 3px;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+}
+
+.trail-card.recommended:hover {
+    box-shadow: 0 5px 20px rgba(40, 167, 69, 0.3);
+}
+
+.trail-card.suggested {
+    border-color: #ffc107;
+    border-width: 2px;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+}
+
+.trail-card.suggested:hover {
+    box-shadow: 0 5px 20px rgba(255, 193, 7, 0.25);
+}
+
+/* Relevance Info */
+.relevance-info {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.relevance-badge {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.9em;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+}
+
+.matched-criteria {
+    color: #666;
+    font-size: 0.85em;
+}
+
+/* Matched Criteria Info */
+.matched-criteria-info {
+    background: #fff3cd;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    border-left: 3px solid #ffc107;
+}
+
+.matched-criteria-info strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #856404;
+}
+
+.criteria-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.criteria-tag {
+    background: #ffc107;
+    color: #333;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+/* Trail Detail Page */
+.trail-detail {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.trail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.popularity {
+    font-size: 1.3em;
+    color: #ffc107;
+}
+
+.trail-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-item strong {
+    display: block;
+    color: #667eea;
+    margin-bottom: 5px;
+}
+
+.trail-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.trail-section h2 {
+    color: #667eea;
+    margin-bottom: 15px;
+}
+
+.safety-info {
+    line-height: 1.8;
+}
+
+.warning {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.weather-warning {
+    background: #fff3cd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #ffc107;
+}
+
+.mobile-map,
+.desktop-map {
+    background: #e7f3ff;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.map-placeholder {
+    font-size: 1.2em;
+    color: #667eea;
+}
+
+.offline-tips {
+    background: #d1ecf1;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.offline-tips ul {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.completion-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 30px;
+}
+
+.completed-badge {
+    background: #d4edda;
+    color: #155724;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-top: 30px;
+}
+
+/* Profile Page */
+.profile-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-section {
+    margin-bottom: 40px;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.profile-section h2 {
+    color: #667eea;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+.profile-info {
+    display: grid;
+    gap: 15px;
+}
+
+.info-item {
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+}
+
+.preferences {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.performance-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.completed-trails-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.completed-trail-item {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.completed-trail-item .date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.completed-trail-item .rating {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+.profile-actions {
+    text-align: center;
+    margin-top: 30px;
+}
+
+/* Dashboard */
+.dashboard-content {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.dashboard-section {
+    margin-bottom: 40px;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.dashboard-section h2 {
+    color: #667eea;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.stat-card-large {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+}
+
+.stat-card-large .stat-value {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.chart-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.bar-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.bar-label {
+    min-width: 150px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.bar-wrapper {
+    flex: 1;
+    height: 30px;
+    background: #e0e0e0;
+    border-radius: 15px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    transition: width 0.5s;
+}
+
+.bar-value {
+    color: white;
+    font-weight: 600;
+    font-size: 0.85em;
+}
+
+.landscape-chart {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.landscape-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.landscape-name {
+    min-width: 120px;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.landscape-bar-wrapper {
+    flex: 1;
+    height: 25px;
+    background: #e0e0e0;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.landscape-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+}
+
+.landscape-count {
+    color: white;
+    font-weight: 600;
+    font-size: 0.85em;
+}
+
+.activity-stats {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.activity-item {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.activity-item strong {
+    min-width: 200px;
+    color: #667eea;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 25px;
+    background: #e0e0e0;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    transition: width 0.5s;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9em;
+}
+
+/* Admin Rules */
+.rules-content {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.rule-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.rule-id {
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+
+.rule-condition,
+.rule-adaptation {
+    margin-bottom: 10px;
+}
+
+.rule-condition code,
+.rule-adaptation code {
+    background: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-left: 10px;
+    font-family: 'Courier New', monospace;
+    color: #dc3545;
+}
+
+.rule-description {
+    margin-top: 10px;
+    color: #666;
+    font-style: italic;
+}
+
+/* No trails message */
+.no-trails {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 1.1em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    header h1 {
+        font-size: 1.8em;
+    }
+
+    .trails-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .trail-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .performance-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

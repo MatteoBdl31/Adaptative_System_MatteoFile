@@ -1,0 +1,7 @@
+[
+  {"id": 1, "question": "Quel est l’élément chimique dont le symbole est O ?", "choices": ["Or", "Oxygène", "Osmium"], "answer": "Oxygène"},
+  {"id": 2, "question": "Quel est l’organe principal de la respiration ?", "choices": ["Cœur", "Poumons", "Reins"], "answer": "Poumons"},
+  {"id": 3, "question": "Quelle planète est surnommée la planète rouge ?", "choices": ["Mars", "Jupiter", "Vénus"], "answer": "Mars"},
+  {"id": 4, "question": "Quel est l’état de l’eau à 100°C ?", "choices": ["Solide", "Liquide", "Gaz"], "answer": "Gaz"},
+  {"id": 5, "question": "Combien de chromosomes possède l’espèce humaine ?", "choices": ["23", "46", "92"], "answer": "46"}
+]

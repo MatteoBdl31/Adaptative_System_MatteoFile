@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.name }} - Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👤 {{ user.name }}'s Profile</h1>
+            <nav class="nav-links">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('all_trails') }}">All Trails</a>
+                <a href="{{ url_for('dashboard', user_id=user.id) }}">Dashboard</a>
+            </nav>
+        </header>
+
+        <div class="profile-content">
+            <div class="profile-section">
+                <h2>Static Profile</h2>
+                <div class="profile-info">
+                    <div class="info-item">
+                        <strong>Experience Level:</strong> 
+                        <span class="badge badge-{{ user.experience.lower() }}">{{ user.experience }}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Fitness Level:</strong> {{ user.fitness_level }}
+                    </div>
+                    <div class="info-item">
+                        <strong>Fear of Heights:</strong> {{ 'Yes' if user.fear_of_heights else 'No' }}
+                    </div>
+                    {% if user.health_constraints %}
+                    <div class="info-item">
+                        <strong>Health Constraints:</strong> {{ user.health_constraints }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h2>Landscape Preferences</h2>
+                <div class="preferences">
+                    {% if user.preferences %}
+                        {% for pref in user.preferences %}
+                        <span class="landscape-tag">{{ pref }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p>No preferences set</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h2>Performance Metrics</h2>
+                {% if user.performance %}
+                <div class="performance-stats">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user.performance.trails_completed or 0 }}</div>
+                        <div class="stat-label">Trails Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ "%.1f"|format(user.performance.avg_difficulty_completed or 0) }}</div>
+                        <div class="stat-label">Avg Difficulty</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ "%.0f%%"|format((user.performance.persistence_score or 0) * 100) }}</div>
+                        <div class="stat-label">Persistence</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ "%.0f%%"|format((user.performance.exploration_level or 0) * 100) }}</div>
+                        <div class="stat-label">Exploration</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ "%.0f"|format(user.performance.avg_completion_time or 0) }} min</div>
+                        <div class="stat-label">Avg Time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user.performance.activity_frequency or 0 }}</div>
+                        <div class="stat-label">Activity Frequency</div>
+                    </div>
+                </div>
+                {% else %}
+                <p>No performance data yet</p>
+                {% endif %}
+            </div>
+
+            <div class="profile-section">
+                <h2>Completed Trails</h2>
+                {% if user.completed_trails %}
+                <div class="completed-trails-list">
+                    {% for ct in user.completed_trails %}
+                    <div class="completed-trail-item">
+                        <strong>{{ ct.trail_id.replace('_', ' ').title() }}</strong>
+                        <span class="date">{{ ct.completion_date }}</span>
+                        <span class="rating">⭐ {{ ct.rating }}/5</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p>No trails completed yet</p>
+                {% endif %}
+            </div>
+
+            <div class="profile-actions">
+                <a href="{{ url_for('recommendations', user_id=user.id, time_available=60, device='desktop', weather='sunny', connection='strong', season='summer', time_of_day='morning') }}" 
+                   class="btn-primary">Get Recommendations</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

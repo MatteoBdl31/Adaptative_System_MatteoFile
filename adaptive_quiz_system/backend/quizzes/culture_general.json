@@ -1,0 +1,7 @@
+[
+  {"id": 1, "question": "Quelle est la capitale de l’Italie ?", "choices": ["Rome", "Milan", "Venise"], "answer": "Rome"},
+  {"id": 2, "question": "Combien de continents y a-t-il sur Terre ?", "choices": ["5", "6", "7"], "answer": "7"},
+  {"id": 3, "question": "Quel est l’océan le plus vaste ?", "choices": ["Atlantique", "Pacifique", "Indien"], "answer": "Pacifique"},
+  {"id": 4, "question": "Qui a peint la Joconde ?", "choices": ["Van Gogh", "Picasso", "Léonard de Vinci"], "answer": "Léonard de Vinci"},
+  {"id": 5, "question": "Quelle est la langue la plus parlée dans le monde ?", "choices": ["Anglais", "Mandarin", "Espagnol"], "answer": "Mandarin"}
+]

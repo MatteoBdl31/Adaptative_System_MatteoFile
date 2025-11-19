@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Adaptation Rules</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ Adaptation Rules</h1>
+            <nav class="nav-links">
+                <a href="{{ url_for('index') }}">Home</a>
+            </nav>
+        </header>
+
+        <div class="rules-content">
+            <h2>All Active Rules ({{ rules|length }})</h2>
+            <div class="rules-list">
+                {% for rule in rules %}
+                <div class="rule-card">
+                    <div class="rule-id">Rule #{{ rule.rule_id }}</div>
+                    <div class="rule-condition">
+                        <strong>Condition:</strong> 
+                        <code>{{ rule.condition }}</code>
+                    </div>
+                    <div class="rule-adaptation">
+                        <strong>Adaptation:</strong> 
+                        <code>{{ rule.adaptation }}</code>
+                    </div>
+                    {% if rule.description %}
+                    <div class="rule-description">
+                        <strong>Description:</strong> {{ rule.description }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hiking Trail Recommendation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏔️ Hiking Trail Recommendations</h1>
+            <p class="subtitle">Find your perfect trail based on your profile and current context</p>
+        </header>
+
+        <main>
+            <form method="post" class="context-form">
+                <div class="form-section">
+                    <h2>Select User</h2>
+                    <label for="user_id">User:</label>
+                    <select name="user_id" id="user_id" required>
+                        {% for user in users %}
+                            <option value="{{ user.id }}">
+                                {{ user.name }} ({{ user.experience }} - {{ user.fitness_level }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-section">
+                    <h2>Context Information</h2>
+                    
+                    <div class="form-group">
+                        <label for="time_available">Time Available (minutes):</label>
+                        <input type="number" name="time_available" id="time_available" value="60" min="15" step="15">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="device">Device:</label>
+                        <select name="device" id="device">
+                            <option value="desktop">Desktop</option>
+                            <option value="mobile">Mobile</option>
+                            <option value="tablet">Tablet</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="weather">Weather:</label>
+                        <select name="weather" id="weather">
+                            <option value="sunny">Sunny</option>
+                            <option value="cloudy">Cloudy</option>
+                            <option value="rainy">Rainy</option>
+                            <option value="storm_risk">Storm Risk</option>
+                            <option value="snowy">Snowy</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="connection">Connection Quality:</label>
+                        <select name="connection" id="connection">
+                            <option value="strong">Strong</option>
+                            <option value="medium">Medium</option>
+                            <option value="weak">Weak</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="season">Season:</label>
+                        <select name="season" id="season">
+                            <option value="spring">Spring</option>
+                            <option value="summer" selected>Summer</option>
+                            <option value="fall">Fall</option>
+                            <option value="winter">Winter</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="time_of_day">Time of Day:</label>
+                        <select name="time_of_day" id="time_of_day">
+                            <option value="morning" selected>Morning</option>
+                            <option value="afternoon">Afternoon</option>
+                            <option value="evening">Evening</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Find My Trails</button>
+            </form>
+
+            <div style="text-align: center; margin-top: 30px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
+                <p>Or browse all available trails:</p>
+                <a href="{{ url_for('all_trails') }}" class="btn-secondary">View All Trails</a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

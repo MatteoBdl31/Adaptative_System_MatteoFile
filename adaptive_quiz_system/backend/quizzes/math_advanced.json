@@ -1,0 +1,7 @@
+[
+  {"id": 1, "question": "Quelle est la dérivée de x² ?", "choices": ["x", "2x", "x²"], "answer": "2x"},
+  {"id": 2, "question": "Quelle est la racine carrée de 144 ?", "choices": ["10", "12", "14"], "answer": "12"},
+  {"id": 3, "question": "Résolvez : 2x + 3 = 7", "choices": ["x=1", "x=2", "x=3"], "answer": "x=2"},
+  {"id": 4, "question": "Quelle est l’intégrale de 1/x ?", "choices": ["ln(x)", "1/x²", "x"], "answer": "ln(x)"},
+  {"id": 5, "question": "Quelle est la limite de (1 + 1/n)^n quand n tend vers l’infini ?", "choices": ["1", "e", "∞"], "answer": "e"}
+]

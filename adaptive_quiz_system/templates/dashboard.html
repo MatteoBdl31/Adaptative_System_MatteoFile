@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.name }} - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 {{ user.name }}'s Dashboard</h1>
+            <nav class="nav-links">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('profile', user_id=user.id) }}">Profile</a>
+            </nav>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="dashboard-section">
+                <h2>Trail Completion Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card-large">
+                        <div class="stat-icon">🏔️</div>
+                        <div class="stat-value">{{ completed_trails|length }}</div>
+                        <div class="stat-label">Total Trails Completed</div>
+                    </div>
+                    <div class="stat-card-large">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-value">
+                            {% if completed_trails %}
+                                {{ "%.1f"|format((completed_trails|sum(attribute='rating') / completed_trails|length)) }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">Average Rating</div>
+                    </div>
+                    <div class="stat-card-large">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-value">{{ "%.1f"|format(performance.avg_difficulty_completed or 0) }}</div>
+                        <div class="stat-label">Average Difficulty Completed</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-section">
+                <h2>Difficulty Progression</h2>
+                <div class="chart-container">
+                    <div class="bar-chart">
+                        {% if completed_trail_details %}
+                            {% set max_difficulty = 10 %}
+                            {% for trail in completed_trail_details %}
+                                <div class="bar-item">
+                                    <div class="bar-label">{{ trail.name[:20] }}...</div>
+                                    <div class="bar-wrapper">
+                                        <div class="bar" style="width: {{ (trail.difficulty / max_difficulty * 100)|round }}%">
+                                            <span class="bar-value">{{ "%.1f"|format(trail.difficulty) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No data available yet</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-section">
+                <h2>Preferred Landscapes</h2>
+                <div class="landscape-chart">
+                    {% if landscape_counts %}
+                        {% for landscape, count in landscape_counts.items() %}
+                        <div class="landscape-bar-item">
+                            <span class="landscape-name">{{ landscape }}</span>
+                            <div class="landscape-bar-wrapper">
+                                <div class="landscape-bar" style="width: {{ (count / landscape_counts.values()|max * 100)|round }}%">
+                                    <span class="landscape-count">{{ count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>Complete some trails to see your landscape preferences</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="dashboard-section">
+                <h2>Activity Overview</h2>
+                <div class="activity-stats">
+                    <div class="activity-item">
+                        <strong>Persistence Score:</strong> 
+                        <span class="progress-bar">
+                            <span class="progress-fill" style="width: {{ (performance.persistence_score or 0) * 100 }}%"></span>
+                            <span class="progress-text">{{ "%.0f%%"|format((performance.persistence_score or 0) * 100) }}</span>
+                        </span>
+                    </div>
+                    <div class="activity-item">
+                        <strong>Exploration Level:</strong> 
+                        <span class="progress-bar">
+                            <span class="progress-fill" style="width: {{ (performance.exploration_level or 0) * 100 }}%"></span>
+                            <span class="progress-text">{{ "%.0f%%"|format((performance.exploration_level or 0) * 100) }}</span>
+                        </span>
+                    </div>
+                    <div class="activity-item">
+                        <strong>Average Completion Time:</strong> {{ "%.0f"|format(performance.avg_completion_time or 0) }} minutes
+                    </div>
+                    <div class="activity-item">
+                        <strong>Activity Frequency:</strong> {{ performance.activity_frequency or 0 }} hikes/month
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
