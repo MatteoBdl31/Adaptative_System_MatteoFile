@@ -1,57 +1,67 @@
-## Adaptive Quiz System
+## Adaptive Trail Recommender
 
-This repository contains the source code for the Adaptive Quiz System coursework project.  
-Follow the steps below to set up your local environment and obtain the required offline
-assets.
+The legacy quiz artefacts have been replaced with a geo-aware adaptive trail demo fed by real
+French Alps data. Follow the steps below to hydrate the dataset, rebuild the SQLite stores, and
+run the personalised experience.
 
 ### 1. Install dependencies
 
-1. Create and activate a Python 3.9+ virtual environment (recommended).
-2. Install requirements:
-
 ```
+python -m venv .venv
+.venv\Scripts\activate  # or `source .venv/bin/activate` on macOS/Linux
 pip install -r requirements.txt
 ```
 
-### 2. Retrieve large GIS data
+### 2. Retrieve the hiking shapefile
 
-The application relies on a GIS shapefile that is too large to store in Git:
+Place the `hiking_foot_routes_lineLine.*` files (shp/shx/dbf/prj) inside `adaptive_quiz_system/data/source/`.
+Those files are sourced from the French data.gouv “Itinéraires de randonnée” dataset and are too
+large for Git.
 
-```
-adaptive_quiz_system/hiking_foot_routes_lineLine.shp
-```
-
-Along with this main `.shp` file, make sure the accompanying `.shx`, `.dbf`, and `.prj` files
-from the same dataset sit in the `adaptive_quiz_system/` directory.
-
-**How to get it**
-
-- Download the archive from the shared drive link (to be provided).
-- Extract the shapefile components into `adaptive_quiz_system/`.
-
-The structure should look like:
+Folder excerpt:
 
 ```
 adaptive_quiz_system/
-  …
-  hiking_foot_routes_lineLine.dbf
-  hiking_foot_routes_lineLine.prj
-  hiking_foot_routes_lineLine.shp
-  hiking_foot_routes_lineLine.shx
+  data/
+    source/
+      hiking_foot_routes_lineLine.dbf
+      hiking_foot_routes_lineLine.prj
+      hiking_foot_routes_lineLine.shp
+      hiking_foot_routes_lineLine.shx
 ```
 
-If you already cloned the repo before these files were ignored, run
-`git rm --cached adaptive_quiz_system/hiking_foot_routes_lineLine.*` and re-commit so the
-large files are fully removed from your local Git history.
+### 3. Generate real trails + seed the databases
 
-### 3. Run the app
-
-From the project root:
+The script will parse the shapefile, call the Open Elevation API (limited sample per run), and
+recreate `users.db`, `rules.db`, and `trails.db` with the curated data.
 
 ```
 cd adaptive_quiz_system
-python app.py
+python backend/init_db.py
 ```
 
-The Flask server starts on the default port; open the printed URL in your browser.
+To regenerate trails without touching users/rules you can also run the loader directly:
+
+```
+python -m data_pipeline.alps_trails_loader --limit 60 --write-db
+```
+
+### 4. Run the Flask app
+
+The Flask entry point now lives in `run.py` (the application itself is inside the `app/`
+package):
+
+```
+cd adaptive_quiz_system
+python run.py
+```
+
+The demo exposes:
+
+- `/recommendations/<user_id>` – toggle between map-first and card-first layouts
+- `/demo` – compare canned contexts side-by-side
+- `/trail/<user_id>/<trail_id>` – detailed view with interactive map + elevation profile
+
+All pages automatically reuse the personalised filters stored in SQLite so the UI is ready for
+presentations without extra configuration.
 

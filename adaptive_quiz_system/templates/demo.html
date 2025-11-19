@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Adaptive Trails · Demo Mode{% endblock %}
+{% block page_class %}detail-page demo-page{% endblock %}
+{% block content %}
+    <div class="detail-shell">
+        <header class="page-header">
+            <div class="page-header__left">
+                <p class="eyebrow">Live demo</p>
+                <h1>Contextual trail recommendations</h1>
+                <p class="subtitle">Switch personas, craft bespoke contexts, and showcase how the engine adapts.</p>
+            </div>
+        </header>
+
+        <div class="demo-layout">
+            <aside class="demo-controls-panel">
+                <form method="get" class="demo-form">
+                    <input type="hidden" name="compare" value="{{ 1 if compare_mode else 0 }}">
+                    <label>
+                        <span>User profile</span>
+                        <select name="user_id">
+                            {% for person in users %}
+                                <option value="{{ person.id }}" {% if person.id == selected_user_id %}selected{% endif %}>
+                                    {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    <div class="compare-toggle-buttons">
+                        <button type="submit" name="compare" value="0" class="toggle-btn {{ '' if compare_mode else 'is-active' }}">Single view</button>
+                        <button type="submit" name="compare" value="1" class="toggle-btn {{ 'is-active' if compare_mode else '' }}">Side-by-side</button>
+                    </div>
+
+                    <div class="scenario-block">
+                        <div class="scenario-header">
+                            <div>
+                                <h3>Scenario A</h3>
+                                <p class="muted small">Primary storyline</p>
+                            </div>
+                            <select name="scenario_preset_a">
+                                {% for scenario in scenarios %}
+                                <option value="{{ scenario.id }}" {% if scenario.id == preset_a %}selected{% endif %}>{{ scenario.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-grid">
+                            {% for field in context_fields %}
+                                {% set value = context_form_values['a'][field.name] %}
+                                <label>
+                                    <span>{{ field.label }}</span>
+                                    {% if field.type == 'select' %}
+                                    <select name="a_{{ field.name }}">
+                                        {% for option in field.options %}
+                                        <option value="{{ option }}" {% if option == value %}selected{% endif %}>{{ option.replace('_', ' ')|title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% else %}
+                                    <input type="{{ field.type }}" name="a_{{ field.name }}" value="{{ value }}" {% if field.min %}min="{{ field.min }}"{% endif %} {% if field.step %}step="{{ field.step }}"{% endif %}>
+                                    {% endif %}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="scenario-block {% if not compare_mode %}is-hidden{% endif %}">
+                        <div class="scenario-header">
+                            <div>
+                                <h3>Scenario B</h3>
+                                <p class="muted small">Comparison storyline</p>
+                            </div>
+                            <select name="scenario_preset_b">
+                                {% for scenario in scenarios %}
+                                <option value="{{ scenario.id }}" {% if scenario.id == preset_b %}selected{% endif %}>{{ scenario.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-grid">
+                            {% for field in context_fields %}
+                                {% set value = context_form_values['b'][field.name] %}
+                                <label>
+                                    <span>{{ field.label }}</span>
+                                    {% if field.type == 'select' %}
+                                    <select name="b_{{ field.name }}">
+                                        {% for option in field.options %}
+                                        <option value="{{ option }}" {% if option == value %}selected{% endif %}>{{ option.replace('_', ' ')|title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% else %}
+                                    <input type="{{ field.type }}" name="b_{{ field.name }}" value="{{ value }}" {% if field.min %}min="{{ field.min }}"{% endif %} {% if field.step %}step="{{ field.step }}"{% endif %}>
+                                    {% endif %}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Update demo</button>
+                </form>
+            </aside>
+
+            <section class="demo-results-panel">
+                {% if comparison_summary %}
+                <section class="panel-card compare-summary">
+                    <div class="comparison-grid">
+                        <div>
+                            <strong>{{ comparison_summary.primary_unique }}</strong>
+                            <span>unique matches (Scenario A)</span>
+                        </div>
+                        <div>
+                            <strong>{{ comparison_summary.overlap }}</strong>
+                            <span>shared recommendations</span>
+                        </div>
+                        <div>
+                            <strong>{{ comparison_summary.secondary_unique }}</strong>
+                            <span>unique matches (Scenario B)</span>
+                        </div>
+                    </div>
+                </section>
+                {% endif %}
+
+                <section class="demo-scenarios {% if compare_mode %}compare{% endif %}">
+                    <div class="demo-column">
+                        {% set result = primary_result %}
+                        {% include 'partials/demo_panel.html' %}
+                    </div>
+                    {% if compare_mode and secondary_result %}
+                    <div class="demo-column">
+                        {% set result = secondary_result %}
+                        {% include 'partials/demo_panel.html' %}
+                    </div>
+                    {% endif %}
+                </section>
+            </section>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_scripts %}
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+{% endblock %}
+

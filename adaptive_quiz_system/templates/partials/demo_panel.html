@@ -1,0 +1,105 @@
+<div class="demo-panel panel-card">
+    <div class="panel-header">
+        <div>
+            <h2>{{ result.scenario.title }}</h2>
+            <p>{{ result.scenario.description }}</p>
+        </div>
+        <span class="badge">{{ result.active_rules|length }} rules</span>
+    </div>
+
+    <div class="context-pill-group">
+        {% for key, value in result.context.items() %}
+            <span class="context-pill">
+                {{ key.replace('_', ' ').title() }}: <strong>{{ value }}</strong>
+            </span>
+        {% endfor %}
+    </div>
+
+    <div class="demo-results">
+        <div class="result-section">
+            <div class="section-header">
+                <h3>🎯 Recommended ({{ result.exact|length }})</h3>
+                <small>Perfect matches for this situation</small>
+            </div>
+            {% if result.exact %}
+            <div class="trail-list modern">
+                {% for trail in result.exact %}
+                <div class="trail-card modern recommended">
+                    <div class="card-heading">
+                        <strong>{{ trail.name }}</strong>
+                        <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+                            {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
+                        </span>
+                    </div>
+                    <div class="trail-stats">
+                        <span>{{ trail.distance or '—' }} km</span>
+                        <span>{{ trail.duration or '—' }} min</span>
+                        <span>{{ trail.elevation_gain or '—' }} m</span>
+                    </div>
+                    {% if trail.recommendation_reasons %}
+                    <p class="muted">Why: {{ trail.recommendation_reasons|join(', ') }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <p class="empty">No direct matches for this scenario.</p>
+            {% endif %}
+        </div>
+
+        <div class="result-section">
+            <div class="section-header">
+                <h3>✨ Additional suggestions ({{ result.suggestions|length }})</h3>
+                <small>High potential even if slightly off the brief</small>
+            </div>
+            {% if result.suggestions %}
+            <div class="trail-list subtle modern">
+                {% for trail in result.suggestions %}
+                <div class="trail-card modern suggested">
+                    <div class="card-heading">
+                        <strong>{{ trail.name }}</strong>
+                        {% if trail.relevance_total > 0 %}
+                        <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage) }}%</span>
+                        {% endif %}
+                    </div>
+                    <div class="trail-stats">
+                        <span>{{ trail.distance or '—' }} km</span>
+                        <span>{{ trail.duration or '—' }} min</span>
+                        <span>{{ trail.elevation_gain or '—' }} m</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <p class="empty">No additional suggestions for this scenario.</p>
+            {% endif %}
+        </div>
+
+        <div class="result-section">
+            <div class="section-header">
+                <h3>📐 Display adjustments</h3>
+                <small>Tunings applied to the UI</small>
+            </div>
+            <ul class="display-settings">
+                {% for key, value in result.display.items() %}
+                    <li><code>{{ key }}</code> → <strong>{{ value }}</strong></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="result-section">
+            <div class="section-header">
+                <h3>🧠 Matching rules</h3>
+            </div>
+            <ul class="rules-list">
+                {% for rule in result.active_rules %}
+                    <li>
+                        <strong>{{ rule.description or rule.condition }}</strong>
+                        <span>{{ rule.condition }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+

@@ -1,97 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hiking Trail Recommendation System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🏔️ Hiking Trail Recommendations</h1>
-            <p class="subtitle">Find your perfect trail based on your profile and current context</p>
-        </header>
+{% extends "base.html" %}
+{% block title %}Adaptive Trails · Start{% endblock %}
+{% block page_class %}home-page{% endblock %}
+{% block content %}
+    <div class="hero-grid">
+        <div class="hero-panel">
+            <header>
+                <h1>🏔️ Hiking Trail Recommendations</h1>
+                <p class="subtitle">Tune the visitor profile and context to jump directly into personalised suggestions.</p>
+            </header>
 
-        <main>
-            <form method="post" class="context-form">
+            <form method="post" class="context-form compact">
                 <div class="form-section">
-                    <h2>Select User</h2>
-                    <label for="user_id">User:</label>
+                    <label for="user_id">Persona</label>
                     <select name="user_id" id="user_id" required>
                         {% for user in users %}
                             <option value="{{ user.id }}">
-                                {{ user.name }} ({{ user.experience }} - {{ user.fitness_level }})
+                                {{ user.name }} ({{ user.experience }} · {{ user.fitness_level }})
                             </option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="form-section">
-                    <h2>Context Information</h2>
-                    
-                    <div class="form-group">
-                        <label for="time_available">Time Available (minutes):</label>
-                        <input type="number" name="time_available" id="time_available" value="60" min="15" step="15">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="device">Device:</label>
-                        <select name="device" id="device">
+                <div class="form-grid">
+                    <label>
+                        <span>Time Available (min)</span>
+                        <input type="number" name="time_available" value="60" min="15" step="15">
+                    </label>
+                    <label>
+                        <span>Device</span>
+                        <select name="device">
                             <option value="desktop">Desktop</option>
                             <option value="mobile">Mobile</option>
                             <option value="tablet">Tablet</option>
                         </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="weather">Weather:</label>
-                        <select name="weather" id="weather">
+                    </label>
+                    <label>
+                        <span>Weather</span>
+                        <select name="weather">
                             <option value="sunny">Sunny</option>
                             <option value="cloudy">Cloudy</option>
                             <option value="rainy">Rainy</option>
                             <option value="storm_risk">Storm Risk</option>
                             <option value="snowy">Snowy</option>
                         </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="connection">Connection Quality:</label>
-                        <select name="connection" id="connection">
+                    </label>
+                    <label>
+                        <span>Connection</span>
+                        <select name="connection">
                             <option value="strong">Strong</option>
                             <option value="medium">Medium</option>
                             <option value="weak">Weak</option>
                         </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="season">Season:</label>
-                        <select name="season" id="season">
+                    </label>
+                    <label>
+                        <span>Season</span>
+                        <select name="season">
                             <option value="spring">Spring</option>
                             <option value="summer" selected>Summer</option>
                             <option value="fall">Fall</option>
                             <option value="winter">Winter</option>
                         </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="time_of_day">Time of Day:</label>
-                        <select name="time_of_day" id="time_of_day">
+                    </label>
+                    <label>
+                        <span>Time of Day</span>
+                        <select name="time_of_day">
                             <option value="morning" selected>Morning</option>
                             <option value="afternoon">Afternoon</option>
                             <option value="evening">Evening</option>
                         </select>
-                    </div>
+                    </label>
                 </div>
 
                 <button type="submit" class="btn-primary">Find My Trails</button>
             </form>
 
-            <div style="text-align: center; margin-top: 30px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
-                <p>Or browse all available trails:</p>
-                <a href="{{ url_for('all_trails') }}" class="btn-secondary">View All Trails</a>
+            <div class="inline-links">
+                <a href="{{ url_for('all_trails') }}">Browse entire catalogue →</a>
             </div>
-        </main>
+        </div>
+
+        <div class="hero-panel hero-highlight">
+            <p class="eyebrow">Live demo</p>
+            <h2>Showcase contextual adaptation</h2>
+            <p>Drive the comparison with bespoke scenarios, map-first views, and card-first narratives. Perfect for presentations.</p>
+            <ul class="highlight-list">
+                <li>Side-by-side context comparisons</li>
+                <li>Interactive map + relevance cards</li>
+                <li>Explainable rule activation logs</li>
+            </ul>
+            <a href="{{ url_for('demo') }}" class="btn-primary">Launch Demo Mode</a>
+        </div>
     </div>
-</body>
-</html>
+{% endblock %}

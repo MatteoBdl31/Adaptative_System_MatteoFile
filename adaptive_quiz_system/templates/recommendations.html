@@ -1,329 +1,187 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trail Recommendations - {{ user.name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% extends "base.html" %}
+{% block title %}Adaptive Trails · {{ user.name }}{% endblock %}
+{% block page_class %}detail-page recommendations-page{% endblock %}
+{% block extra_head %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🏔️ Recommended Trails for {{ user.name }}</h1>
-            <nav class="nav-links">
-                <a href="{{ url_for('index') }}">Home</a>
-                <a href="{{ url_for('all_trails') }}">All Trails</a>
-                <a href="{{ url_for('profile', user_id=user.id) }}">Profile</a>
-                <a href="{{ url_for('dashboard', user_id=user.id) }}">Dashboard</a>
-            </nav>
+{% endblock %}
+{% block content %}
+    <div class="detail-shell">
+        <header class="page-header">
+            <div class="page-header__left">
+                <p class="eyebrow">Adaptive recommendations</p>
+                <h1>{{ user.name }} · {{ user.experience }} profile</h1>
+                <p class="subtitle">Personalised shortlist based on your live context and long-term preferences.</p>
+            </div>
+            <div class="context-badges compact">
+                <span class="badge">⏱ {{ context.time_available }} min</span>
+                <span class="badge">📱 {{ context.device|title }}</span>
+                <span class="badge">🌤 {{ context.weather|title }}</span>
+                <span class="badge">📶 {{ context.connection|title }}</span>
+                <span class="badge">🍂 {{ context.season|title }}</span>
+                <span class="badge">🕐 {{ context.time_of_day|title }}</span>
+            </div>
         </header>
 
-        <div class="context-info">
-            <h3>Current Context</h3>
-            <div class="context-badges">
-                <span class="badge">⏱️ {{ context.time_available }} min</span>
-                <span class="badge">📱 {{ context.device }}</span>
-                <span class="badge">🌤️ {{ context.weather }}</span>
-                <span class="badge">📶 {{ context.connection }}</span>
-                <span class="badge">🍂 {{ context.season }}</span>
-                <span class="badge">🕐 {{ context.time_of_day }}</span>
+        <section class="hero-metrics">
+            <div class="metric">
+                <span>⭐ Exact matches</span>
+                <strong>{{ exact_matches|length }}</strong>
             </div>
-        </div>
+            <div class="metric">
+                <span>💡 Smart suggestions</span>
+                <strong>{{ suggestions|length }}</strong>
+            </div>
+            <div class="metric">
+                <span>🧠 Active rules</span>
+                <strong>{{ active_rules|length }}</strong>
+            </div>
+            <div class="metric">
+                <span>🎯 Display mode</span>
+                <strong>{{ display_settings.display_mode|title }}</strong>
+            </div>
+        </section>
 
-        {% if active_rules %}
-        <div class="rules-info">
-            <h3>Active Adaptation Rules</h3>
-            <ul>
-                {% for rule in active_rules %}
-                <li>{{ rule.description }}</li>
-                {% endfor %}
-            </ul>
-        </div>
+        <section class="panel-card view-toggle" data-view-toggle>
+            <div>
+                <h2>Presentation mode</h2>
+                <p>Select how to demo the personalised shortlist.</p>
+            </div>
+            <div class="toggle-buttons">
+                <button type="button" class="toggle-btn is-active" data-view-target="map">Map + context</button>
+                <button type="button" class="toggle-btn" data-view-target="cards">Card grid</button>
+            </div>
+        </section>
+
+        {% if combined_trails %}
+        <section class="view-panels" data-view-panels data-active-view="map">
+            <article class="panel-card view-panel" data-view-panel="map">
+                <div class="panel-header">
+                    <div>
+                        <h2>Geo-personalised overview</h2>
+                        <p>Hover markers to see why each trail surfaced for you.</p>
+                    </div>
+                    <span class="badge">{{ combined_trails|length }} routes plotted</span>
+                </div>
+                <div id="recommendations-map" class="map-canvas"></div>
+            </article>
+
+            <article class="panel-card view-panel hide" data-view-panel="cards">
+                {% if exact_matches %}
+                <div class="cards-group">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Top picks ({{ exact_matches|length }})</h2>
+                            <p>Trails that satisfy every adaptation rule.</p>
+                        </div>
+                    </div>
+                    <div class="trails-grid modern">
+                        {% for trail in exact_matches %}
+                        <div class="trail-card modern recommended">
+                            <div>
+                                <div class="card-heading">
+                                    <h3>{{ trail.name }}</h3>
+                                    <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+                                        {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
+                                    </span>
+                                </div>
+                                <p class="trail-description">{{ trail.description }}</p>
+                            </div>
+                            <div class="trail-stats">
+                                <span>📏 {{ trail.distance or '—' }} km</span>
+                                <span>⏱ {{ trail.duration or '—' }} min</span>
+                                <span>⛰ {{ trail.elevation_gain or '—' }} m</span>
+                            </div>
+                            <div class="landscapes">
+                                {% for landscape in trail.landscapes.split(',') %}
+                                <span class="landscape-chip">{{ landscape.strip().title() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% if trail.recommendation_reasons %}
+                            <p class="muted">Why: {{ trail.recommendation_reasons|join(', ') }}</p>
+                            {% endif %}
+                            <a class="btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available=context.time_available, season=context.season, time_of_day=context.time_of_day) }}">Inspect trail</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if suggestions %}
+                <div class="cards-group">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Context-aware suggestions ({{ suggestions|length }})</h2>
+                            <p>Ranked by relevance percentage.</p>
+                        </div>
+                    </div>
+                    <div class="trails-grid modern">
+                        {% for trail in suggestions %}
+                        <div class="trail-card modern suggested">
+                            <div class="card-heading">
+                                <h3>{{ trail.name }}</h3>
+                                <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage) }}% match</span>
+                            </div>
+                            <div class="trail-stats">
+                                <span>📏 {{ trail.distance or '—' }} km</span>
+                                <span>⏱ {{ trail.duration or '—' }} min</span>
+                                <span>⛰ {{ trail.elevation_gain or '—' }} m</span>
+                            </div>
+                            <div class="landscapes">
+                                {% for landscape in trail.landscapes.split(',') %}
+                                <span class="landscape-chip">{{ landscape.strip().title() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% if trail.matched_criteria %}
+                            <div class="criteria-tags">
+                                {% for criteria in trail.matched_criteria %}
+                                <span class="criteria-tag">{{ criteria }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <a class="btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available=context.time_available, season=context.season, time_of_day=context.time_of_day) }}">Inspect trail</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </article>
+        </section>
+        {% else %}
+        <section class="panel-card">
+            <h2>No trails match this context</h2>
+            <p class="muted">Try widening the time window, changing weather assumptions, or selecting another user persona.</p>
+        </section>
         {% endif %}
 
-        <div class="trails-container {{ 'compact' if display_settings.display_mode == 'compact' else 'full' }}">
-            {% set all_trails = exact_matches + suggestions %}
-            {% if all_trails %}
-                {% if exact_matches or suggestions %}
-                <div class="trails-map-overview" style="margin-bottom: 30px;">
-                    <h2>📍 All Recommended Trails on Map</h2>
-                    <div id="recommended-trails-map" style="height: 400px; width: 100%; border-radius: 8px; margin-bottom: 30px;"></div>
+        {% if active_rules %}
+        <section class="panel-card rules-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Active adaptation rules</h2>
+                    <p>Transparent logic powering this shortlist.</p>
                 </div>
-                {% endif %}
-                
-                {% if exact_matches %}
-                <div class="recommendations-section">
-                    <h2>⭐ Recommended Trails ({{ exact_matches|length }})</h2>
-                    <p class="section-description">These trails perfectly match your criteria and context.</p>
-                    
-                    <div class="trails-grid">
-                        {% for trail in exact_matches %}
-                        <div class="trail-card recommended">
-                            {% if not display_settings.hide_images %}
-                            <div class="trail-image-placeholder">
-                                🏞️
-                            </div>
-                            {% endif %}
-                            <div class="trail-content">
-                                <h3>{{ trail.name }}</h3>
-                                <div class="trail-stats">
-                                    <span class="difficulty-badge difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
-                                        {% if trail.difficulty <= 3 %}Easy
-                                        {% elif trail.difficulty <= 6 %}Medium
-                                        {% else %}Hard{% endif %}
-                                    </span>
-                                    <span>📏 {% if trail.distance is not none %}{{ trail.distance }}{% else %}N/A{% endif %} km</span>
-                                    <span>⏱️ {{ trail.duration }} min</span>
-                                    <span>⛰️ {{ trail.elevation_gain }}m</span>
-                                </div>
-                                <p class="trail-description">{{ trail.description }}</p>
-                                <div class="trail-features">
-                                    <div class="landscapes">
-                                        {% for landscape in trail.landscapes.split(',') %}
-                                        <span class="landscape-tag">{{ landscape.strip() }}</span>
-                                        {% endfor %}
-                                    </div>
-                                    <div class="accessibility">
-                                        {% if trail.accessibility %}
-                                        <span class="access-tag">{{ trail.accessibility.split(',')[0] }}</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% if trail.recommendation_reasons %}
-                                <div class="recommendation-reasons">
-                                    <strong>Why recommended:</strong>
-                                    <ul>
-                                        {% for reason in trail.recommendation_reasons[:2] %}
-                                        <li>{{ reason }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                                {% endif %}
-                                <a href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather) }}" 
-                                   class="btn-secondary">View Details</a>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% if suggestions %}
-                <div class="suggestions-section">
-                    <h2>💡 Suggested Trails ({{ suggestions|length }})</h2>
-                    <p class="section-description">These trails match some of your criteria and are sorted by relevance.</p>
-                    
-                    <div class="trails-grid">
-                        {% for trail in suggestions %}
-                        <div class="trail-card suggested">
-                            {% if not display_settings.hide_images %}
-                            <div class="trail-image-placeholder">
-                                🏞️
-                            </div>
-                            {% endif %}
-                            <div class="trail-content">
-                                <h3>{{ trail.name }}</h3>
-                                {% if trail.relevance_total > 0 %}
-                                <div class="relevance-info">
-                                    <span class="relevance-badge">Relevance: {{ "%.0f"|format(trail.relevance_percentage) }}%</span>
-                                    <span class="matched-criteria">({{ trail.matched_criteria|length }}/{{ trail.relevance_total }} criteria matched)</span>
-                                </div>
-                                {% endif %}
-                                <div class="trail-stats">
-                                    <span class="difficulty-badge difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
-                                        {% if trail.difficulty <= 3 %}Easy
-                                        {% elif trail.difficulty <= 6 %}Medium
-                                        {% else %}Hard{% endif %}
-                                    </span>
-                                    <span>📏 {% if trail.distance is not none %}{{ trail.distance }}{% else %}N/A{% endif %} km</span>
-                                    <span>⏱️ {{ trail.duration }} min</span>
-                                    <span>⛰️ {{ trail.elevation_gain }}m</span>
-                                </div>
-                                <p class="trail-description">{{ trail.description }}</p>
-                                <div class="trail-features">
-                                    <div class="landscapes">
-                                        {% for landscape in trail.landscapes.split(',') %}
-                                        <span class="landscape-tag">{{ landscape.strip() }}</span>
-                                        {% endfor %}
-                                    </div>
-                                    <div class="accessibility">
-                                        {% if trail.accessibility %}
-                                        <span class="access-tag">{{ trail.accessibility.split(',')[0] }}</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% if trail.matched_criteria %}
-                                <div class="matched-criteria-info">
-                                    <strong>Matched criteria:</strong>
-                                    <span class="criteria-tags">
-                                        {% for criteria in trail.matched_criteria %}
-                                        <span class="criteria-tag">{{ criteria }}</span>
-                                        {% endfor %}
-                                    </span>
-                                </div>
-                                {% endif %}
-                                <a href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather) }}" 
-                                   class="btn-secondary">View Details</a>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            {% else %}
-                <div class="no-trails">
-                    <p>No trails match your current context. Try adjusting your preferences or context.</p>
-                </div>
-            {% endif %}
-        </div>
+            </div>
+            <ul class="rules-list">
+                {% for rule in active_rules %}
+                <li>
+                    <strong>{{ rule.description or rule.condition }}</strong>
+                    <span>{{ rule.condition }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
     </div>
-
+{% endblock %}
+{% block extra_scripts %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
-        // Initialize map for recommended trails
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if Leaflet is loaded
-            if (typeof L === 'undefined') {
-                console.error('Leaflet library not loaded!');
-                return;
-            }
-            
-            // Combine exact matches and suggestions for map display
-            var recommendedTrailsData = [
-                {% for trail in exact_matches %}
-                {% if trail.latitude and trail.longitude %}
-                {
-                    id: "{{ trail.trail_id }}",
-                    name: {{ trail.name|tojson }},
-                    lat: {{ trail.latitude }},
-                    lon: {{ trail.longitude }},
-                    difficulty: {{ trail.difficulty }},
-                    distance: {% if trail.distance is not none %}{{ trail.distance }}{% else %}null{% endif %},
-                    coordinates: {% if trail.coordinates %}{{ trail.coordinates|tojson }}{% else %}null{% endif %},
-                    url: "{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather) }}",
-                    type: "recommended"
-                }{% if not loop.last or suggestions %},{% endif %}
-                {% endif %}
-                {% endfor %}
-                {% for trail in suggestions %}
-                {% if trail.latitude and trail.longitude %}
-                {
-                    id: "{{ trail.trail_id }}",
-                    name: {{ trail.name|tojson }},
-                    lat: {{ trail.latitude }},
-                    lon: {{ trail.longitude }},
-                    difficulty: {{ trail.difficulty }},
-                    distance: {% if trail.distance is not none %}{{ trail.distance }}{% else %}null{% endif %},
-                    coordinates: {% if trail.coordinates %}{{ trail.coordinates|tojson }}{% else %}null{% endif %},
-                    url: "{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather) }}",
-                    type: "suggested"
-                }{% if not loop.last %},{% endif %}
-                {% endif %}
-                {% endfor %}
-            ];
-            
-            // Only initialize map if we have trails to show
-            if (recommendedTrailsData.length > 0) {
-                var mapContainer = document.getElementById('recommended-trails-map');
-                if (!mapContainer) {
-                    console.error('Map container not found!');
-                    return;
-                }
-                
-                // Wait a bit to ensure the container is ready
-                setTimeout(function() {
-                    try {
-                        var recommendedMap = L.map('recommended-trails-map');
-                        
-                        // Add OpenStreetMap tiles
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                            maxZoom: 19
-                        }).addTo(recommendedMap);
-                        
-                        // Parse coordinates from JSON string if needed
-                        recommendedTrailsData.forEach(function(trail) {
-                            if (trail.coordinates) {
-                                if (typeof trail.coordinates === 'string') {
-                                    try {
-                                        trail.coordinates = JSON.parse(trail.coordinates);
-                                    } catch(e) {
-                                        console.log('Could not parse coordinates for trail ' + trail.id + ':', e);
-                                        trail.coordinates = null;
-                                    }
-                                }
-                            }
-                        });
-                        
-                        // Add markers and paths for recommended trails
-                        var bounds = [];
-                        var polylines = [];
-                        
-                        recommendedTrailsData.forEach(function(trail) {
-                            // Use different colors for recommended vs suggested
-                            var iconColor = trail.type === 'recommended' ? '#667eea' : '#f59e0b';
-                            var icon = L.divIcon({
-                                className: 'custom-marker',
-                                html: '<div style="background-color: ' + iconColor + '; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-                                iconSize: [20, 20],
-                                iconAnchor: [10, 10]
-                            });
-                            
-                            var marker = L.marker([trail.lat, trail.lon], {icon: icon})
-                                .addTo(recommendedMap)
-                                .bindPopup('<strong><a href="' + trail.url + '">' + trail.name + '</a></strong><br>' +
-                                          'Type: ' + (trail.type === 'recommended' ? '⭐ Recommended' : '💡 Suggested') + '<br>' +
-                                          'Difficulty: ' + (trail.difficulty <= 3 ? 'Easy' : trail.difficulty <= 6 ? 'Medium' : 'Hard') + '<br>' +
-                                          'Distance: ' + (trail.distance !== null ? trail.distance + ' km' : 'N/A'));
-                            bounds.push([trail.lat, trail.lon]);
-                            
-                            // Add trail path if coordinates available
-                            if (trail.coordinates && trail.coordinates.coordinates && Array.isArray(trail.coordinates.coordinates)) {
-                                // Convert GeoJSON coordinates [lon, lat] to Leaflet [lat, lon]
-                                var latLngs = trail.coordinates.coordinates.map(function(coord) {
-                                    return [coord[1], coord[0]];
-                                });
-                                
-                                var polyline = L.polyline(latLngs, {
-                                    color: '#667eea',
-                                    weight: 4,
-                                    opacity: 0.7
-                                }).addTo(recommendedMap);
-                                
-                                polylines.push(polyline);
-                                
-                                // Extend bounds to include the entire trail path
-                                var polylineBounds = polyline.getBounds();
-                                bounds.push(polylineBounds.getSouthWest());
-                                bounds.push(polylineBounds.getNorthEast());
-                            }
-                        });
-                        
-                        // Fit map to show all markers and paths
-                        if (bounds.length > 0) {
-                            recommendedMap.fitBounds(bounds, {padding: [20, 20]});
-                        } else {
-                            recommendedMap.setView([45.8, 6.5], 8); // Default to French Alps center
-                        }
-                        
-                        // Invalidate map size to ensure it renders properly
-                        setTimeout(function() {
-                            if (recommendedMap) {
-                                recommendedMap.invalidateSize();
-                            }
-                        }, 200);
-                        
-                        console.log('Recommended trails map initialized with', recommendedTrailsData.length, 'trails');
-                    } catch(e) {
-                        console.error('Error initializing recommended trails map:', e);
-                    }
-                }, 100);
-            } else {
-                console.log('No recommended trails with coordinates to display on map');
-            }
-        });
+        window.recommendationMapData = {{ combined_trails|tojson }};
+        window.recommendationDetailUrl = function(trailId) {
+            const base = "{{ url_for('trail_detail', user_id=user.id, trail_id='__REPLACE__', device=context.device, connection=context.connection, weather=context.weather, time_available=context.time_available, season=context.season, time_of_day=context.time_of_day) }}";
+            return base.replace('__REPLACE__', trailId);
+        };
     </script>
-</body>
-</html>
+{% endblock %}
 

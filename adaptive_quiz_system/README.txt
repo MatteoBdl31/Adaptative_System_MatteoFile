@@ -29,6 +29,11 @@ pip install -r requirements.txt
 
 This will install all the required Python libraries for the project.
 
+6. Downloading trail source data
+Copy the French hiking shapefile (`hiking_foot_routes_lineLine.*`) into the dedicated
+`adaptive_quiz_system/data/source/` folder. Ensure the `.shp`, `.shx`, `.dbf`, and `.prj`
+files all sit in that directory before running `python backend/init_db.py`.
+
 6. File Encoding (to avoid text errors)
 This project uses UTF-8 encoding to support accented characters (é, è, à, ç, etc.).
 On macOS:
@@ -46,7 +51,12 @@ follow these steps:
 	4	Click Apply, then OK.
 
 7. Running the Program
-Locate the main script (usually main.py or app.py)
-and click Run in PyCharm (top-right corner).
-You can also run it from the terminal with:
-python main.py
+The Flask app now lives in the `app/` package and is started via `run.py`. After installing the
+dependencies and generating the SQLite databases (`python backend/init_db.py`), you can launch
+the experience from PyCharm or the terminal with:
+
+```
+python run.py
+```
+
+The personalised demo is available at `http://127.0.0.1:5000/` by default.

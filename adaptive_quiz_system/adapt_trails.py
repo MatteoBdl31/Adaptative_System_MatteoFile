@@ -2,6 +2,26 @@
 
 from backend.db import get_rules, filter_trails, get_all_trails
 
+
+def _prepare_trail_metadata(trail):
+    if not trail:
+        return {}
+    profile = trail.get("elevation_profile") or []
+    if profile:
+        elevations = [point.get("elevation_m", 0) for point in profile]
+        if elevations:
+            trail["max_elevation"] = max(elevations)
+            trail["min_elevation"] = min(elevations)
+        trail["elevation_samples"] = len(profile)
+    trail["region_label"] = trail.get("region", "french_alps").replace("_", " ").title()
+    return trail
+
+
+def _is_low_risk(trail):
+    safety = (trail.get("safety_risks") or "").lower()
+    return safety in ("", "none", "low")
+
+
 def evaluate_condition(condition, user, context):
     """Evaluate a condition string against user and context"""
     clauses = condition.split("AND")
@@ -164,8 +184,7 @@ def calculate_relevance_score(trail, filters, user, context, active_rules):
     # Check safety (avoid_risky)
     if filters.get("avoid_risky"):
         total_criteria += 1
-        safety_risks = trail.get("safety_risks", "").lower()
-        if safety_risks in ["none", "low", ""]:
+        if _is_low_risk(trail):
             score += 1
             matched_criteria.append("safety")
     
@@ -184,6 +203,34 @@ def calculate_relevance_score(trail, filters, user, context, active_rules):
         if "heights" not in safety_risks:
             score += 1
             matched_criteria.append("safety")
+
+    # Weather-aware safety boost
+    if context.get("weather") in {"rainy", "snowy", "storm_risk"}:
+        total_criteria += 1
+        if _is_low_risk(trail):
+            score += 1
+            matched_criteria.append("weather")
+
+    # Time alignment
+    if context.get("time_available") and trail.get("duration"):
+        total_criteria += 1
+        if trail["duration"] <= context["time_available"] + 30:
+            score += 1
+            matched_criteria.append("duration")
+
+    # Fitness vs elevation gain
+    fitness = (user.get("fitness_level") or "").lower()
+    elevation_gain = trail.get("elevation_gain") or 0
+    if fitness == "low":
+        total_criteria += 1
+        if elevation_gain <= 400:
+            score += 1
+            matched_criteria.append("fitness")
+    elif fitness == "high":
+        total_criteria += 1
+        if elevation_gain >= 400:
+            score += 1
+            matched_criteria.append("fitness")
     
     # Check user preferences (landscape preferences)
     user_preferences = user.get("preferences", [])
@@ -210,7 +257,7 @@ def calculate_relevance_score(trail, filters, user, context, active_rules):
 
 def adapt_trails(user, context):
     """Main adaptation function for trail recommendations"""
-    filters = {}
+    filters = {"region": "french_alps", "is_real": True}
     display_settings = {"display_mode": "full", "max_trails": 10, "hide_images": False}
     
     rules = get_rules()
@@ -230,7 +277,7 @@ def adapt_trails(user, context):
         display_settings["hide_images"] = filters.pop("hide_images")
     
     # Get all trails for relevance calculation
-    all_trails = get_all_trails()
+    all_trails = [_prepare_trail_metadata(trail) for trail in get_all_trails()]
     
     # Post-filter for season-based closures
     avoid_closed = filters.get("avoid_closed", False)
@@ -259,7 +306,7 @@ def adapt_trails(user, context):
     # Get filtered trails (exact matches)
     filters_copy = filters.copy()
     if filters_copy:
-        exact_matches = filter_trails(filters_copy)
+        exact_matches = [_prepare_trail_metadata(trail) for trail in filter_trails(filters_copy)]
         # Post-filter exact matches for season and fear of heights
         if avoid_closed and context.get("season"):
             season = context["season"]

@@ -10,6 +10,22 @@ USERS_DB = os.path.join(BASE_DIR, "users.db")
 RULES_DB = os.path.join(BASE_DIR, "rules.db")
 TRAILS_DB = os.path.join(BASE_DIR, "trails.db")
 
+
+def _normalize_trail_row(row):
+    if not row:
+        return None
+    trail = dict(row)
+    for field in ("coordinates", "elevation_profile"):
+        value = trail.get(field)
+        if value:
+            try:
+                trail[field] = json.loads(value) if isinstance(value, str) else value
+            except (TypeError, json.JSONDecodeError):
+                trail[field] = value
+        else:
+            trail[field] = None
+    return trail
+
 # --- Users ---
 def get_all_users():
     conn = sqlite3.connect(USERS_DB)
@@ -87,7 +103,7 @@ def get_all_trails():
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute("SELECT * FROM trails")
-    trails = [dict(row) for row in cur.fetchall()]
+    trails = [_normalize_trail_row(row) for row in cur.fetchall()]
     conn.close()
     return trails
 
@@ -98,7 +114,7 @@ def get_trail(trail_id):
     cur.execute("SELECT * FROM trails WHERE trail_id=?", (trail_id,))
     row = cur.fetchone()
     conn.close()
-    return dict(row) if row else None
+    return _normalize_trail_row(row)
 
 def filter_trails(filters):
     """Filter trails based on criteria"""
@@ -132,6 +148,12 @@ def filter_trails(filters):
         params.append(f"%{filters['landscape_filter']}%")
     if filters.get("avoid_risky"):
         query += " AND (safety_risks = 'none' OR safety_risks = 'low')"
+    if filters.get("region"):
+        query += " AND region = ?"
+        params.append(filters["region"])
+    if filters.get("is_real") is not None:
+        query += " AND is_real = ?"
+        params.append(1 if filters["is_real"] else 0)
     if filters.get("avoid_closed"):
         # This would need season context - for now just filter out trails with closed_seasons
         # In a real implementation, you'd check if current season matches closed_seasons
@@ -144,6 +166,6 @@ def filter_trails(filters):
         query += " ORDER BY popularity DESC"
     
     cur.execute(query, params)
-    trails = [dict(row) for row in cur.fetchall()]
+    trails = [_normalize_trail_row(row) for row in cur.fetchall()]
     conn.close()
     return trails
