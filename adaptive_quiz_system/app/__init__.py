@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import date, datetime
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 
@@ -13,6 +14,38 @@ from backend.db import (
 from adapt_trails import adapt_trails
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def get_season_from_date(target_date: str = None) -> str:
+    """
+    Determine the season based on a date.
+    
+    Args:
+        target_date: Date in ISO format (YYYY-MM-DD). If None, uses today's date.
+    
+    Returns:
+        Season string: "spring", "summer", "fall", or "winter"
+    """
+    if target_date:
+        try:
+            target = datetime.fromisoformat(target_date).date()
+        except (ValueError, TypeError):
+            target = date.today()
+    else:
+        target = date.today()
+    
+    month = target.month
+    
+    # Northern Hemisphere seasons (French Alps)
+    # Note: Using "fall" to match the form options
+    if month in [12, 1, 2]:  # December, January, February
+        return "winter"
+    elif month in [3, 4, 5]:  # March, April, May
+        return "spring"
+    elif month in [6, 7, 8]:  # June, July, August
+        return "summer"
+    else:  # September, October, November
+        return "fall"  # Using "fall" to match form options
 
 app = Flask(
     __name__,
@@ -153,11 +186,13 @@ def extract_context_from_request(prefix, request_args):
             value = raw
         elif name == "device":
             value = "laptop"
+        elif name == "season":
+            # Determine season from hike date if not provided
+            value = get_season_from_date(context.get("hike_start_date"))
         else:
             defaults = {
                 "weather": "sunny",
                 "connection": "strong",
-                "season": "summer",
             }
             value = defaults.get(name, "")
         
@@ -167,11 +202,17 @@ def extract_context_from_request(prefix, request_args):
     return context, form_values
 
 
-def build_demo_result(user, context):
+def build_demo_result(user, context, user_label=None):
     """Build a demo result dictionary from user and context"""
     exact_matches, suggestions, display_settings, active_rules = adapt_trails(user, context)
     return {
-        "scenario": {"title": "Custom Scenario", "description": "User-defined context"},
+        "scenario": {
+            "title": f"{user.get('name', 'User')} · {user.get('experience', '')} profile",
+            "description": "User-defined context",
+            "user_id": user.get("id")
+        },
+        "user_id": user.get("id"),
+        "user_label": user_label or f"User {user.get('id')}",
         "context": context,
         "exact": exact_matches,
         "suggestions": suggestions,
@@ -196,7 +237,10 @@ def index():
         device = request.form.get("device", "laptop")
         weather = request.form.get("weather", "sunny")
         connection = request.form.get("connection", "strong")
-        season = request.form.get("season", "summer")
+        # Get season from form, or determine from hike date, or use current season
+        season = request.form.get("season")
+        if not season:
+            season = get_season_from_date(hike_start_date)
         
         # Build query string
         params = {
@@ -242,7 +286,10 @@ def recommendations(user_id):
     device = request.args.get("device", "laptop")
     weather = request.args.get("weather", "sunny")
     connection = request.args.get("connection", "strong")
-    season = request.args.get("season", "summer")
+    # Get season from request, or determine from hike date, or use current season
+    season = request.args.get("season")
+    if not season:
+        season = get_season_from_date(hike_start_date)
 
     context = {
         "hike_start_date": hike_start_date,
@@ -318,7 +365,10 @@ def trail_detail(user_id, trail_id):
     days = int(request.args.get("time_available_days", 0))
     hours = int(request.args.get("time_available_hours", 1))
     time_available = days * 24 * 60 + hours * 60  # Convert to minutes
-    season = request.args.get("season", "summer")
+    # Get season from request, or determine from hike date, or use current season
+    season = request.args.get("season")
+    if not season:
+        season = get_season_from_date(hike_start_date)
 
     context = {
         "device": device,
@@ -475,8 +525,8 @@ def demo():
     context_a, form_a = extract_context_from_request("a", request.args)
     context_b, form_b = extract_context_from_request("b", request.args)
 
-    primary_result = build_demo_result(user_a, context_a)
-    secondary_result = build_demo_result(user_b, context_b) if compare_mode and user_b else None
+    primary_result = build_demo_result(user_a, context_a, user_label="User A")
+    secondary_result = build_demo_result(user_b, context_b, user_label="User B") if compare_mode and user_b else None
 
     return render_template(
         "demo.html",
@@ -524,9 +574,9 @@ def api_demo_results():
     context_a, _ = extract_context_from_request("a", request.args)
     context_b, _ = extract_context_from_request("b", request.args)
     
-    primary_result = build_demo_result(user_a, context_a)
-    secondary_result = build_demo_result(user_b, context_b) if compare_mode and user_b else None
-    
+    primary_result = build_demo_result(user_a, context_a, user_label="User A")
+    secondary_result = build_demo_result(user_b, context_b, user_label="User B") if compare_mode and user_b else None
+
     return jsonify({
         "primary_result": primary_result,
         "secondary_result": secondary_result,

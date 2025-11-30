@@ -3,23 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Adaptive Trail Recommender - Personalized hiking trail recommendations based on context">
     <title>{% block title %}Adaptive Trails{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block page_class %}{% endblock %}">
-    <header class="global-header">
-        <div class="brand">
-            <a href="{{ url_for('demo') }}">Adaptive Trails</a>
+    <header class="app-header" role="banner">
+        <div class="app-header__container">
+            <div class="app-header__brand">
+                <a href="{{ url_for('demo') }}" class="app-header__logo">
+                    <span class="app-header__logo-icon">🏔️</span>
+                    <span class="app-header__logo-text">Adaptive Trails</span>
+                </a>
+            </div>
+            <nav class="app-header__nav" role="navigation" aria-label="Main navigation">
+                <a href="{{ url_for('demo') }}" class="app-header__nav-link">Demo</a>
+                <a href="{{ url_for('all_trails') }}" class="app-header__nav-link">All Trails</a>
+            </nav>
         </div>
-        <nav class="global-nav">
-            <a href="{{ url_for('all_trails') }}">All Trails</a>
-        </nav>
     </header>
-    <main class="page-content">
+    
+    <main class="app-main" role="main">
         {% block content %}{% endblock %}
     </main>
+    
+    <footer class="app-footer" role="contentinfo">
+        <div class="app-footer__container">
+            <p class="app-footer__text">Adaptive Trail Recommender System</p>
+        </div>
+    </footer>
+    
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
-
