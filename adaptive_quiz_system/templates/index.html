@@ -23,12 +23,20 @@
 
                 <div class="form-grid">
                     <label>
-                        <span>Time Available (min)</span>
-                        <input type="number" name="time_available" value="60" min="15" step="15">
+                        <span>Start Date</span>
+                        <input type="date" name="hike_start_date" id="hike_start_date" required>
                     </label>
+                    <label>
+                        <span>End Date</span>
+                        <input type="date" name="hike_end_date" id="hike_end_date">
+                    </label>
+                    <!-- Days and hours calculated in background from date range -->
+                    <input type="hidden" name="time_available_days" id="time_available_days" value="0">
+                    <input type="hidden" name="time_available_hours" id="time_available_hours" value="0">
                     <label>
                         <span>Device</span>
                         <select name="device">
+                            <option value="laptop" selected>Laptop</option>
                             <option value="desktop">Desktop</option>
                             <option value="mobile">Mobile</option>
                             <option value="tablet">Tablet</option>
@@ -54,25 +62,92 @@
                     </label>
                     <label>
                         <span>Season</span>
-                        <select name="season">
+                        <select name="season" id="season">
                             <option value="spring">Spring</option>
-                            <option value="summer" selected>Summer</option>
+                            <option value="summer">Summer</option>
                             <option value="fall">Fall</option>
                             <option value="winter">Winter</option>
-                        </select>
-                    </label>
-                    <label>
-                        <span>Time of Day</span>
-                        <select name="time_of_day">
-                            <option value="morning" selected>Morning</option>
-                            <option value="afternoon">Afternoon</option>
-                            <option value="evening">Evening</option>
                         </select>
                     </label>
                 </div>
 
                 <button type="submit" class="btn-primary">Find My Trails</button>
             </form>
+            
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const startDateInput = document.getElementById('hike_start_date');
+                    const endDateInput = document.getElementById('hike_end_date');
+                    const daysInput = document.getElementById('time_available_days');
+                    const hoursInput = document.getElementById('time_available_hours');
+                    const seasonSelect = document.getElementById('season');
+                    
+                    // Function to get current season based on date
+                    function getCurrentSeason(date) {
+                        const month = date.getMonth() + 1; // getMonth() returns 0-11
+                        if (month >= 3 && month <= 5) return 'spring';
+                        if (month >= 6 && month <= 8) return 'summer';
+                        if (month >= 9 && month <= 11) return 'fall';
+                        return 'winter'; // December, January, February
+                    }
+                    
+                    // Set default start date to today
+                    if (!startDateInput.value) {
+                        const today = new Date().toISOString().split('T')[0];
+                        startDateInput.value = today;
+                    }
+                    
+                    // Set season to current season
+                    if (seasonSelect) {
+                        const currentSeason = getCurrentSeason(new Date());
+                        seasonSelect.value = currentSeason;
+                    }
+                    
+                    // Set end date min to start date
+                    startDateInput.addEventListener('change', function() {
+                        endDateInput.min = startDateInput.value;
+                        if (endDateInput.value && endDateInput.value < startDateInput.value) {
+                            endDateInput.value = startDateInput.value;
+                        }
+                        calculateTimeAvailable();
+                    });
+                    
+                    endDateInput.addEventListener('change', function() {
+                        calculateTimeAvailable();
+                    });
+                    
+                    // Calculate days and hours from date range in background
+                    function calculateTimeAvailable() {
+                        const startDate = startDateInput.value;
+                        const endDate = endDateInput.value || startDate;
+                        
+                        if (!startDate) return;
+                        
+                        const start = new Date(startDate);
+                        const end = new Date(endDate);
+                        start.setHours(0, 0, 0, 0);
+                        end.setHours(0, 0, 0, 0);
+                        
+                        const diffTime = end - start;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (daysInput) {
+                            daysInput.value = Math.max(0, diffDays).toString();
+                        }
+                        // Hours always 0 since we removed hours input
+                        if (hoursInput) {
+                            hoursInput.value = '0';
+                        }
+                    }
+                    
+                    // Set initial min for end date
+                    if (startDateInput.value) {
+                        endDateInput.min = startDateInput.value;
+                    }
+                    
+                    calculateTimeAvailable(); // Initial call
+                });
+            </script>
 
             <div class="inline-links">
                 <a href="{{ url_for('all_trails') }}">Browse entire catalogue →</a>

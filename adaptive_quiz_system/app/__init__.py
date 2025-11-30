@@ -20,106 +20,202 @@ app = Flask(
     static_folder=str(BASE_DIR / "static"),
 )
 
-DEMO_CONTEXTS = [
-    {
-        "id": "mobile_short_time",
-        "title": "Mobile · 45 min · Rainy",
-        "description": "Beginner user on a mobile phone, short timeframe and rainy weather. Perfect to showcase safer forest routes.",
-        "context": {
-            "time_available": 45,
-            "device": "mobile",
-            "weather": "rainy",
-            "connection": "medium",
-            "season": "spring",
-            "time_of_day": "morning",
-        },
-    },
-    {
-        "id": "desktop_full_day",
-        "title": "Desktop · 4h · Sunny Afternoon",
-        "description": "Advanced profile planning a long hike with plenty of time and great weather.",
-        "context": {
-            "time_available": 240,
-            "device": "desktop",
-            "weather": "sunny",
-            "connection": "strong",
-            "season": "summer",
-            "time_of_day": "afternoon",
-        },
-    },
-    {
-        "id": "weak_connection_winter",
-        "title": "Tablet · 90 min · Winter & Weak signal",
-        "description": "Intermediate user travelling with a tablet and weak network coverage during winter months.",
-        "context": {
-            "time_available": 90,
-            "device": "tablet",
-            "weather": "snowy",
-            "connection": "weak",
-            "season": "winter",
-            "time_of_day": "morning",
-        },
-    },
-    {
-        "id": "evening_storm_risk",
-        "title": "Mobile · Evening · Storm Risk",
-        "description": "Demo of risk-aware filtering with evening start and potential storms.",
-        "context": {
-            "time_available": 120,
-            "device": "mobile",
-            "weather": "storm_risk",
-            "connection": "medium",
-            "season": "fall",
-            "time_of_day": "evening",
-        },
-    },
-]
+
+def format_duration(minutes):
+    """Format duration in minutes to human-readable format (days/hours/minutes)"""
+    if not minutes or minutes == 0:
+        return "—"
+    
+    try:
+        minutes = int(minutes)
+    except (ValueError, TypeError):
+        return "—"
+    
+    if minutes < 60:
+        return f"{minutes} min"
+    elif minutes < 1440:  # Less than 1 day
+        hours = minutes // 60
+        mins = minutes % 60
+        if mins == 0:
+            return f"{hours} hour{'s' if hours != 1 else ''}"
+        else:
+            return f"{hours} hour{'s' if hours != 1 else ''} {mins} min"
+    else:  # 1 day or more
+        days = minutes // 1440
+        remaining_minutes = minutes % 1440
+        hours = remaining_minutes // 60
+        mins = remaining_minutes % 60
+        
+        parts = []
+        if days > 0:
+            parts.append(f"{days} day{'s' if days != 1 else ''}")
+        if hours > 0:
+            parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+        if mins > 0 and days == 0:  # Only show minutes if less than a day total
+            parts.append(f"{mins} min")
+        
+        return " ".join(parts) if parts else "—"
+
+
+# Register the filter for use in templates
+app.jinja_env.filters['format_duration'] = format_duration
+
+# DEMO_CONTEXTS removed - predefined scenarios no longer used
 
 CONTEXT_FIELD_DEFS = [
-    {"name": "time_available", "label": "Time Available (min)", "type": "number", "min": 15, "step": 15},
-    {"name": "device", "label": "Device", "type": "select", "options": ["desktop", "mobile", "tablet"]},
+    {"name": "hike_start_date", "label": "Start Date", "type": "date"},
+    {"name": "hike_end_date", "label": "End Date", "type": "date"},
+    # Days and hours are calculated in background, not shown in UI
+    {"name": "device", "label": "Device", "type": "select", "options": ["laptop", "desktop", "mobile", "tablet"]},
     {"name": "weather", "label": "Weather", "type": "select", "options": ["sunny", "cloudy", "rainy", "storm_risk", "snowy"]},
     {"name": "connection", "label": "Connection", "type": "select", "options": ["strong", "medium", "weak"]},
     {"name": "season", "label": "Season", "type": "select", "options": ["spring", "summer", "fall", "winter"]},
-    {"name": "time_of_day", "label": "Time of Day", "type": "select", "options": ["morning", "afternoon", "evening"]},
 ]
 
 
-def _get_demo_context(context_id):
-    for scenario in DEMO_CONTEXTS:
-        if scenario["id"] == context_id:
-            return scenario
-    return DEMO_CONTEXTS[0]
+# Helper functions for context extraction and result building
+def extract_context_from_request(prefix, request_args):
+    """Extract context parameters from request for a given prefix (a or b)"""
+    context = {}
+    form_values = {}
+    
+    # Get hike date range
+    start_date_param = f"{prefix}_hike_start_date"
+    end_date_param = f"{prefix}_hike_end_date"
+    hike_start_date = request_args.get(start_date_param)
+    hike_end_date = request_args.get(end_date_param)
+    
+    if hike_start_date:
+        context["hike_start_date"] = hike_start_date
+        form_values["hike_start_date"] = hike_start_date
+        # Also set hike_date for backward compatibility
+        context["hike_date"] = hike_start_date
+    else:
+        # Default to today if not provided
+        from datetime import date
+        today = date.today().isoformat()
+        context["hike_start_date"] = today
+        context["hike_date"] = today
+        form_values["hike_start_date"] = today
+    
+    if hike_end_date:
+        context["hike_end_date"] = hike_end_date
+        form_values["hike_end_date"] = hike_end_date
+    else:
+        # If no end date, use start date
+        context["hike_end_date"] = context["hike_start_date"]
+        form_values["hike_end_date"] = context["hike_start_date"]
+    
+    # Get days and hours to calculate time_available
+    days_param = f"{prefix}_time_available_days"
+    hours_param = f"{prefix}_time_available_hours"
+    days = int(request_args.get(days_param, 0))
+    hours = int(request_args.get(hours_param, 0))
+    
+    # Calculate time_available from date range if days/hours are 0 or not provided
+    if days == 0 and hours == 0 and hike_start_date and hike_end_date:
+        from datetime import datetime
+        try:
+            start = datetime.fromisoformat(hike_start_date)
+            end = datetime.fromisoformat(hike_end_date)
+            time_delta = end - start
+            days = time_delta.days
+            # If same day, default to 8 hours (full day hike)
+            if days == 0:
+                hours = 8
+            else:
+                hours = 0  # Multi-day, hours don't matter
+        except (ValueError, TypeError):
+            # If date parsing fails, default to 8 hours for single day
+            if hike_start_date == hike_end_date:
+                hours = 8
+            else:
+                days = 1
+                hours = 0
+    
+    # Ensure minimum time_available (at least 1 hour for single day)
+    if days == 0 and hours == 0:
+        hours = 8  # Default to 8 hours for single day hike
+    
+    context["time_available"] = days * 24 * 60 + hours * 60
+    form_values["time_available_days"] = str(days)
+    form_values["time_available_hours"] = str(hours)
+    
+    # Process other fields
+    for field in CONTEXT_FIELD_DEFS:
+        name = field["name"]
+        if name in ["hike_start_date", "hike_end_date", "time_available_days", "time_available_hours"]:
+            continue  # Already handled above
+            
+        param_name = f"{prefix}_{name}"
+        raw = request_args.get(param_name)
+        if raw not in (None, ""):
+            value = raw
+        elif name == "device":
+            value = "laptop"
+        else:
+            defaults = {
+                "weather": "sunny",
+                "connection": "strong",
+                "season": "summer",
+            }
+            value = defaults.get(name, "")
+        
+        context[name] = value
+        form_values[name] = str(value)
+    
+    return context, form_values
+
+
+def build_demo_result(user, context):
+    """Build a demo result dictionary from user and context"""
+    exact_matches, suggestions, display_settings, active_rules = adapt_trails(user, context)
+    return {
+        "scenario": {"title": "Custom Scenario", "description": "User-defined context"},
+        "context": context,
+        "exact": exact_matches,
+        "suggestions": suggestions,
+        "display": display_settings,
+        "active_rules": active_rules,
+    }
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    """Home page - user selection and context input"""
-    users = get_all_users()
-
+    """Home page - redirects to demo mode or processes form submission"""
     if request.method == "POST":
-        user_id = int(request.form["user_id"])
-        time_available = int(request.form.get("time_available", 60))
-        device = request.form.get("device", "desktop")
+        user_id = request.form.get("user_id")
+        if not user_id:
+            return redirect(url_for("demo"))
+        
+        # Get form data
+        hike_start_date = request.form.get("hike_start_date")
+        hike_end_date = request.form.get("hike_end_date")
+        time_available_days = request.form.get("time_available_days", "0")
+        time_available_hours = request.form.get("time_available_hours", "1")
+        device = request.form.get("device", "laptop")
         weather = request.form.get("weather", "sunny")
         connection = request.form.get("connection", "strong")
         season = request.form.get("season", "summer")
-        time_of_day = request.form.get("time_of_day", "morning")
-
-        return redirect(
-            url_for(
-                "recommendations",
-                user_id=user_id,
-                time_available=time_available,
-                device=device,
-                weather=weather,
-                connection=connection,
-                season=season,
-                time_of_day=time_of_day,
-            )
-        )
-
-    return render_template("index.html", users=users)
+        
+        # Build query string
+        params = {
+            "time_available_days": time_available_days,
+            "time_available_hours": time_available_hours,
+            "device": device,
+            "weather": weather,
+            "connection": connection,
+            "season": season,
+        }
+        if hike_start_date:
+            params["hike_start_date"] = hike_start_date
+        if hike_end_date:
+            params["hike_end_date"] = hike_end_date
+        
+        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+        return redirect(url_for("recommendations", user_id=user_id) + "?" + query_string)
+    
+    return redirect(url_for("demo"))
 
 
 @app.route("/recommendations/<int:user_id>")
@@ -129,20 +225,34 @@ def recommendations(user_id):
     if not user:
         return "User not found", 404
 
-    time_available = int(request.args.get("time_available", 60))
-    device = request.args.get("device", "desktop")
+    # Get hike date range
+    hike_start_date = request.args.get("hike_start_date")
+    hike_end_date = request.args.get("hike_end_date")
+    if not hike_start_date:
+        from datetime import date
+        hike_start_date = date.today().isoformat()
+    if not hike_end_date:
+        hike_end_date = hike_start_date
+    
+    # Convert days and hours to minutes for internal processing
+    days = int(request.args.get("time_available_days", 0))
+    hours = int(request.args.get("time_available_hours", 1))
+    time_available = days * 24 * 60 + hours * 60  # Convert to minutes
+    
+    device = request.args.get("device", "laptop")
     weather = request.args.get("weather", "sunny")
     connection = request.args.get("connection", "strong")
     season = request.args.get("season", "summer")
-    time_of_day = request.args.get("time_of_day", "morning")
 
     context = {
+        "hike_start_date": hike_start_date,
+        "hike_end_date": hike_end_date,
+        "hike_date": hike_start_date,  # For backward compatibility
         "time_available": time_available,
         "device": device,
         "weather": weather,
         "connection": connection,
         "season": season,
-        "time_of_day": time_of_day,
     }
 
     exact_matches, suggestions, display_settings, active_rules = adapt_trails(user, context)
@@ -153,6 +263,19 @@ def recommendations(user_id):
         trail["view_type"] = "suggested"
 
     combined_trails = exact_matches + suggestions
+    
+    # Get weather forecast summary for context display
+    # Use the first trail's forecast as representative, or get a general forecast
+    from backend.weather_service import get_weather_forecast
+    context["forecast_weather"] = None
+    if hike_start_date:
+        # Try to get a representative forecast (using approximate French Alps center)
+        # This gives a general idea of weather in the region
+        try:
+            representative_forecast = get_weather_forecast(45.5, 6.2, hike_start_date)
+            context["forecast_weather"] = representative_forecast
+        except:
+            pass
 
     return render_template(
         "recommendations.html",
@@ -181,20 +304,31 @@ def trail_detail(user_id, trail_id):
     record_trail_view(user_id, trail_id)
 
     # Get context from query params
-    device = request.args.get("device", "desktop")
+    device = request.args.get("device", "laptop")
     connection = request.args.get("connection", "strong")
     weather = request.args.get("weather", "sunny")
-    time_available = int(request.args.get("time_available", 60))
+    hike_start_date = request.args.get("hike_start_date")
+    hike_end_date = request.args.get("hike_end_date")
+    if not hike_start_date:
+        from datetime import date
+        hike_start_date = date.today().isoformat()
+    if not hike_end_date:
+        hike_end_date = hike_start_date
+    # Convert days and hours to minutes for internal processing
+    days = int(request.args.get("time_available_days", 0))
+    hours = int(request.args.get("time_available_hours", 1))
+    time_available = days * 24 * 60 + hours * 60  # Convert to minutes
     season = request.args.get("season", "summer")
-    time_of_day = request.args.get("time_of_day", "morning")
 
     context = {
         "device": device,
         "connection": connection,
         "weather": weather,
+        "hike_start_date": hike_start_date,
+        "hike_end_date": hike_end_date,
+        "hike_date": hike_start_date,  # For backward compatibility
         "time_available": time_available,
         "season": season,
-        "time_of_day": time_of_day,
     }
 
     # Check if user has completed this trail
@@ -310,83 +444,94 @@ def demo():
     """Interactive demo page showing different context adaptations."""
     users = get_all_users()
     default_user_id = users[0]["id"] if users else None
-    user_id_param = request.args.get("user_id")
-    if user_id_param is not None:
-        user_id = int(user_id_param)
+    
+    # Get user IDs for each scenario
+    user_id_a_param = request.args.get("user_id_a")
+    user_id_b_param = request.args.get("user_id_b")
+    
+    if user_id_a_param is not None:
+        user_id_a = int(user_id_a_param)
     elif default_user_id is not None:
-        user_id = int(default_user_id)
+        user_id_a = int(default_user_id)
     else:
-        user_id = None
+        user_id_a = None
+    
+    # Only set user_id_b if explicitly provided in the request
+    # Don't use default - second user should only appear when explicitly added
+    if user_id_b_param is not None:
+        user_id_b = int(user_id_b_param)
+    else:
+        user_id_b = None
 
-    user = get_user(user_id) if user_id is not None else None
+    user_a = get_user(user_id_a) if user_id_a is not None else None
+    user_b = get_user(user_id_b) if user_id_b is not None else None
 
-    if not user:
+    if not user_a:
         return "No user data available to run demo", 500
 
-    compare_mode = request.args.get("compare", "0") == "1"
-    preset_a = request.args.get("scenario_preset_a", DEMO_CONTEXTS[0]["id"])
-    preset_b_default = DEMO_CONTEXTS[1]["id"] if len(DEMO_CONTEXTS) > 1 else DEMO_CONTEXTS[0]["id"]
-    preset_b = request.args.get("scenario_preset_b", preset_b_default)
+    # Compare mode is determined by whether user_id_b is present
+    compare_mode = user_id_b is not None
 
-    primary_scenario = _get_demo_context(preset_a)
-    secondary_scenario = _get_demo_context(preset_b)
+    context_a, form_a = extract_context_from_request("a", request.args)
+    context_b, form_b = extract_context_from_request("b", request.args)
 
-    def extract_context(prefix, base_context):
-        context = {}
-        form_values = {}
-        for field in CONTEXT_FIELD_DEFS:
-            name = field["name"]
-            param_name = f"{prefix}_{name}"
-            raw = request.args.get(param_name)
-            value = raw if raw not in (None, "") else base_context.get(name)
-            if name == "time_available":
-                value = int(value)
-            context[name] = value
-            form_values[name] = str(value)
-        return context, form_values
-
-    context_a, form_a = extract_context("a", primary_scenario["context"])
-    context_b, form_b = extract_context("b", secondary_scenario["context"])
-
-    def build_result(scenario_meta, context):
-        exact_matches, suggestions, display_settings, active_rules = adapt_trails(user, context)
-        return {
-            "scenario": scenario_meta,
-            "context": context,
-            "exact": exact_matches,
-            "suggestions": suggestions,
-            "display": display_settings,
-            "active_rules": active_rules,
-        }
-
-    primary_result = build_result(primary_scenario, context_a)
-    secondary_result = build_result(secondary_scenario, context_b) if compare_mode else None
-
-    comparison_summary = None
-    if compare_mode and secondary_result:
-        set_primary = {trail["trail_id"] for trail in primary_result["exact"]}
-        set_secondary = {trail["trail_id"] for trail in secondary_result["exact"]}
-        overlap = set_primary & set_secondary
-        comparison_summary = {
-            "primary_unique": len(set_primary - set_secondary),
-            "secondary_unique": len(set_secondary - set_primary),
-            "overlap": len(overlap),
-        }
+    primary_result = build_demo_result(user_a, context_a)
+    secondary_result = build_demo_result(user_b, context_b) if compare_mode and user_b else None
 
     return render_template(
         "demo.html",
         users=users,
-        selected_user_id=user_id,
-        scenarios=DEMO_CONTEXTS,
+        selected_user_id_a=user_id_a,
+        selected_user_id_b=user_id_b,
         primary_result=primary_result,
         secondary_result=secondary_result,
         compare_mode=compare_mode,
-        comparison_summary=comparison_summary,
         context_fields=CONTEXT_FIELD_DEFS,
         context_form_values={"a": form_a, "b": form_b},
-        preset_a=preset_a,
-        preset_b=preset_b,
     )
+
+
+@app.route("/api/demo/results", methods=["GET"])
+def api_demo_results():
+    """API endpoint to get demo results as JSON"""
+    
+    users = get_all_users()
+    default_user_id = users[0]["id"] if users else None
+    
+    user_id_a_param = request.args.get("user_id_a")
+    user_id_b_param = request.args.get("user_id_b")
+    
+    if user_id_a_param is not None:
+        user_id_a = int(user_id_a_param)
+    elif default_user_id is not None:
+        user_id_a = int(default_user_id)
+    else:
+        return jsonify({"error": "No user data available"}), 500
+    
+    if user_id_b_param is not None:
+        user_id_b = int(user_id_b_param)
+    else:
+        user_id_b = None
+    
+    user_a = get_user(user_id_a) if user_id_a is not None else None
+    user_b = get_user(user_id_b) if user_id_b is not None else None
+    
+    if not user_a:
+        return jsonify({"error": "No user data available"}), 500
+    
+    compare_mode = user_id_b is not None
+    
+    context_a, _ = extract_context_from_request("a", request.args)
+    context_b, _ = extract_context_from_request("b", request.args)
+    
+    primary_result = build_demo_result(user_a, context_a)
+    secondary_result = build_demo_result(user_b, context_b) if compare_mode and user_b else None
+    
+    return jsonify({
+        "primary_result": primary_result,
+        "secondary_result": secondary_result,
+        "compare_mode": compare_mode
+    })
 
 
 def create_app():

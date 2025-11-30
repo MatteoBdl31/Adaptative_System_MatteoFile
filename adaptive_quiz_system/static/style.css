@@ -26,6 +26,14 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
 }
 
+/* Dark theme global header */
+.detail-page .global-header,
+.list-page .global-header {
+    background: rgba(8, 12, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
 .brand a {
     font-weight: 700;
     font-size: 1.2rem;
@@ -49,6 +57,22 @@ body {
 
 .global-nav a:hover {
     background: rgba(76, 29, 149, 0.1);
+}
+
+/* Dark theme brand and nav */
+.detail-page .brand a,
+.list-page .brand a {
+    color: #e8ecff;
+}
+
+.detail-page .global-nav a,
+.list-page .global-nav a {
+    color: #a5b4fc;
+}
+
+.detail-page .global-nav a:hover,
+.list-page .global-nav a:hover {
+    background: rgba(99, 102, 241, 0.2);
 }
 
 .page-content {
@@ -100,6 +124,28 @@ body {
     gap: 4px;
 }
 
+.form-grid input,
+.form-grid select {
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    color: #333;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.form-grid select option {
+    background: white;
+    color: #333;
+}
+
 .inline-links {
     margin-top: 20px;
 }
@@ -120,6 +166,14 @@ body {
     margin-bottom: 20px;
 }
 
+/* Dark theme for list-page */
+.list-page .container {
+    background: rgba(6, 10, 24, 0.9);
+    color: #e8ecff;
+    box-shadow: 0 25px 80px rgba(8, 11, 26, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 /* Header */
 header {
     text-align: center;
@@ -134,9 +188,23 @@ header h1 {
     margin-bottom: 10px;
 }
 
+/* Dark theme header */
+.list-page header {
+    border-bottom: 3px solid rgba(99, 102, 241, 0.5);
+}
+
+.list-page header h1 {
+    color: #e8ecff;
+}
+
 .subtitle {
     color: #666;
     font-size: 1.1em;
+}
+
+/* Dark theme subtitle */
+.list-page .subtitle {
+    color: rgba(232, 236, 255, 0.7);
 }
 
 /* Navigation */
@@ -160,6 +228,17 @@ header h1 {
 .nav-links a:hover {
     background: #667eea;
     color: white;
+}
+
+/* Dark theme nav links */
+.list-page .nav-links a {
+    color: #a5b4fc;
+    border: 2px solid rgba(99, 102, 241, 0.5);
+}
+
+.list-page .nav-links a:hover {
+    background: rgba(99, 102, 241, 0.3);
+    color: #e8ecff;
 }
 
 /* Forms */
@@ -246,6 +325,18 @@ header h1 {
 
 .btn-secondary:hover {
     background: #5a6268;
+}
+
+/* Dark theme buttons */
+.list-page .btn-secondary {
+    background: rgba(99, 102, 241, 0.3);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.5);
+}
+
+.list-page .btn-secondary:hover {
+    background: rgba(99, 102, 241, 0.5);
+    color: #e8ecff;
 }
 
 /* Context Info */
@@ -336,6 +427,17 @@ header h1 {
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
 }
 
+/* Dark theme trail card */
+.list-page .trail-card {
+    background: rgba(8, 12, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.list-page .trail-card:hover {
+    box-shadow: 0 5px 20px rgba(99, 102, 241, 0.2);
+}
+
 .trail-image-placeholder {
     width: 100%;
     height: 150px;
@@ -363,6 +465,29 @@ header h1 {
     margin-bottom: 15px;
     font-size: 0.9em;
     color: #666;
+}
+
+.trail-stats .weather-stat {
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(165, 180, 252, 0.15);
+    color: #a5b4fc;
+}
+
+.trail-stats .weather-stat.weather-unavailable {
+    background: rgba(156, 163, 175, 0.15);
+    color: #9ca3af;
+    opacity: 0.7;
+}
+
+/* Dark theme trail content */
+.list-page .trail-content h3 {
+    color: #e8ecff;
+}
+
+.list-page .trail-stats {
+    color: rgba(232, 236, 255, 0.7);
 }
 
 .difficulty-badge {
@@ -402,6 +527,11 @@ header h1 {
     line-height: 1.6;
 }
 
+/* Dark theme trail description */
+.list-page .trail-description {
+    color: rgba(232, 236, 255, 0.8);
+}
+
 .trail-features {
     margin-bottom: 15px;
 }
@@ -420,6 +550,13 @@ header h1 {
     border-radius: 12px;
     font-size: 0.85em;
     border: 1px solid #667eea;
+}
+
+/* Dark theme landscape tag */
+.list-page .landscape-tag {
+    background: rgba(76, 29, 149, 0.25);
+    color: #a5b4fc;
+    border: 1px solid rgba(147, 197, 253, 0.3);
 }
 
 .access-tag {
@@ -542,6 +679,111 @@ header h1 {
     font-weight: 500;
 }
 
+/* Unmatched criteria styling */
+.unmatched-criteria {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.unmatched-label {
+    display: block;
+    color: #ff9800;
+    font-weight: 600;
+    font-size: 0.85em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.unmatched-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.unmatched-item {
+    font-size: 0.85em;
+    color: #666;
+    padding: 4px 8px;
+    background: rgba(255, 152, 0, 0.1);
+    border-left: 3px solid #ff9800;
+    border-radius: 3px;
+    line-height: 1.4;
+}
+
+.trail-card.suggested .unmatched-item {
+    color: #555;
+}
+
+.dark-theme .unmatched-item,
+.list-page .unmatched-item {
+    color: #ccc;
+    background: rgba(255, 152, 0, 0.15);
+}
+
+.weather-forecast-info {
+    margin: 12px 0;
+    padding: 10px;
+    background: rgba(165, 180, 252, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #a5b4fc;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.weather-label {
+    font-size: 0.75rem;
+    color: #a5b4fc;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.weather-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.weather-badge.weather-sunny {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.weather-badge.weather-cloudy {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.weather-badge.weather-rainy {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.weather-badge.weather-snowy {
+    background: rgba(147, 197, 253, 0.2);
+    color: #93c5fd;
+    border: 1px solid rgba(147, 197, 253, 0.3);
+}
+
+.weather-badge.weather-storm_risk {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 /* Trail Detail Page */
 .trail-detail {
     max-width: 900px;
@@ -642,6 +884,30 @@ header h1 {
     padding: 20px;
     border-radius: 8px;
     margin-top: 30px;
+}
+
+.completion-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 15px;
+}
+
+.completion-form input {
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    color: #333;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.completion-form input:focus {
+    outline: none;
+    border-color: #667eea;
 }
 
 .completed-badge {
@@ -1015,7 +1281,7 @@ header h1 {
 
 .demo-form label {
     font-size: 0.9rem;
-    color: #cbd5f5;
+    color: #4b5563;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -1024,9 +1290,20 @@ header h1 {
 .demo-form select {
     padding: 10px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
-    color: #f3f6ff;
+    border: 2px solid #ddd;
+    background: white;
+    color: #333;
+    transition: border-color 0.3s;
+}
+
+.demo-form select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.demo-form select option {
+    background: white;
+    color: #333;
 }
 
 .compare-toggle {
@@ -1159,6 +1436,38 @@ header h1 {
     margin-top: 20px;
 }
 
+.scenario-block h3 {
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.scenario-block .muted {
+    color: #666;
+}
+
+/* Ensure form-grid inputs and selects in demo controls panel have proper colors */
+.demo-controls-panel .form-grid input,
+.demo-controls-panel .form-grid select {
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    color: #333;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.demo-controls-panel .form-grid input:focus,
+.demo-controls-panel .form-grid select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.demo-controls-panel .form-grid select option {
+    background: white;
+    color: #333;
+}
+
 .scenario-header {
     display: flex;
     justify-content: space-between;
@@ -1170,8 +1479,21 @@ header h1 {
 .scenario-header select {
     padding: 8px;
     border-radius: 8px;
-    border: 1px solid rgba(99, 102, 241, 0.4);
+    border: 2px solid #ddd;
+    background: white;
+    color: #333;
     min-width: 140px;
+    transition: border-color 0.3s;
+}
+
+.scenario-header select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.scenario-header select option {
+    background: white;
+    color: #333;
 }
 
 .compare-toggle-buttons {
@@ -1225,7 +1547,8 @@ header h1 {
 /* ----------------------------- */
 /* Trail detail immersive layout */
 /* ----------------------------- */
-.detail-page {
+.detail-page,
+.list-page {
     background: radial-gradient(circle at top, #1c1f3b 0%, #070912 65%, #04050a 100%);
     min-height: 100vh;
     padding: 40px 20px;
@@ -1356,6 +1679,26 @@ header h1 {
     background: rgba(255, 255, 255, 0.15);
     font-size: 0.85rem;
     border: 1px solid rgba(255, 255, 255, 0.18);
+    color: white;
+}
+
+/* Ensure difficulty pills are always visible */
+.pill.difficulty-easy {
+    background: #28a745 !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.pill.difficulty-medium {
+    background: #ffc107 !important;
+    color: #333 !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.pill.difficulty-hard {
+    background: #dc3545 !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
 .hero-metrics {
@@ -1544,12 +1887,30 @@ header h1 {
     color: white;
 }
 
+/* Dark theme view toggle */
+.list-page .view-toggle button {
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    background: rgba(255, 255, 255, 0.05);
+    color: #a5b4fc;
+}
+
+.list-page .view-toggle button.active,
+.list-page .view-toggle button:hover {
+    background: rgba(99, 102, 241, 0.4);
+    color: #e8ecff;
+}
+
 .view-section {
     display: none;
 }
 
 .view-section.active {
     display: block;
+}
+
+/* Dark theme view section headers */
+.list-page .view-section h2 {
+    color: #e8ecff;
 }
 
 #trails-map {
@@ -1566,12 +1927,121 @@ header h1 {
     gap: 20px;
 }
 
+/* Card View with Maps (for strong connection) */
+.trails-card-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+}
+
+.trail-card-with-map {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.trail-card-with-map:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark theme for card with map */
+.list-page .trail-card-with-map {
+    background: rgba(8, 12, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.list-page .trail-card-with-map:hover {
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+}
+
+.trail-card-map-container {
+    width: 100%;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    background: #f0f0f0;
+}
+
+.trail-mini-map {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+}
+
+.trail-card-content {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.trail-card-content h3 {
+    margin: 0 0 12px 0;
+    color: #333;
+    font-size: 1.3rem;
+}
+
+.list-page .trail-card-content h3 {
+    color: #e8ecff;
+}
+
+.trail-card-content .trail-stats {
+    margin-bottom: 12px;
+}
+
+.trail-card-content .trail-description {
+    margin-bottom: 12px;
+    color: #666;
+    flex: 1;
+}
+
+.list-page .trail-card-content .trail-description {
+    color: #a5b4fc;
+}
+
+.trail-card-content .trail-features {
+    margin-bottom: 12px;
+}
+
+/* Connection Status Indicator */
+.connection-status {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.list-page .connection-status {
+    color: #e8ecff;
+}
+
+.connection-status span {
+    margin-right: 8px;
+}
+
 .filter-section {
     background: rgba(255, 255, 255, 0.85);
     padding: 20px;
     border-radius: 12px;
     margin-bottom: 30px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark theme filter section */
+.list-page .filter-section {
+    background: rgba(8, 12, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.list-page .filter-section h3 {
+    color: #e8ecff;
 }
 
 .filter-group {
@@ -1593,6 +2063,42 @@ header h1 {
     border: 2px solid #ddd;
     border-radius: 6px;
     min-width: 160px;
+    background: white;
+    color: #333;
+    transition: border-color 0.3s;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.filter-group select option {
+    background: white;
+    color: #333;
+}
+
+/* Dark theme filter group */
+.list-page .filter-group label {
+    color: #cbd5f5;
+}
+
+.list-page .filter-group select,
+.list-page .filter-group input {
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #e8ecff;
+}
+
+.list-page .filter-group select:focus,
+.list-page .filter-group input:focus {
+    border-color: rgba(99, 102, 241, 0.6);
+}
+
+.list-page .filter-group select option {
+    background: rgba(8, 12, 30, 0.95);
+    color: #e8ecff;
 }
 
 .trails-grid.modern {
@@ -1690,5 +2196,488 @@ header h1 {
 
     .performance-stats {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Demo Controls Header Bar */
+.demo-controls-header {
+    background: rgba(8, 12, 30, 0.95);
+    border-radius: 18px;
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01);
+    margin-bottom: 32px;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.demo-controls-header .demo-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 100%;
+}
+
+.controls-top-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.controls-top-row .compare-toggle-buttons {
+    margin: 0;
+}
+
+.scenarios-horizontal-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.user-rows-wrapper {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.fields-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fields-header-row {
+    display: flex;
+    gap: 12px;
+    min-width: max-content;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 4px;
+    align-items: flex-start;
+}
+
+.field-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+    min-width: 120px;
+    box-sizing: border-box;
+}
+
+.field-header.field-column-small {
+    min-width: 90px;
+    max-width: 100px;
+}
+
+.field-header.user-profile-field {
+    min-width: 160px;
+    max-width: 180px;
+}
+
+/* Ensure header columns match data column widths exactly */
+.field-header.field-column {
+    min-width: 120px;
+    width: 120px;
+}
+
+.field-header.field-column.user-profile-field {
+    min-width: 160px;
+    width: 160px;
+    max-width: 180px;
+}
+
+.field-header span {
+    font-size: 0.8rem;
+    color: #a5b4fc;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.user-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+}
+
+.user-row .fields-row {
+    display: flex;
+    gap: 12px;
+    min-width: max-content;
+    padding-bottom: 4px;
+    align-items: flex-start;
+}
+
+/* Ensure header row and data rows have identical column widths */
+.fields-header-row .field-column,
+.user-row .fields-row .field-column {
+    min-width: 120px;
+    width: 120px;
+    flex-shrink: 0;
+}
+
+.fields-header-row .field-column.user-profile-field,
+.user-row .fields-row .field-column.user-profile-field {
+    min-width: 160px;
+    width: 160px;
+    max-width: 180px;
+}
+
+.fields-header-row .field-column.field-column-delete,
+.user-row .fields-row .field-column.field-column-delete {
+    min-width: 40px;
+    width: 40px;
+    max-width: 40px;
+}
+
+.user-row.is-hidden {
+    display: none !important;
+}
+
+.table-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 0;
+}
+
+.table-actions-left {
+    flex: 1;
+}
+
+.table-actions-right {
+    flex-shrink: 0;
+}
+
+.btn-primary {
+    position: relative;
+}
+
+.btn-primary .btn-loading {
+    display: inline-block;
+}
+
+.btn-primary .btn-loading.is-hidden {
+    display: none;
+}
+
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-add-another-user {
+    padding: 10px 20px;
+    border: 1px dashed rgba(165, 180, 252, 0.4);
+    border-radius: 8px;
+    background: rgba(165, 180, 252, 0.08);
+    color: #a5b4fc;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-add-another-user:hover {
+    background: rgba(165, 180, 252, 0.15);
+    border-color: rgba(165, 180, 252, 0.6);
+    transform: translateY(-1px);
+}
+
+.btn-add-another-user.is-hidden {
+    display: none;
+}
+
+.btn-delete-user-inline {
+    padding: 6px 12px;
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 6px;
+    background: rgba(220, 53, 69, 0.1);
+    color: #f87171;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    line-height: 1;
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-delete-user-inline:hover {
+    background: rgba(220, 53, 69, 0.2);
+    border-color: rgba(220, 53, 69, 0.7);
+    color: #fca5a5;
+    transform: scale(1.1);
+}
+
+.user-profile-field {
+    min-width: 160px;
+    max-width: 180px;
+}
+
+.field-column-delete {
+    min-width: 10px !important;
+    max-width: 12px !important;
+    width: 12px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: flex-start;
+    align-self: flex-start;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.field-column-delete.field-header {
+    min-width: 10px !important;
+    max-width: 12px !important;
+    width: 12px !important;
+}
+
+.field-column-delete span {
+    height: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    display: none;
+}
+
+.field-column-delete.field-header {
+    gap: 0;
+    justify-content: flex-start;
+}
+
+.field-column-delete .btn-delete-user-inline {
+    margin: 0;
+    padding: 2px 1px !important;
+    font-size: 0.9rem;
+    width: 100% !important;
+    height: auto;
+    min-width: 0 !important;
+    max-width: 100%;
+    line-height: 1;
+    box-sizing: border-box;
+    align-self: flex-start;
+}
+
+.btn-delete-user {
+    padding: 0;
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 6px;
+    background: rgba(220, 53, 69, 0.1);
+    color: #f87171;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-delete-user:hover {
+    background: rgba(220, 53, 69, 0.2);
+    border-color: rgba(220, 53, 69, 0.7);
+    color: #fca5a5;
+    transform: scale(1.1);
+}
+
+
+.fields-horizontal-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.fields-horizontal-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.fields-horizontal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.fields-horizontal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 4px;
+}
+
+.fields-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.5);
+}
+
+.fields-horizontal-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.fields-horizontal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.fields-horizontal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 4px;
+}
+
+.fields-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.5);
+}
+
+.fields-row {
+    display: flex;
+    gap: 12px;
+    min-width: max-content;
+    padding-bottom: 4px;
+}
+
+.field-column {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 120px;
+    width: 120px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.field-column.user-profile-field {
+    min-width: 160px;
+    width: 160px;
+    max-width: 180px;
+}
+
+.field-column-small {
+    min-width: 90px;
+    max-width: 100px;
+}
+
+.field-column span {
+    font-size: 0.8rem;
+    color: #a5b4fc;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.field-column input,
+.field-column select {
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.field-column:not(.field-column-small) input,
+.field-column:not(.field-column-small) select {
+    min-width: 120px;
+}
+
+.field-column-small input,
+.field-column-small select {
+    min-width: 90px;
+    max-width: 100px;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+}
+
+.field-column input:focus,
+.field-column select:focus {
+    outline: none;
+    border-color: rgba(165, 180, 252, 0.5);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.field-column select option {
+    background: #1e293b;
+    color: #fff;
+}
+
+.demo-results-container {
+    margin-top: 24px;
+}
+
+/* Responsive adjustments for demo controls header */
+@media (max-width: 768px) {
+    .demo-controls-header {
+        padding: 16px;
+        margin: -16px -16px 16px -16px;
+    }
+    
+    .controls-top-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .controls-top-row .btn-primary {
+        width: 100%;
+    }
+    
+    .scenario-row-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .user-select-label-inline {
+        width: 100%;
+    }
+    
+    .user-select-label-inline select {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .field-column {
+        min-width: 100px;
+    }
+    
+    .field-column:not(.field-column-small) input,
+    .field-column:not(.field-column-small) select {
+        min-width: 100px;
+    }
+    
+    .field-column-small {
+        min-width: 80px;
+        max-width: 90px;
+    }
+    
+    .field-column-small input,
+    .field-column-small select {
+        min-width: 80px;
+        max-width: 90px;
+    }
+    
+    .user-profile-field {
+        min-width: 140px;
+        max-width: 160px;
     }
 }

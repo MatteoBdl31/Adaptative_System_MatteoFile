@@ -10,7 +10,7 @@
         <header>
             <h1>🗺️ All Available Trails</h1>
             <nav class="nav-links">
-                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('demo') }}">Demo</a>
                 <a href="{{ url_for('admin_rules') }}">Admin Rules</a>
             </nav>
         </header>
@@ -54,9 +54,15 @@
             <button onclick="clearFilters()" class="btn-secondary" style="margin-top: 20px;">Clear Filters</button>
         </div>
 
+        <div class="connection-status" id="connection-status" style="margin: 20px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; display: none;">
+            <span id="connection-indicator">📶</span>
+            <span id="connection-text">Detecting connection...</span>
+        </div>
+
         <div class="view-toggle">
             <button onclick="showView('map')" id="btn-map" class="active">🗺️ Map View</button>
             <button onclick="showView('list')" id="btn-list">📋 List View</button>
+            <button onclick="showView('cards')" id="btn-cards" style="display: none;">🃏 Card View</button>
         </div>
 
         <!-- Map View -->
@@ -65,7 +71,59 @@
             <div id="trails-map"></div>
         </div>
 
-        <!-- List View -->
+        <!-- Card View (for strong connection) -->
+        <div id="cards-view" class="view-section">
+            <h2>All Trails ({{ trails|length }})</h2>
+            <div class="trails-card-view" id="trails-cards">
+                {% for trail in trails %}
+                <div class="trail-card-with-map" data-difficulty="{{ trail.difficulty }}" 
+                     data-landscape="{{ trail.landscapes }}" data-type="{{ trail.trail_type }}"
+                     data-distance="{{ trail.distance }}" data-trail-id="{{ trail.trail_id }}"
+                     data-lat="{{ trail.latitude }}" data-lon="{{ trail.longitude }}"
+                     data-coordinates="{% if trail.coordinates %}{{ trail.coordinates|tojson }}{% else %}null{% endif %}">
+                    <div class="trail-card-map-container">
+                        <div class="trail-mini-map" id="mini-map-{{ trail.trail_id }}"></div>
+                    </div>
+                    <div class="trail-card-content">
+                        <h3>{{ trail.name }}</h3>
+                        <div class="trail-stats">
+                            <span class="difficulty-badge difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+                                {% if trail.difficulty <= 3 %}Easy
+                                {% elif trail.difficulty <= 6 %}Medium
+                                {% else %}Hard{% endif %}
+                            </span>
+                            <span>📏 {{ trail.distance }} km</span>
+                            <span>⏱️ {{ trail.duration|format_duration }}</span>
+                            <span>⛰️ {{ trail.elevation_gain }}m</span>
+                        </div>
+                        <p class="trail-description">{{ trail.description }}</p>
+                        <div class="trail-features">
+                            <div class="landscapes">
+                                {% for landscape in trail.landscapes.split(',') %}
+                                <span class="landscape-tag">{{ landscape.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="accessibility">
+                                {% if trail.accessibility %}
+                                <span class="access-tag">{{ trail.accessibility.split(',')[0] }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <strong>Type:</strong> {{ trail.trail_type.replace('_', ' ').title() }} | 
+                            <strong>Popularity:</strong> ⭐ {{ trail.popularity }}/10
+                        </div>
+                        {% if trail.latitude and trail.longitude %}
+                        <a href="#" onclick="showTrailOnMap({{ trail.latitude }}, {{ trail.longitude }}); return false;" 
+                           class="btn-secondary" style="margin-top: 10px;">📍 Show on Map</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- List View (for weak connection) -->
         <div id="list-view" class="view-section">
             <h2>All Trails ({{ trails|length }})</h2>
             <div class="trails-list-view" id="trails-list">
@@ -87,7 +145,7 @@
                                 {% else %}Hard{% endif %}
                             </span>
                             <span>📏 {{ trail.distance }} km</span>
-                            <span>⏱️ {{ trail.duration }} min</span>
+                            <span>⏱️ {{ trail.duration|format_duration }}</span>
                             <span>⛰️ {{ trail.elevation_gain }}m</span>
                         </div>
                         <p class="trail-description">{{ trail.description }}</p>
@@ -125,9 +183,209 @@
         var markers = [];
         var polylines = [];
         var currentTrails = [];
+        var connectionStrength = 'strong'; // Default to strong, will be detected
+        var miniMaps = {}; // Store mini maps for card view
+        
+        // Connection detection function
+        function detectConnection() {
+            return new Promise(function(resolve) {
+                // Check if navigator.connection is available (Network Information API)
+                if ('connection' in navigator) {
+                    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                    if (conn) {
+                        // Use effectiveType if available (Chrome/Edge)
+                        if (conn.effectiveType) {
+                            var effectiveType = conn.effectiveType;
+                            if (effectiveType === 'slow-2g' || effectiveType === '2g') {
+                                resolve('weak');
+                                return;
+                            } else if (effectiveType === '3g') {
+                                // For 3g, check downlink speed if available
+                                if (conn.downlink !== undefined && conn.downlink < 1.5) {
+                                    resolve('weak');
+                                    return;
+                                }
+                                // Otherwise test with a small download
+                                testConnectionSpeed().then(function(isFast) {
+                                    resolve(isFast ? 'strong' : 'weak');
+                                });
+                                return;
+                            } else {
+                                // 4g or better
+                                resolve('strong');
+                                return;
+                            }
+                        }
+                        // Use downlink if available (Mbps)
+                        if (conn.downlink !== undefined) {
+                            if (conn.downlink < 0.5) {
+                                resolve('weak');
+                                return;
+                            } else if (conn.downlink < 1.5) {
+                                // Test with a small download for borderline cases
+                                testConnectionSpeed().then(function(isFast) {
+                                    resolve(isFast ? 'strong' : 'weak');
+                                });
+                                return;
+                            } else {
+                                resolve('strong');
+                                return;
+                            }
+                        }
+                    }
+                }
+                
+                // Fallback: test connection speed with a small download
+                testConnectionSpeed().then(function(isFast) {
+                    resolve(isFast ? 'strong' : 'weak');
+                });
+            });
+        }
+        
+        // Test connection speed by downloading a small resource
+        function testConnectionSpeed() {
+            return new Promise(function(resolve) {
+                var startTime = Date.now();
+                var timeoutId;
+                
+                // Try using fetch API for more reliable testing
+                if ('fetch' in window) {
+                    // Use a small endpoint - try to fetch the current page's HTML head
+                    fetch(window.location.href, {
+                        method: 'HEAD',
+                        cache: 'no-cache'
+                    }).then(function(response) {
+                        clearTimeout(timeoutId);
+                        var endTime = Date.now();
+                        var duration = endTime - startTime;
+                        // If it takes more than 2 seconds, consider it weak
+                        resolve(duration < 2000);
+                    }).catch(function() {
+                        clearTimeout(timeoutId);
+                        // If fetch fails, assume weak connection
+                        resolve(false);
+                    });
+                    
+                    // Timeout after 3 seconds
+                    timeoutId = setTimeout(function() {
+                        resolve(false); // Assume weak if timeout
+                    }, 3000);
+                } else {
+                    // Fallback: assume strong if we can't test
+                    // This is safer for user experience
+                    resolve(true);
+                }
+            });
+        }
+        
+        // Initialize connection detection and set default view
+        function initializeConnection() {
+            detectConnection().then(function(strength) {
+                connectionStrength = strength;
+                var statusEl = document.getElementById('connection-status');
+                var indicatorEl = document.getElementById('connection-indicator');
+                var textEl = document.getElementById('connection-text');
+                var cardsBtn = document.getElementById('btn-cards');
+                
+                if (strength === 'weak') {
+                    indicatorEl.textContent = '📶';
+                    textEl.textContent = 'Weak connection detected - Using lightweight view';
+                    statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
+                    statusEl.style.display = 'block';
+                    cardsBtn.style.display = 'none';
+                    // Ensure list view is shown for weak connection
+                    if (!document.getElementById('list-view').classList.contains('active')) {
+                        showView('list');
+                    }
+                } else {
+                    indicatorEl.textContent = '📶';
+                    textEl.textContent = 'Strong connection detected - Card view with maps available';
+                    statusEl.style.background = 'rgba(34, 197, 94, 0.2)';
+                    statusEl.style.display = 'block';
+                    cardsBtn.style.display = 'inline-block';
+                    // Show card view by default for strong connection
+                    showView('cards');
+                    // Initialize mini maps after a short delay
+                    setTimeout(function() {
+                        initializeMiniMaps();
+                    }, 500);
+                }
+            });
+        }
+        
+        // Initialize mini maps for card view
+        function initializeMiniMaps() {
+            if (typeof L === 'undefined') return;
+            
+            var cardElements = document.querySelectorAll('.trail-card-with-map');
+            cardElements.forEach(function(card) {
+                var trailId = card.getAttribute('data-trail-id');
+                var lat = parseFloat(card.getAttribute('data-lat'));
+                var lon = parseFloat(card.getAttribute('data-lon'));
+                var mapContainer = document.getElementById('mini-map-' + trailId);
+                
+                if (!mapContainer || !lat || !lon) return;
+                
+                try {
+                    var miniMap = L.map('mini-map-' + trailId, {
+                        zoomControl: false,
+                        attributionControl: false,
+                        dragging: false,
+                        touchZoom: false,
+                        doubleClickZoom: false,
+                        scrollWheelZoom: false,
+                        boxZoom: false,
+                        keyboard: false
+                    }).setView([lat, lon], 12);
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19
+                    }).addTo(miniMap);
+                    
+                    // Add marker
+                    L.marker([lat, lon]).addTo(miniMap);
+                    
+                    // Add trail path if coordinates available
+                    var coordinatesStr = card.getAttribute('data-coordinates');
+                    if (coordinatesStr && coordinatesStr !== 'null') {
+                        try {
+                            var coordinates = JSON.parse(coordinatesStr);
+                            if (coordinates && coordinates.coordinates && Array.isArray(coordinates.coordinates)) {
+                                var latLngs = coordinates.coordinates.map(function(coord) {
+                                    return [coord[1], coord[0]];
+                                });
+                                L.polyline(latLngs, {
+                                    color: '#667eea',
+                                    weight: 3,
+                                    opacity: 0.7
+                                }).addTo(miniMap);
+                                
+                                // Fit bounds to show the trail
+                                var bounds = L.latLngBounds(latLngs);
+                                miniMap.fitBounds(bounds, {padding: [10, 10]});
+                            }
+                        } catch(e) {
+                            console.log('Could not parse coordinates for mini map:', e);
+                        }
+                    }
+                    
+                    miniMaps[trailId] = miniMap;
+                    
+                    // Invalidate size after a short delay to ensure proper rendering
+                    setTimeout(function() {
+                        miniMap.invalidateSize();
+                    }, 100);
+                } catch(e) {
+                    console.error('Error initializing mini map for trail ' + trailId + ':', e);
+                }
+            });
+        }
         
         // Wait for DOM and Leaflet to be ready before initializing map
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize connection detection first
+            initializeConnection();
+            
             // Check if Leaflet is loaded
             if (typeof L === 'undefined') {
                 console.error('Leaflet library not loaded!');
@@ -250,7 +508,7 @@
                         '<strong>' + (trail.name || 'Unnamed Trail') + '</strong><br>' +
                         'Difficulty: ' + (trail.difficulty <= 3 ? 'Easy' : trail.difficulty <= 6 ? 'Medium' : 'Hard') + '<br>' +
                         'Distance: ' + (trail.distance !== null ? trail.distance + ' km' : 'N/A') + '<br>' +
-                        'Duration: ' + trail.duration + ' min<br>' +
+                        'Duration: ' + formatDuration(trail.duration) + '<br>' +
                         'Elevation: ' + (trail.elevation !== null ? trail.elevation + 'm' : 'N/A') + '<br>' +
                         '⭐ ' + trail.popularity + '/10'
                     );
@@ -317,14 +575,23 @@
         function showView(view) {
             document.getElementById('map-view').classList.toggle('active', view === 'map');
             document.getElementById('list-view').classList.toggle('active', view === 'list');
+            document.getElementById('cards-view').classList.toggle('active', view === 'cards');
             document.getElementById('btn-map').classList.toggle('active', view === 'map');
             document.getElementById('btn-list').classList.toggle('active', view === 'list');
+            document.getElementById('btn-cards').classList.toggle('active', view === 'cards');
             
             // If switching to map view, invalidate map size to ensure it renders
             if (view === 'map' && map) {
                 setTimeout(function() {
                     map.invalidateSize();
                 }, 100);
+            }
+            
+            // If switching to cards view, initialize mini maps if not already done
+            if (view === 'cards' && connectionStrength === 'strong') {
+                setTimeout(function() {
+                    initializeMiniMaps();
+                }, 200);
             }
         }
 
@@ -362,13 +629,15 @@
         }
 
         function filterList(filteredTrails) {
-            var trailCards = document.querySelectorAll('.trail-card');
+            var trailCards = document.querySelectorAll('.trail-card, .trail-card-with-map');
             
             trailCards.forEach(function(card) {
                 var trailId = card.getAttribute('data-trail-id');
                 // Check if this trail matches filters
                 var difficulty = parseFloat(card.getAttribute('data-difficulty'));
-                var landscape = card.getAttribute('data-landscape').toLowerCase();
+                var landscape = card.getAttribute('data-landscape');
+                if (!landscape) landscape = '';
+                landscape = landscape.toLowerCase();
                 var type = card.getAttribute('data-type');
                 var distance = parseFloat(card.getAttribute('data-distance'));
 

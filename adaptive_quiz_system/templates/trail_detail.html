@@ -8,7 +8,9 @@
     <div class="detail-shell">
         <header class="page-header">
             <div class="page-header__left">
-                <a class="link-pill" href="{{ url_for('recommendations', user_id=user.id, time_available=context.time_available, device=context.device, weather=context.weather, connection=context.connection, season=context.get('season', 'summer'), time_of_day=context.get('time_of_day', 'morning')) }}">← Back to personalised recommendations</a>
+                {% set days = (context.time_available // (24 * 60)) %}
+                {% set hours = ((context.time_available % (24 * 60)) // 60) %}
+                <a class="link-pill" href="{{ url_for('recommendations', user_id=user.id, time_available_days=days, time_available_hours=hours, device=context.device, weather=context.weather, connection=context.connection, season=context.get('season', 'summer')) }}">← Back to personalised recommendations</a>
                 <nav class="nav-inline">
                     <a href="{{ url_for('index') }}">Home</a>
                     <a href="{{ url_for('all_trails') }}">All Trails</a>
@@ -16,7 +18,14 @@
                 </nav>
             </div>
             <div class="context-badges compact">
-                <span class="badge">⏱ {{ context.time_available or 60 }} min</span>
+                {% set time_avail = context.time_available or 60 %}
+                {% set days = (time_avail // (24 * 60)) %}
+                {% set hours = ((time_avail % (24 * 60)) // 60) %}
+                {% if days > 0 %}
+                    <span class="badge">⏱ {{ days }} day{{ 's' if days != 1 else '' }}{% if hours > 0 %}, {{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}</span>
+                {% else %}
+                    <span class="badge">⏱ {{ hours }} hour{{ 's' if hours != 1 else '' }}</span>
+                {% endif %}
                 <span class="badge">📱 {{ context.device|title }}</span>
                 <span class="badge">🌤 {{ context.weather|title }}</span>
                 <span class="badge">📶 {{ context.connection|title }}</span>
@@ -43,7 +52,7 @@
                 </div>
                 <div class="metric">
                     <span>Duration</span>
-                    <strong>{{ trail.duration|default('—') }} min</strong>
+                    <strong>{{ trail.duration|format_duration }}</strong>
                 </div>
                 <div class="metric">
                     <span>Elevation gain</span>
@@ -124,7 +133,9 @@
                 <h3>Context-aware tips</h3>
                 <ul class="meta-list">
                     <li>Device: {{ context.device|title }} · Connection: {{ context.connection|title }}</li>
-                    <li>Suggested window: {{ context.time_available }} minutes</li>
+                    {% set days = (context.time_available // (24 * 60)) %}
+                    {% set hours = ((context.time_available % (24 * 60)) // 60) %}
+                    <li>Suggested window: {% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% if hours > 0 %}, {{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}{% else %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}</li>
                     <li>{% if context.connection == 'weak' %}Download map tiles before leaving signal range.{% else %}Streaming-friendly trail assets available.{% endif %}</li>
                 </ul>
             </article>

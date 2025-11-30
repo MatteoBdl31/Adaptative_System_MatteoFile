@@ -64,9 +64,9 @@ def seed_rules() -> None:
             "Weak connection: text-only layout",
         ),
         (
-            "persistence_score<=0.5",
+            "persistence_score<=0.5 AND time_available<1440",
             "max_difficulty=medium;prefer_short=true;max_distance=8",
-            "Low persistence: shorter, easier trails",
+            "Low persistence: shorter, easier trails (only for short trips)",
         ),
         (
             "landscape_preference CONTAINS lake",
@@ -74,7 +74,7 @@ def seed_rules() -> None:
             "User prefers lakes: filter for lake trails",
         ),
         (
-            "time_available<=45",
+            "time_available<=45 AND time_available>0",
             "max_duration=45;max_distance=6",
             "Limited time: short trails under 45 min",
         ),

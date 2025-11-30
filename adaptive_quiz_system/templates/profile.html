@@ -98,7 +98,7 @@
             </div>
 
             <div class="profile-actions">
-                <a href="{{ url_for('recommendations', user_id=user.id, time_available=60, device='desktop', weather='sunny', connection='strong', season='summer', time_of_day='morning') }}" 
+                <a href="{{ url_for('recommendations', user_id=user.id, time_available_days=0, time_available_hours=1, device='laptop', weather='sunny', connection='strong', season='summer') }}" 
                    class="btn-primary">Get Recommendations</a>
             </div>
         </div>

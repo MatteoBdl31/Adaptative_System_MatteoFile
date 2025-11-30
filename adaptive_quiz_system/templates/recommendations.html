@@ -13,12 +13,23 @@
                 <p class="subtitle">Personalised shortlist based on your live context and long-term preferences.</p>
             </div>
             <div class="context-badges compact">
-                <span class="badge">⏱ {{ context.time_available }} min</span>
+                {% set days = (context.time_available // (24 * 60)) %}
+                {% set hours = ((context.time_available % (24 * 60)) // 60) %}
+                {% if days > 0 %}
+                    <span class="badge">⏱ {{ days }} day{{ 's' if days != 1 else '' }}{% if hours > 0 %}, {{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}</span>
+                {% else %}
+                    <span class="badge">⏱ {{ hours }} hour{{ 's' if hours != 1 else '' }}</span>
+                {% endif %}
                 <span class="badge">📱 {{ context.device|title }}</span>
-                <span class="badge">🌤 {{ context.weather|title }}</span>
+                <span class="badge">🌤 Desired: {{ context.weather|title }}</span>
+                {% if context.forecast_weather %}
+                    <span class="badge">🌦 Forecast: {{ context.forecast_weather|title }}</span>
+                {% endif %}
                 <span class="badge">📶 {{ context.connection|title }}</span>
                 <span class="badge">🍂 {{ context.season|title }}</span>
-                <span class="badge">🕐 {{ context.time_of_day|title }}</span>
+                {% if context.hike_start_date %}
+                    <span class="badge">📅 {{ context.hike_start_date }}{% if context.hike_end_date and context.hike_end_date != context.hike_start_date %} - {{ context.hike_end_date }}{% endif %}</span>
+                {% endif %}
             </div>
         </header>
 
@@ -88,18 +99,24 @@
                             </div>
                             <div class="trail-stats">
                                 <span>📏 {{ trail.distance or '—' }} km</span>
-                                <span>⏱ {{ trail.duration or '—' }} min</span>
+                                <span>⏱ {{ trail.duration|format_duration }}</span>
                                 <span>⛰ {{ trail.elevation_gain or '—' }} m</span>
+                                {% if context.hike_start_date or context.hike_date %}
+                                    {% if trail.forecast_weather %}
+                                        <span class="weather-stat">🌦 {{ trail.forecast_weather|title }}</span>
+                                    {% else %}
+                                        <span class="weather-stat weather-unavailable" title="Weather forecast unavailable (API key may not be set)">🌦 N/A</span>
+                                    {% endif %}
+                                {% endif %}
                             </div>
                             <div class="landscapes">
                                 {% for landscape in trail.landscapes.split(',') %}
                                 <span class="landscape-chip">{{ landscape.strip().title() }}</span>
                                 {% endfor %}
                             </div>
-                            {% if trail.recommendation_reasons %}
-                            <p class="muted">Why: {{ trail.recommendation_reasons|join(', ') }}</p>
-                            {% endif %}
-                            <a class="btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available=context.time_available, season=context.season, time_of_day=context.time_of_day) }}">Inspect trail</a>
+                            {% set days = (context.time_available // (24 * 60)) %}
+                            {% set hours = ((context.time_available % (24 * 60)) // 60) %}
+                            <a class="btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}">Inspect trail</a>
                         </div>
                         {% endfor %}
                     </div>
@@ -119,18 +136,35 @@
                         <div class="trail-card modern suggested">
                             <div class="card-heading">
                                 <h3>{{ trail.name }}</h3>
-                                <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage) }}% match</span>
+                                <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}% match</span>
                             </div>
                             <div class="trail-stats">
                                 <span>📏 {{ trail.distance or '—' }} km</span>
-                                <span>⏱ {{ trail.duration or '—' }} min</span>
+                                <span>⏱ {{ trail.duration|format_duration }}</span>
                                 <span>⛰ {{ trail.elevation_gain or '—' }} m</span>
+                                {% if context.hike_start_date or context.hike_date %}
+                                    {% if trail.forecast_weather %}
+                                        <span class="weather-stat">🌦 {{ trail.forecast_weather|title }}</span>
+                                    {% else %}
+                                        <span class="weather-stat weather-unavailable" title="Weather forecast unavailable (API key may not be set)">🌦 N/A</span>
+                                    {% endif %}
+                                {% endif %}
                             </div>
                             <div class="landscapes">
                                 {% for landscape in trail.landscapes.split(',') %}
                                 <span class="landscape-chip">{{ landscape.strip().title() }}</span>
                                 {% endfor %}
                             </div>
+                            {% if context.hike_start_date or context.hike_date %}
+                            <div class="weather-forecast-info">
+                                <small class="weather-label">Weather forecast for {{ context.hike_start_date or context.hike_date }}:</small>
+                                {% if trail.forecast_weather %}
+                                    <span class="weather-badge weather-{{ trail.forecast_weather }}">🌦 {{ trail.forecast_weather|title }}</span>
+                                {% else %}
+                                    <span class="weather-badge weather-unavailable">🌦 Unavailable</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                             {% if trail.matched_criteria %}
                             <div class="criteria-tags">
                                 {% for criteria in trail.matched_criteria %}
@@ -138,7 +172,19 @@
                                 {% endfor %}
                             </div>
                             {% endif %}
-                            <a class="btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available=context.time_available, season=context.season, time_of_day=context.time_of_day) }}">Inspect trail</a>
+                            {% if trail.unmatched_criteria %}
+                            <div class="unmatched-criteria">
+                                <small class="unmatched-label">Missing criteria:</small>
+                                <ul class="unmatched-list">
+                                    {% for criteria in trail.unmatched_criteria %}
+                                    <li class="unmatched-item">{{ criteria }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            {% set days = (context.time_available // (24 * 60)) %}
+                            {% set hours = ((context.time_available % (24 * 60)) // 60) %}
+                            <a class="btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}">Inspect trail</a>
                         </div>
                         {% endfor %}
                     </div>
@@ -174,12 +220,16 @@
     </div>
 {% endblock %}
 {% block extra_scripts %}
+    {% set days = (context.time_available // (24 * 60)) %}
+    {% set hours = ((context.time_available % (24 * 60)) // 60) %}
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script id="recommendation-data" type="application/json">{{ combined_trails|tojson }}</script>
     <script>
-        window.recommendationMapData = {{ combined_trails|tojson }};
+        const dataElement = document.getElementById('recommendation-data');
+        window.recommendationMapData = JSON.parse(dataElement.textContent);
         window.recommendationDetailUrl = function(trailId) {
-            const base = "{{ url_for('trail_detail', user_id=user.id, trail_id='__REPLACE__', device=context.device, connection=context.connection, weather=context.weather, time_available=context.time_available, season=context.season, time_of_day=context.time_of_day) }}";
+            const base = "{{ url_for('trail_detail', user_id=user.id, trail_id='__REPLACE__', device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}";
             return base.replace('__REPLACE__', trailId);
         };
     </script>

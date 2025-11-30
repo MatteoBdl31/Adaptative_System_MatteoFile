@@ -92,6 +92,61 @@ def _parse_difficulty(raw: str | None) -> float:
     return mapping.get(raw.lower(), 5.0)
 
 
+def _estimate_difficulty_from_characteristics(
+    distance_km: float,
+    elevation_gain: int | None = None,
+    elevation_gain_per_km: float | None = None,
+) -> float:
+    """
+    Estimate difficulty based on trail characteristics when source data is missing.
+    Uses elevation gain per km as the primary indicator.
+    
+    Returns a difficulty value between 1.0 (very easy) and 10.0 (extreme).
+    """
+    if elevation_gain_per_km is None:
+        if elevation_gain is not None and distance_km > 0:
+            elevation_gain_per_km = elevation_gain / distance_km
+        else:
+            # Default fallback: assume moderate terrain
+            elevation_gain_per_km = 50.0
+    
+    # Classify based on elevation gain per km
+    # More realistic thresholds based on typical hiking standards:
+    # - < 30 m/km: Easy (flat/gentle)
+    # - 30-60 m/km: Moderate (rolling hills)
+    # - 60-100 m/km: Challenging (steep sections)
+    # - 100-150 m/km: Very challenging (mountainous)
+    # - > 150 m/km: Extreme (alpine/technical)
+    if elevation_gain_per_km < 30:
+        # Flat or gentle terrain
+        base_difficulty = 2.5
+    elif elevation_gain_per_km < 60:
+        # Moderate terrain
+        base_difficulty = 4.0
+    elif elevation_gain_per_km < 100:
+        # Challenging terrain
+        base_difficulty = 5.5
+    elif elevation_gain_per_km < 150:
+        # Very challenging
+        base_difficulty = 7.0
+    else:
+        # Extreme terrain
+        base_difficulty = 8.5
+    
+    # Adjust for distance (longer trails are slightly harder, but not dramatically)
+    if distance_km > 25:
+        base_difficulty += 0.4
+    elif distance_km > 20:
+        base_difficulty += 0.3
+    elif distance_km > 15:
+        base_difficulty += 0.2
+    elif distance_km < 5:
+        base_difficulty -= 0.3
+    
+    # Clamp to valid range
+    return max(1.0, min(10.0, base_difficulty))
+
+
 def _estimate_duration_minutes(distance_km: float | None) -> int:
     if not distance_km or distance_km <= 0:
         return 120
@@ -275,7 +330,8 @@ def load_french_alps_trails(
             continue
 
         sac_scale = _coerce_str(props.get("sac_scale"))
-        difficulty = _parse_difficulty(sac_scale or props.get("difficulty"))
+        raw_difficulty_value = sac_scale or props.get("difficulty")
+        raw_difficulty = _parse_difficulty(raw_difficulty_value)
         duration = _estimate_duration_minutes(total_distance_km)
         landscapes = _parse_landscapes({k: _coerce_str(v) for k, v in props.items()})
         safety = _parse_safety({k: _coerce_str(v) for k, v in props.items()})
@@ -288,6 +344,17 @@ def load_french_alps_trails(
             print(f"[WARN] Elevation profile failed for {name}: {exc}")
             elevation_profile = []
             elevation_gain = int(total_distance_km * 75)
+        
+        # If difficulty defaulted to 5.0 (medium) because the field was missing or didn't match,
+        # try to estimate from trail characteristics (elevation gain, distance)
+        if raw_difficulty == 5.0 and not raw_difficulty_value:
+            # No difficulty field found in source - estimate from characteristics
+            difficulty = _estimate_difficulty_from_characteristics(
+                total_distance_km, elevation_gain
+            )
+        else:
+            # Use the parsed difficulty from source data (even if it's 5.0 from a match)
+            difficulty = raw_difficulty
 
         trail_id = f"alps_{props.get('osm_id') or props.get('id') or len(trails)}"
         description = _coerce_str(props.get("note") or props.get("description"))

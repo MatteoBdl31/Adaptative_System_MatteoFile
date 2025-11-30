@@ -9,9 +9,17 @@
 
     <div class="context-pill-group">
         {% for key, value in result.context.items() %}
-            <span class="context-pill">
-                {{ key.replace('_', ' ').title() }}: <strong>{{ value }}</strong>
-            </span>
+            {% if key == 'time_available' %}
+                {% set days = (value // (24 * 60)) %}
+                {% set hours = ((value % (24 * 60)) // 60) %}
+                <span class="context-pill">
+                    Time Available: <strong>{% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% endif %}{% if days > 0 and hours > 0 %} {% endif %}{% if hours > 0 %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}</strong>
+                </span>
+            {% else %}
+                <span class="context-pill">
+                    {{ key.replace('_', ' ').title() }}: <strong>{{ value }}</strong>
+                </span>
+            {% endif %}
         {% endfor %}
     </div>
 
@@ -33,12 +41,9 @@
                     </div>
                     <div class="trail-stats">
                         <span>{{ trail.distance or '—' }} km</span>
-                        <span>{{ trail.duration or '—' }} min</span>
+                        <span>{{ trail.duration|format_duration }}</span>
                         <span>{{ trail.elevation_gain or '—' }} m</span>
                     </div>
-                    {% if trail.recommendation_reasons %}
-                    <p class="muted">Why: {{ trail.recommendation_reasons|join(', ') }}</p>
-                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -58,15 +63,23 @@
                 <div class="trail-card modern suggested">
                     <div class="card-heading">
                         <strong>{{ trail.name }}</strong>
-                        {% if trail.relevance_total > 0 %}
-                        <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage) }}%</span>
-                        {% endif %}
+                        <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}%</span>
                     </div>
                     <div class="trail-stats">
                         <span>{{ trail.distance or '—' }} km</span>
-                        <span>{{ trail.duration or '—' }} min</span>
+                        <span>{{ trail.duration|format_duration }}</span>
                         <span>{{ trail.elevation_gain or '—' }} m</span>
                     </div>
+                    {% if trail.unmatched_criteria %}
+                    <div class="unmatched-criteria">
+                        <small class="unmatched-label">Missing criteria:</small>
+                        <ul class="unmatched-list">
+                            {% for criteria in trail.unmatched_criteria %}
+                            <li class="unmatched-item">{{ criteria }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
