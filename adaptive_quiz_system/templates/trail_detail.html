@@ -5,19 +5,18 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 {% endblock %}
 {% block content %}
-    <div class="detail-shell">
+    <div class="container">
         <header class="page-header">
             <div class="page-header__left">
                 {% set days = (context.time_available // (24 * 60)) %}
                 {% set hours = ((context.time_available % (24 * 60)) // 60) %}
-                <a class="link-pill" href="{{ url_for('recommendations', user_id=user.id, time_available_days=days, time_available_hours=hours, device=context.device, weather=context.weather, connection=context.connection, season=context.get('season', 'summer')) }}">← Back to personalised recommendations</a>
-                <nav class="nav-inline">
-                    <a href="{{ url_for('index') }}">Home</a>
-                    <a href="{{ url_for('all_trails') }}">All Trails</a>
-                    <a href="{{ url_for('profile', user_id=user.id) }}">Profile</a>
-                </nav>
+                <a class="btn btn-ghost" href="{{ url_for('recommendations', user_id=user.id, time_available_days=days, time_available_hours=hours, device=context.device, weather=context.weather, connection=context.connection, season=context.get('season', 'summer')) }}" style="margin-bottom: var(--space-md);">
+                    ← Back to recommendations
+                </a>
+                <h1 class="page-header__title">{{ trail.name }}</h1>
+                <p class="page-header__subtitle">{{ trail.description }}</p>
             </div>
-            <div class="context-badges compact">
+            <div class="context-pills" style="margin-top: var(--space-lg);">
                 {% set time_avail = context.time_available or 60 %}
                 {% set days = (time_avail // (24 * 60)) %}
                 {% set hours = ((time_avail % (24 * 60)) // 60) %}
@@ -32,90 +31,81 @@
             </div>
         </header>
 
-        <section class="trail-hero">
-            <div class="hero-text">
-                <p class="eyebrow">{{ (trail.region|default('french_alps'))|replace('_', ' ')|title }}</p>
-                <h1>{{ trail.name }}</h1>
-                <p class="subtitle">{{ trail.description }}</p>
-                <div class="hero-tags">
-                    <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+        <section class="card" style="margin-bottom: var(--space-xl);">
+            <div class="grid grid-cols-4" style="gap: var(--space-lg);">
+                <div class="text-center">
+                    <div style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
+                        {{ trail.distance|default('—') }} km
+                    </div>
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">Distance</div>
+                </div>
+                <div class="text-center">
+                    <div style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
+                        {{ trail.duration|format_duration }}
+                    </div>
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">Duration</div>
+                </div>
+                <div class="text-center">
+                    <div style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
+                        {{ trail.elevation_gain|default('—') }} m
+                    </div>
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">Elevation Gain</div>
+                </div>
+                <div class="text-center">
+                    <div style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
                         {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
-                    </span>
-                    <span class="pill">⭐ {{ trail.popularity|default(7)|round(1) }}/10 popularity</span>
-                    <span class="pill">{{ trail.trail_type.replace('_', ' ').title() }}</span>
-                </div>
-            </div>
-            <div class="hero-metrics">
-                <div class="metric">
-                    <span>Distance</span>
-                    <strong>{{ trail.distance|default('—') }} km</strong>
-                </div>
-                <div class="metric">
-                    <span>Duration</span>
-                    <strong>{{ trail.duration|format_duration }}</strong>
-                </div>
-                <div class="metric">
-                    <span>Elevation gain</span>
-                    <strong>{{ trail.elevation_gain|default('—') }} m</strong>
-                </div>
-                <div class="metric">
-                    <span>Samples</span>
-                    <strong>{{ (trail.elevation_profile|length) if trail.elevation_profile else 0 }}</strong>
+                    </div>
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">Difficulty</div>
                 </div>
             </div>
         </section>
 
-        <section class="layout-grid">
-            <article class="panel-card map-panel">
-                <div class="panel-header">
-                    <div>
-                        <h2>Trail geometry</h2>
-                        <p>Real GPS trace with interactive map overlay.</p>
-                    </div>
-                    <div class="panel-meta">
-                        <span class="badge">Lat {{ '%.3f'|format(trail.latitude|default(0)) }}</span>
-                        <span class="badge">Lon {{ '%.3f'|format(trail.longitude|default(0)) }}</span>
-                    </div>
+        <section class="grid grid-cols-2" style="gap: var(--space-xl); margin-bottom: var(--space-xl);">
+            <article class="card">
+                <div class="card__header">
+                    <h2 class="card__title">Trail Geometry</h2>
+                    <p class="card__description">Real GPS trace with interactive map overlay.</p>
                 </div>
                 {% if trail.latitude and trail.longitude %}
-                <div id="trail-map" class="map-canvas"></div>
+                <div id="trail-map" class="map-container" style="height: 400px;"></div>
                 {% else %}
-                <div class="map-placeholder">Map data unavailable</div>
+                <div class="empty-state">
+                    <div class="empty-state__icon">🗺️</div>
+                    <p class="empty-state__description">Map data unavailable</p>
+                </div>
                 {% endif %}
             </article>
 
-            <article class="panel-card chart-panel">
-                <div class="panel-header">
-                    <div>
-                        <h2>Elevation profile</h2>
-                        <p>{{ "Ready for personalised pacing tips." if trail.elevation_profile else "Elevation data missing for this trail." }}</p>
-                    </div>
-                    <div class="panel-meta">
-                        <span class="badge">Context: {{ user.fitness_level|title }}</span>
-                    </div>
+            <article class="card">
+                <div class="card__header">
+                    <h2 class="card__title">Elevation Profile</h2>
+                    <p class="card__description">{{ "Ready for personalised pacing tips." if trail.elevation_profile else "Elevation data missing for this trail." }}</p>
                 </div>
                 {% if trail.elevation_profile %}
-                <canvas id="elevationChart" height="220"></canvas>
+                <canvas id="elevationChart" style="max-height: 300px;"></canvas>
                 {% else %}
-                <div class="chart-placeholder">Elevation samples unavailable.</div>
+                <div class="empty-state">
+                    <div class="empty-state__icon">⛰️</div>
+                    <p class="empty-state__description">Elevation samples unavailable</p>
+                </div>
                 {% endif %}
             </article>
         </section>
 
-        <section class="insights-grid">
-            <article class="panel-card">
-                <h3>Landscape highlights</h3>
-                <div class="landscape-tags">
+        <section class="grid grid-cols-2" style="gap: var(--space-xl);">
+            <article class="card">
+                <h3 class="card__title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md);">Landscape Highlights</h3>
+                <div class="context-pills" style="margin-bottom: var(--space-md);">
                     {% for landscape in trail.landscapes.split(',') %}
-                    <span class="landscape-chip">{{ landscape.strip().title() }}</span>
+                    <span class="context-pill">{{ landscape.strip().title() }}</span>
                     {% endfor %}
                 </div>
-                <p class="muted">Perfect for {{ ", ".join(user.preferences) }} lovers.</p>
+                <p class="text-muted">Perfect for {{ ", ".join(user.preferences) }} lovers.</p>
             </article>
 
-            <article class="panel-card">
-                <h3>Safety & logistics</h3>
-                <ul class="meta-list">
+            <article class="card">
+                <h3 class="card__title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md);">Safety & Logistics</h3>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-sm);">
                     <li><strong>Risks:</strong> {{ trail.safety_risks if trail.safety_risks != 'none' else 'None reported' }}</li>
                     <li><strong>Accessibility:</strong> {{ trail.accessibility or 'General hiking gear' }}</li>
                     {% if trail.closed_seasons %}
@@ -125,13 +115,13 @@
                     {% endif %}
                 </ul>
                 {% if context.weather != 'sunny' %}
-                <p class="warning-chip">Weather alert: {{ context.weather|title }} mode activated</p>
+                <div class="badge badge-warning" style="margin-top: var(--space-md);">Weather alert: {{ context.weather|title }} mode activated</div>
                 {% endif %}
             </article>
 
-            <article class="panel-card">
-                <h3>Context-aware tips</h3>
-                <ul class="meta-list">
+            <article class="card">
+                <h3 class="card__title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md);">Context-aware Tips</h3>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-sm); color: var(--color-text-secondary);">
                     <li>Device: {{ context.device|title }} · Connection: {{ context.connection|title }}</li>
                     {% set days = (context.time_available // (24 * 60)) %}
                     {% set hours = ((context.time_available % (24 * 60)) // 60) %}
@@ -140,22 +130,22 @@
                 </ul>
             </article>
 
-            <article class="panel-card action-card">
-                <h3>Status & feedback</h3>
+            <article class="card">
+                <h3 class="card__title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md);">Status & Feedback</h3>
                 {% if not completed %}
-                <form method="post" action="{{ url_for('complete_trail', user_id=user.id, trail_id=trail.trail_id) }}" class="completion-form">
-                    <label>
-                        <span>Actual duration (min)</span>
-                        <input type="number" name="actual_duration" min="1" value="{{ trail.duration or 60 }}" required>
-                    </label>
-                    <label>
-                        <span>Rating</span>
-                        <input type="number" name="rating" min="1" max="5" value="5" required>
-                    </label>
-                    <button class="btn-primary">Mark as completed</button>
+                <form method="post" action="{{ url_for('complete_trail', user_id=user.id, trail_id=trail.trail_id) }}" style="display: flex; flex-direction: column; gap: var(--space-md);">
+                    <div class="form-group">
+                        <label class="form-label">Actual duration (min)</label>
+                        <input type="number" name="actual_duration" min="1" value="{{ trail.duration or 60 }}" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rating</label>
+                        <input type="number" name="rating" min="1" max="5" value="5" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Mark as completed</button>
                 </form>
                 {% else %}
-                <div class="completed-banner">✅ Logged in your history</div>
+                <div class="badge badge-success" style="padding: var(--space-md); text-align: center;">✅ Logged in your history</div>
                 {% endif %}
             </article>
         </section>
@@ -182,7 +172,7 @@
 
             if (coordinatesGeoJSON && coordinatesGeoJSON.coordinates) {
                 const latLngs = coordinatesGeoJSON.coordinates.map(coord => [coord[1], coord[0]]);
-                const polyline = L.polyline(latLngs, { color: '#5b8df9', weight: 4, opacity: 0.85 }).addTo(map);
+                const polyline = L.polyline(latLngs, { color: '#6366f1', weight: 4, opacity: 0.85 }).addTo(map);
                 map.fitBounds(polyline.getBounds(), { padding: [18, 18] });
             } else {
                 map.setView([lat, lon], 12);
@@ -201,17 +191,25 @@
                         datasets: [{
                             label: 'Elevation (m)',
                             data,
-                            borderColor: '#5b8df9',
-                            backgroundColor: 'rgba(91, 141, 249, 0.15)',
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
                             tension: 0.3,
                             fill: true,
                             pointRadius: 0
                         }]
                     },
                     options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
                         scales: {
-                            x: { title: { text: 'Distance (km)', display: true } },
-                            y: { title: { text: 'Elevation (m)', display: true } }
+                            x: { 
+                                title: { text: 'Distance (km)', display: true },
+                                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                            },
+                            y: { 
+                                title: { text: 'Elevation (m)', display: true },
+                                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                            }
                         },
                         plugins: {
                             legend: { display: false }
@@ -222,4 +220,3 @@
         }
     </script>
 {% endblock %}
-

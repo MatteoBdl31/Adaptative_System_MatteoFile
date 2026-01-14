@@ -1,94 +1,257 @@
-<div class="demo-panel panel-card">
+<div class="demo-panel panel-card" data-user-index="{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-connection="{{ result.context.get('connection', 'strong') }}">
     <div class="panel-header">
-        <div>
-            <h2>{{ result.scenario.title }}</h2>
-            <p>{{ result.scenario.description }}</p>
+        <div class="result-panel__title-wrapper">
+            <h2 class="result-panel__title">{{ result.scenario.title }}</h2>
+            <button type="button" class="context-info-btn" aria-label="Show context information" data-user-idx>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M8 11V8M8 5H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
         </div>
         <span class="badge">{{ result.active_rules|length }} rules</span>
     </div>
 
-    <div class="context-pill-group">
-        {% for key, value in result.context.items() %}
-            {% if key == 'time_available' %}
-                {% set days = (value // (24 * 60)) %}
-                {% set hours = ((value % (24 * 60)) // 60) %}
-                <span class="context-pill">
-                    Time Available: <strong>{% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% endif %}{% if days > 0 and hours > 0 %} {% endif %}{% if hours > 0 %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}</strong>
-                </span>
-            {% else %}
-                <span class="context-pill">
-                    {{ key.replace('_', ' ').title() }}: <strong>{{ value }}</strong>
-                </span>
-            {% endif %}
-        {% endfor %}
+    <!-- Context Info Modal -->
+    <div class="context-modal" id="context-modal-idx" role="dialog" aria-labelledby="context-modal-title-idx" aria-hidden="true">
+        <div class="context-modal__backdrop"></div>
+        <div class="context-modal__content">
+            <div class="context-modal__header">
+                <h3 class="context-modal__title" id="context-modal-title-idx">Search Context</h3>
+                <button type="button" class="context-modal__close" aria-label="Close modal">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="context-modal__body">
+                <div class="context-modal__items">
+                    {% for key, value in result.context.items() %}
+                        {% if key not in ['hike_date', 'hike_start_date', 'hike_end_date'] %}
+                            {% if key == 'time_available' %}
+                                {% set days = (value // (24 * 60)) %}
+                                {% set hours = ((value % (24 * 60)) // 60) %}
+                                <div class="context-modal__item">
+                                    <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
+                                    <span class="context-modal__value">{% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% endif %}{% if days > 0 and hours > 0 %} {% endif %}{% if hours > 0 %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}{% if days == 0 and hours == 0 %}0 hours{% endif %}</span>
+                                </div>
+                            {% else %}
+                                <div class="context-modal__item">
+                                    <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
+                                    <span class="context-modal__value">{{ value }}</span>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="demo-results">
-        <div class="result-section">
-            <div class="section-header">
-                <h3>🎯 Recommended ({{ result.exact|length }})</h3>
-                <small>Perfect matches for this situation</small>
+    {# View Toggle - Always show all 3 views (Map, List, Cards) #}
+    <div class="demo-view-toggle">
+        <button type="button" class="view-toggle-btn" data-view="map" data-panel-id="demo-panel-{{ result.scenario.user_id }}">🗺️ Map</button>
+        <button type="button" class="view-toggle-btn" data-view="list" data-panel-id="demo-panel-{{ result.scenario.user_id }}">📋 List</button>
+        <button type="button" class="view-toggle-btn" data-view="cards" data-panel-id="demo-panel-{{ result.scenario.user_id }}">🃏 Cards</button>
+    </div>
+
+    <div class="demo-results" data-panel-id="demo-panel-{{ result.scenario.user_id }}">
+        {# Map View #}
+        <div class="demo-view-section demo-view-map" data-view="map">
+            <div class="map-container">
+                <div class="demo-map" id="demo-map-{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-user-id="{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-user-label="{{ result.user_label|default('User') }}"></div>
             </div>
-            {% if result.exact %}
-            <div class="trail-list modern">
-                {% for trail in result.exact %}
-                <div class="trail-card modern recommended">
-                    <div class="card-heading">
-                        <strong>{{ trail.name }}</strong>
-                        <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
-                            {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
-                        </span>
-                    </div>
-                    <div class="trail-stats">
-                        <span>{{ trail.distance or '—' }} km</span>
-                        <span>{{ trail.duration|format_duration }}</span>
-                        <span>{{ trail.elevation_gain or '—' }} m</span>
-                    </div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <span class="legend-marker exact-marker"></span>
+                    <span>Exact Match</span>
                 </div>
-                {% endfor %}
+                <div class="legend-item">
+                    <span class="legend-marker suggestion-marker"></span>
+                    <span>Suggestion</span>
+                </div>
             </div>
-            {% else %}
-                <p class="empty">No direct matches for this scenario.</p>
-            {% endif %}
         </div>
 
-        <div class="result-section">
-            <div class="section-header">
-                <h3>✨ Additional suggestions ({{ result.suggestions|length }})</h3>
-                <small>High potential even if slightly off the brief</small>
-            </div>
-            {% if result.suggestions %}
-            <div class="trail-list subtle modern">
-                {% for trail in result.suggestions %}
-                <div class="trail-card modern suggested">
-                    <div class="card-heading">
-                        <strong>{{ trail.name }}</strong>
-                        <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}%</span>
-                    </div>
-                    <div class="trail-stats">
-                        <span>{{ trail.distance or '—' }} km</span>
-                        <span>{{ trail.duration|format_duration }}</span>
-                        <span>{{ trail.elevation_gain or '—' }} m</span>
-                    </div>
-                    {% if trail.unmatched_criteria %}
-                    <div class="unmatched-criteria">
-                        <small class="unmatched-label">Missing criteria:</small>
-                        <ul class="unmatched-list">
-                            {% for criteria in trail.unmatched_criteria %}
-                            <li class="unmatched-item">{{ criteria }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
+        {# List View (current view) #}
+        <div class="demo-view-section demo-view-list" data-view="list">
+            <div class="result-section">
+                <div class="section-header">
+                    <h3>🎯 Recommended ({{ result.exact|length }})</h3>
+                    <small>Perfect matches for this situation</small>
                 </div>
-                {% endfor %}
+                {% if result.exact %}
+                <div class="trail-list modern">
+                    {% for trail in result.exact %}
+                    <div class="trail-card modern recommended">
+                        <div class="card-heading">
+                            <strong>{{ trail.name }}</strong>
+                            <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+                                {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
+                            </span>
+                        </div>
+                        <div class="trail-stats">
+                            <span>{{ trail.distance or '—' }} km</span>
+                            <span>{{ trail.duration|format_duration }}</span>
+                            <span>{{ trail.elevation_gain or '—' }} m</span>
+                            {% if trail.forecast_weather %}<span>{% if trail.forecast_weather == 'sunny' %}☀️{% elif trail.forecast_weather == 'cloudy' %}☁️{% elif trail.forecast_weather == 'rainy' %}🌧️{% elif trail.forecast_weather == 'snowy' %}❄️{% elif trail.forecast_weather == 'storm_risk' %}⛈️{% else %}🌤️{% endif %} {{ trail.forecast_weather|title }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                    <p class="empty">No direct matches for this scenario.</p>
+                {% endif %}
             </div>
-            {% else %}
-                <p class="empty">No additional suggestions for this scenario.</p>
-            {% endif %}
+
+            <div class="result-section">
+                <div class="section-header">
+                    <h3>✨ Additional suggestions ({{ result.suggestions|length }})</h3>
+                    <small>High potential even if slightly off the brief</small>
+                </div>
+                {% if result.suggestions %}
+                <div class="trail-list subtle modern">
+                    {% for trail in result.suggestions %}
+                    <div class="trail-card modern suggested">
+                        <div class="card-heading">
+                            <strong>{{ trail.name }}</strong>
+                            <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}%</span>
+                        </div>
+                        <div class="trail-stats">
+                            <span>{{ trail.distance or '—' }} km</span>
+                            <span>{{ trail.duration|format_duration }}</span>
+                            <span>{{ trail.elevation_gain or '—' }} m</span>
+                            {% if trail.forecast_weather %}<span>{% if trail.forecast_weather == 'sunny' %}☀️{% elif trail.forecast_weather == 'cloudy' %}☁️{% elif trail.forecast_weather == 'rainy' %}🌧️{% elif trail.forecast_weather == 'snowy' %}❄️{% elif trail.forecast_weather == 'storm_risk' %}⛈️{% else %}🌤️{% endif %} {{ trail.forecast_weather|title }}</span>{% endif %}
+                        </div>
+                        {% if trail.unmatched_criteria %}
+                        <div class="unmatched-criteria">
+                            <small class="unmatched-label">Missing criteria:</small>
+                            <ul class="unmatched-list">
+                                {% for criteria in trail.unmatched_criteria %}
+                                <li class="unmatched-item">{{ criteria }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                    <p class="empty">No additional suggestions for this scenario.</p>
+                {% endif %}
+            </div>
         </div>
 
-        <div class="result-section">
+        {# Card View (available in all modes) #}
+        <div class="demo-view-section demo-view-cards" data-view="cards">
+            <div class="result-section">
+                <div class="section-header">
+                    <h3>🎯 Recommended ({{ result.exact|length }})</h3>
+                    <small>Perfect matches for this situation</small>
+                </div>
+                {% if result.exact %}
+                <div class="trails-grid modern">
+                    {% for trail in result.exact %}
+                    <div class="trail-card modern recommended demo-trail-card-with-map" 
+                         data-trail-id="{{ trail.trail_id }}"
+                         data-lat="{{ trail.latitude or '' }}"
+                         data-lon="{{ trail.longitude or '' }}"
+                         data-coordinates="{% if trail.coordinates %}{{ trail.coordinates|tojson }}{% else %}null{% endif %}">
+                        {% if trail.latitude and trail.longitude %}
+                        <div class="demo-trail-card-map-container">
+                            <div class="demo-trail-mini-map" id="demo-mini-map-{{ trail.trail_id }}-exact"></div>
+                        </div>
+                        {% endif %}
+                        <div class="demo-trail-card-content">
+                            <div>
+                                <div class="card-heading">
+                                    <h3>{{ trail.name }}</h3>
+                                    <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+                                        {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
+                                    </span>
+                                </div>
+                                <p class="trail-description">{{ trail.description or 'No description available' }}</p>
+                            </div>
+                            <div class="trail-stats">
+                                <span>📏 {{ trail.distance or '—' }} km</span>
+                                <span>⏱ {{ trail.duration|format_duration }}</span>
+                                <span>⛰ {{ trail.elevation_gain or '—' }} m</span>
+                                {% if trail.forecast_weather %}<span>{% if trail.forecast_weather == 'sunny' %}☀️{% elif trail.forecast_weather == 'cloudy' %}☁️{% elif trail.forecast_weather == 'rainy' %}🌧️{% elif trail.forecast_weather == 'snowy' %}❄️{% elif trail.forecast_weather == 'storm_risk' %}⛈️{% else %}🌤️{% endif %} {{ trail.forecast_weather|title }}</span>{% endif %}
+                            </div>
+                            {% if trail.landscapes %}
+                            <div class="landscapes">
+                                {% for landscape in trail.landscapes.split(',') %}
+                                <span class="landscape-chip">{{ landscape.strip().title() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                    <p class="empty">No direct matches for this scenario.</p>
+                {% endif %}
+            </div>
+
+            <div class="result-section">
+                <div class="section-header">
+                    <h3>✨ Additional suggestions ({{ result.suggestions|length }})</h3>
+                    <small>High potential even if slightly off the brief</small>
+                </div>
+                {% if result.suggestions %}
+                <div class="trails-grid modern">
+                    {% for trail in result.suggestions %}
+                    <div class="trail-card modern suggested demo-trail-card-with-map"
+                         data-trail-id="{{ trail.trail_id }}"
+                         data-lat="{{ trail.latitude or '' }}"
+                         data-lon="{{ trail.longitude or '' }}"
+                         data-coordinates="{% if trail.coordinates %}{{ trail.coordinates|tojson }}{% else %}null{% endif %}">
+                        {% if trail.latitude and trail.longitude %}
+                        <div class="demo-trail-card-map-container">
+                            <div class="demo-trail-mini-map" id="demo-mini-map-{{ trail.trail_id }}-suggestion"></div>
+                        </div>
+                        {% endif %}
+                        <div class="demo-trail-card-content">
+                            <div class="card-heading">
+                                <h3>{{ trail.name }}</h3>
+                                <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}% match</span>
+                            </div>
+                            <div class="trail-stats">
+                                <span>📏 {{ trail.distance or '—' }} km</span>
+                                <span>⏱ {{ trail.duration|format_duration }}</span>
+                                <span>⛰ {{ trail.elevation_gain or '—' }} m</span>
+                                {% if trail.forecast_weather %}<span>{% if trail.forecast_weather == 'sunny' %}☀️{% elif trail.forecast_weather == 'cloudy' %}☁️{% elif trail.forecast_weather == 'rainy' %}🌧️{% elif trail.forecast_weather == 'snowy' %}❄️{% elif trail.forecast_weather == 'storm_risk' %}⛈️{% else %}🌤️{% endif %} {{ trail.forecast_weather|title }}</span>{% endif %}
+                            </div>
+                            {% if trail.landscapes %}
+                            <div class="landscapes">
+                                {% for landscape in trail.landscapes.split(',') %}
+                                <span class="landscape-chip">{{ landscape.strip().title() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% if trail.unmatched_criteria %}
+                            <div class="unmatched-criteria">
+                                <small class="unmatched-label">Missing criteria:</small>
+                                <ul class="unmatched-list">
+                                    {% for criteria in trail.unmatched_criteria %}
+                                    <li class="unmatched-item">{{ criteria }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                    <p class="empty">No additional suggestions for this scenario.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Display settings and rules (shown in all views) #}
+        <div class="result-section demo-meta-section">
             <div class="section-header">
                 <h3>📐 Display adjustments</h3>
                 <small>Tunings applied to the UI</small>
@@ -100,7 +263,7 @@
             </ul>
         </div>
 
-        <div class="result-section">
+        <div class="result-section demo-meta-section">
             <div class="section-header">
                 <h3>🧠 Matching rules</h3>
             </div>
@@ -116,3 +279,12 @@
     </div>
 </div>
 
+{# Trail data for map (JSON) #}
+<script type="application/json" id="demo-trail-data-{{ result.scenario.user_id|default(result.user_id|default('1')) }}">
+{{ {
+    'exact': result.exact,
+    'suggestions': result.suggestions,
+    'user_label': result.user_label|default('User'),
+    'user_id': result.scenario.user_id|default(result.user_id|default('1'))
+}|tojson }}
+</script>

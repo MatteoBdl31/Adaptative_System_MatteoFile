@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Adaptive Trails · {{ user.name }}{% endblock %}
-{% block page_class %}detail-page recommendations-page{% endblock %}
+{% block page_class %}recommendations-page{% endblock %}
 {% block extra_head %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 {% endblock %}
 {% block content %}
-    <div class="detail-shell">
+    <div class="container">
         <header class="page-header">
             <div class="page-header__left">
-                <p class="eyebrow">Adaptive recommendations</p>
-                <h1>{{ user.name }} · {{ user.experience }} profile</h1>
-                <p class="subtitle">Personalised shortlist based on your live context and long-term preferences.</p>
+                <p class="text-muted" style="font-size: var(--font-size-sm); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-sm);">Adaptive Recommendations</p>
+                <h1 class="page-header__title">{{ user.name }} · {{ user.experience }} profile</h1>
+                <p class="page-header__subtitle">Personalised shortlist based on your live context and long-term preferences.</p>
             </div>
-            <div class="context-badges compact">
+            <div class="context-pills" style="margin-top: var(--space-lg);">
                 {% set days = (context.time_available // (24 * 60)) %}
                 {% set hours = ((context.time_available % (24 * 60)) // 60) %}
                 {% if days > 0 %}
@@ -33,90 +33,105 @@
             </div>
         </header>
 
-        <section class="hero-metrics">
-            <div class="metric">
-                <span>⭐ Exact matches</span>
-                <strong>{{ exact_matches|length }}</strong>
+        <section class="card" style="margin-bottom: var(--space-xl);">
+            <div class="card__header">
+                <h2 class="card__title">Overview</h2>
             </div>
-            <div class="metric">
-                <span>💡 Smart suggestions</span>
-                <strong>{{ suggestions|length }}</strong>
-            </div>
-            <div class="metric">
-                <span>🧠 Active rules</span>
-                <strong>{{ active_rules|length }}</strong>
-            </div>
-            <div class="metric">
-                <span>🎯 Display mode</span>
-                <strong>{{ display_settings.display_mode|title }}</strong>
+            <div class="grid grid-cols-4" style="gap: var(--space-lg);">
+                <div class="text-center">
+                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
+                        {{ exact_matches|length }}
+                    </div>
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">⭐ Exact matches</div>
+                </div>
+                <div class="text-center">
+                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-accent); margin-bottom: var(--space-xs);">
+                        {{ suggestions|length }}
+                    </div>
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">💡 Smart suggestions</div>
+                </div>
+                <div class="text-center">
+                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-secondary); margin-bottom: var(--space-xs);">
+                        {{ active_rules|length }}
+                    </div>
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">🧠 Active rules</div>
+                </div>
+                <div class="text-center">
+                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-text); margin-bottom: var(--space-xs);">
+                        {{ display_settings.display_mode|title }}
+                    </div>
+                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">🎯 Display mode</div>
+                </div>
             </div>
         </section>
 
-        <section class="panel-card view-toggle" data-view-toggle>
-            <div>
-                <h2>Presentation mode</h2>
-                <p>Select how to demo the personalised shortlist.</p>
+        <section class="card" style="margin-bottom: var(--space-xl);">
+            <div class="flex items-center justify-between" style="margin-bottom: var(--space-lg);">
+                <div>
+                    <h2 class="card__title" style="margin-bottom: var(--space-xs);">Presentation Mode</h2>
+                    <p class="card__description">Select how to view the personalised shortlist.</p>
+                </div>
             </div>
-            <div class="toggle-buttons">
-                <button type="button" class="toggle-btn is-active" data-view-target="map">Map + context</button>
-                <button type="button" class="toggle-btn" data-view-target="cards">Card grid</button>
+            <div class="view-toggle">
+                <button type="button" class="view-toggle__button active" data-view-target="map">🗺️ Map + Context</button>
+                <button type="button" class="view-toggle__button" data-view-target="cards">🃏 Card Grid</button>
             </div>
         </section>
 
         {% if combined_trails %}
         <section class="view-panels" data-view-panels data-active-view="map">
-            <article class="panel-card view-panel" data-view-panel="map">
-                <div class="panel-header">
-                    <div>
-                        <h2>Geo-personalised overview</h2>
-                        <p>Hover markers to see why each trail surfaced for you.</p>
+            <article class="card view-panel" data-view-panel="map">
+                <div class="card__header">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="card__title">Geo-personalised Overview</h2>
+                            <p class="card__description">Hover markers to see why each trail surfaced for you.</p>
+                        </div>
+                        <span class="badge badge-primary">{{ combined_trails|length }} routes plotted</span>
                     </div>
-                    <span class="badge">{{ combined_trails|length }} routes plotted</span>
                 </div>
-                <div id="recommendations-map" class="map-canvas"></div>
+                <div id="recommendations-map" class="map-container" style="height: 600px;"></div>
             </article>
 
-            <article class="panel-card view-panel hide" data-view-panel="cards">
+            <article class="card view-panel hidden" data-view-panel="cards">
                 {% if exact_matches %}
-                <div class="cards-group">
-                    <div class="panel-header">
-                        <div>
-                            <h2>Top picks ({{ exact_matches|length }})</h2>
-                            <p>Trails that satisfy every adaptation rule.</p>
-                        </div>
+                <div style="margin-bottom: var(--space-2xl);">
+                    <div class="card__header">
+                        <h2 class="card__title">Top Picks ({{ exact_matches|length }})</h2>
+                        <p class="card__description">Trails that satisfy every adaptation rule.</p>
                     </div>
-                    <div class="trails-grid modern">
+                    <div class="trail-grid" style="margin-top: var(--space-lg);">
                         {% for trail in exact_matches %}
-                        <div class="trail-card modern recommended">
-                            <div>
-                                <div class="card-heading">
-                                    <h3>{{ trail.name }}</h3>
-                                    <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
-                                        {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
-                                    </span>
-                                </div>
-                                <p class="trail-description">{{ trail.description }}</p>
+                        <div class="trail-card recommended">
+                            <div class="trail-card__header">
+                                <h3 class="trail-card__title">{{ trail.name }}</h3>
+                                <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+                                    {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
+                                </span>
                             </div>
-                            <div class="trail-stats">
+                            <p class="trail-card__description">{{ trail.description }}</p>
+                            <div class="trail-card__stats">
                                 <span>📏 {{ trail.distance or '—' }} km</span>
                                 <span>⏱ {{ trail.duration|format_duration }}</span>
                                 <span>⛰ {{ trail.elevation_gain or '—' }} m</span>
                                 {% if context.hike_start_date or context.hike_date %}
                                     {% if trail.forecast_weather %}
-                                        <span class="weather-stat">🌦 {{ trail.forecast_weather|title }}</span>
+                                        <span class="badge">🌦 {{ trail.forecast_weather|title }}</span>
                                     {% else %}
-                                        <span class="weather-stat weather-unavailable" title="Weather forecast unavailable (API key may not be set)">🌦 N/A</span>
+                                        <span class="badge" style="opacity: 0.5;">🌦 N/A</span>
                                     {% endif %}
                                 {% endif %}
                             </div>
-                            <div class="landscapes">
+                            {% if trail.landscapes %}
+                            <div class="context-pills" style="margin-top: var(--space-md);">
                                 {% for landscape in trail.landscapes.split(',') %}
-                                <span class="landscape-chip">{{ landscape.strip().title() }}</span>
+                                <span class="context-pill">{{ landscape.strip().title() }}</span>
                                 {% endfor %}
                             </div>
+                            {% endif %}
                             {% set days = (context.time_available // (24 * 60)) %}
                             {% set hours = ((context.time_available % (24 * 60)) // 60) %}
-                            <a class="btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}">Inspect trail</a>
+                            <a class="btn btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}" style="margin-top: var(--space-md);">Inspect Trail</a>
                         </div>
                         {% endfor %}
                     </div>
@@ -124,67 +139,50 @@
                 {% endif %}
 
                 {% if suggestions %}
-                <div class="cards-group">
-                    <div class="panel-header">
-                        <div>
-                            <h2>Context-aware suggestions ({{ suggestions|length }})</h2>
-                            <p>Ranked by relevance percentage.</p>
-                        </div>
+                <div>
+                    <div class="card__header">
+                        <h2 class="card__title">Context-aware Suggestions ({{ suggestions|length }})</h2>
+                        <p class="card__description">Ranked by relevance percentage.</p>
                     </div>
-                    <div class="trails-grid modern">
+                    <div class="trail-grid" style="margin-top: var(--space-lg);">
                         {% for trail in suggestions %}
-                        <div class="trail-card modern suggested">
-                            <div class="card-heading">
-                                <h3>{{ trail.name }}</h3>
-                                <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}% match</span>
+                        <div class="trail-card suggested">
+                            <div class="trail-card__header">
+                                <h3 class="trail-card__title">{{ trail.name }}</h3>
+                                <span class="badge badge-warning">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}% match</span>
                             </div>
-                            <div class="trail-stats">
+                            <div class="trail-card__stats">
                                 <span>📏 {{ trail.distance or '—' }} km</span>
                                 <span>⏱ {{ trail.duration|format_duration }}</span>
                                 <span>⛰ {{ trail.elevation_gain or '—' }} m</span>
                                 {% if context.hike_start_date or context.hike_date %}
                                     {% if trail.forecast_weather %}
-                                        <span class="weather-stat">🌦 {{ trail.forecast_weather|title }}</span>
+                                        <span class="badge">🌦 {{ trail.forecast_weather|title }}</span>
                                     {% else %}
-                                        <span class="weather-stat weather-unavailable" title="Weather forecast unavailable (API key may not be set)">🌦 N/A</span>
+                                        <span class="badge" style="opacity: 0.5;">🌦 N/A</span>
                                     {% endif %}
                                 {% endif %}
                             </div>
-                            <div class="landscapes">
+                            {% if trail.landscapes %}
+                            <div class="context-pills" style="margin-top: var(--space-md);">
                                 {% for landscape in trail.landscapes.split(',') %}
-                                <span class="landscape-chip">{{ landscape.strip().title() }}</span>
-                                {% endfor %}
-                            </div>
-                            {% if context.hike_start_date or context.hike_date %}
-                            <div class="weather-forecast-info">
-                                <small class="weather-label">Weather forecast for {{ context.hike_start_date or context.hike_date }}:</small>
-                                {% if trail.forecast_weather %}
-                                    <span class="weather-badge weather-{{ trail.forecast_weather }}">🌦 {{ trail.forecast_weather|title }}</span>
-                                {% else %}
-                                    <span class="weather-badge weather-unavailable">🌦 Unavailable</span>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-                            {% if trail.matched_criteria %}
-                            <div class="criteria-tags">
-                                {% for criteria in trail.matched_criteria %}
-                                <span class="criteria-tag">{{ criteria }}</span>
+                                <span class="context-pill">{{ landscape.strip().title() }}</span>
                                 {% endfor %}
                             </div>
                             {% endif %}
                             {% if trail.unmatched_criteria %}
-                            <div class="unmatched-criteria">
-                                <small class="unmatched-label">Missing criteria:</small>
-                                <ul class="unmatched-list">
+                            <div style="margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                                <small style="color: var(--color-text-secondary); font-weight: var(--font-weight-medium); display: block; margin-bottom: var(--space-xs);">Missing criteria:</small>
+                                <ul style="list-style: none; padding: 0; margin: 0;">
                                     {% for criteria in trail.unmatched_criteria %}
-                                    <li class="unmatched-item">{{ criteria }}</li>
+                                    <li style="color: var(--color-text-muted); font-size: var(--font-size-sm); padding: var(--space-xs) 0;">• {{ criteria }}</li>
                                     {% endfor %}
                                 </ul>
                             </div>
                             {% endif %}
                             {% set days = (context.time_available // (24 * 60)) %}
                             {% set hours = ((context.time_available % (24 * 60)) // 60) %}
-                            <a class="btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}">Inspect trail</a>
+                            <a class="btn btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}" style="margin-top: var(--space-md);">Inspect Trail</a>
                         </div>
                         {% endfor %}
                     </div>
@@ -193,25 +191,26 @@
             </article>
         </section>
         {% else %}
-        <section class="panel-card">
-            <h2>No trails match this context</h2>
-            <p class="muted">Try widening the time window, changing weather assumptions, or selecting another user persona.</p>
+        <section class="card">
+            <div class="empty-state">
+                <div class="empty-state__icon">🏔️</div>
+                <h2 class="empty-state__title">No trails match this context</h2>
+                <p class="empty-state__description">Try widening the time window, changing weather assumptions, or selecting another user persona.</p>
+            </div>
         </section>
         {% endif %}
 
         {% if active_rules %}
-        <section class="panel-card rules-panel">
-            <div class="panel-header">
-                <div>
-                    <h2>Active adaptation rules</h2>
-                    <p>Transparent logic powering this shortlist.</p>
-                </div>
+        <section class="card" style="margin-top: var(--space-xl);">
+            <div class="card__header">
+                <h2 class="card__title">Active Adaptation Rules</h2>
+                <p class="card__description">Transparent logic powering this shortlist.</p>
             </div>
-            <ul class="rules-list">
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-md);">
                 {% for rule in active_rules %}
-                <li>
-                    <strong>{{ rule.description or rule.condition }}</strong>
-                    <span>{{ rule.condition }}</span>
+                <li style="padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md); border-left: 3px solid var(--color-primary);">
+                    <strong style="display: block; margin-bottom: var(--space-xs); color: var(--color-text);">{{ rule.description or rule.condition }}</strong>
+                    <span style="color: var(--color-text-secondary); font-size: var(--font-size-sm); font-family: var(--font-family-mono);">{{ rule.condition }}</span>
                 </li>
                 {% endfor %}
             </ul>
@@ -223,7 +222,8 @@
     {% set days = (context.time_available // (24 * 60)) %}
     {% set hours = ((context.time_available % (24 * 60)) // 60) %}
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='recommendations.js') }}"></script>
     <script id="recommendation-data" type="application/json">{{ combined_trails|tojson }}</script>
     <script>
         const dataElement = document.getElementById('recommendation-data');
@@ -234,4 +234,3 @@
         };
     </script>
 {% endblock %}
-

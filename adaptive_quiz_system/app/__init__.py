@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import date, datetime
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 
@@ -13,6 +14,78 @@ from backend.db import (
 from adapt_trails import adapt_trails
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def get_season_from_date(target_date: str = None) -> str:
+    """
+    Determine the season based on a date.
+    
+    Args:
+        target_date: Date in ISO format (YYYY-MM-DD). If None, uses today's date.
+    
+    Returns:
+        Season string: "spring", "summer", "fall", or "winter"
+    """
+    if target_date:
+        try:
+            target = datetime.fromisoformat(target_date).date()
+        except (ValueError, TypeError):
+            target = date.today()
+    else:
+        target = date.today()
+    
+    month = target.month
+    
+    # Northern Hemisphere seasons (French Alps)
+    # Note: Using "fall" to match the form options
+    if month in [12, 1, 2]:  # December, January, February
+        return "winter"
+    elif month in [3, 4, 5]:  # March, April, May
+        return "spring"
+    elif month in [6, 7, 8]:  # June, July, August
+        return "summer"
+    else:  # September, October, November
+        return "fall"  # Using "fall" to match form options
+
+
+def detect_device_from_user_agent(user_agent: str = None) -> str:
+    """
+    Detect device type from user agent string.
+    
+    Args:
+        user_agent: User agent string from request. If None, uses default.
+    
+    Returns:
+        Device string: "mobile", "tablet", "desktop", or "laptop" (default)
+    """
+    if not user_agent:
+        return "laptop"  # Default to laptop
+    
+    user_agent_lower = user_agent.lower()
+    
+    # Check for mobile devices
+    mobile_keywords = ['mobile', 'android', 'iphone', 'ipod', 'blackberry', 'windows phone']
+    if any(keyword in user_agent_lower for keyword in mobile_keywords):
+        # Check if it's a tablet (iPad, Android tablets)
+        tablet_keywords = ['ipad', 'tablet', 'playbook', 'kindle']
+        if any(keyword in user_agent_lower for keyword in tablet_keywords):
+            return "tablet"
+        return "mobile"
+    
+    # Check for tablet devices
+    tablet_keywords = ['ipad', 'tablet', 'playbook', 'kindle', 'android.*tablet']
+    if any(keyword in user_agent_lower for keyword in tablet_keywords):
+        return "tablet"
+    
+    # Check for desktop (Windows, Mac, Linux)
+    desktop_keywords = ['windows', 'macintosh', 'mac os', 'linux', 'x11']
+    if any(keyword in user_agent_lower for keyword in desktop_keywords):
+        # Distinguish between desktop and laptop (simplified - assume desktop for desktop OS)
+        # In practice, this is hard to distinguish, so we'll default to laptop for most cases
+        return "desktop"
+    
+    # Default to laptop
+    return "laptop"
 
 app = Flask(
     __name__,
@@ -66,10 +139,9 @@ CONTEXT_FIELD_DEFS = [
     {"name": "hike_start_date", "label": "Start Date", "type": "date"},
     {"name": "hike_end_date", "label": "End Date", "type": "date"},
     # Days and hours are calculated in background, not shown in UI
-    {"name": "device", "label": "Device", "type": "select", "options": ["laptop", "desktop", "mobile", "tablet"]},
+    # Device and season are auto-detected in background, not shown in UI
     {"name": "weather", "label": "Weather", "type": "select", "options": ["sunny", "cloudy", "rainy", "storm_risk", "snowy"]},
     {"name": "connection", "label": "Connection", "type": "select", "options": ["strong", "medium", "weak"]},
-    {"name": "season", "label": "Season", "type": "select", "options": ["spring", "summer", "fall", "winter"]},
 ]
 
 
@@ -141,7 +213,23 @@ def extract_context_from_request(prefix, request_args):
     form_values["time_available_days"] = str(days)
     form_values["time_available_hours"] = str(hours)
     
-    # Process other fields
+    # Auto-detect device from user agent (in background, not shown in UI)
+    # Note: request is available in Flask request context
+    try:
+        user_agent = request.headers.get('User-Agent', '')
+    except RuntimeError:
+        # If not in request context, default to laptop
+        user_agent = ''
+    device = detect_device_from_user_agent(user_agent)
+    context["device"] = device
+    # Don't add device to form_values since it's not shown in UI
+    
+    # Auto-determine season from hike date (in background, not shown in UI)
+    season = get_season_from_date(context.get("hike_start_date"))
+    context["season"] = season
+    # Don't add season to form_values since it's not shown in UI
+    
+    # Process other fields (weather, connection)
     for field in CONTEXT_FIELD_DEFS:
         name = field["name"]
         if name in ["hike_start_date", "hike_end_date", "time_available_days", "time_available_hours"]:
@@ -151,13 +239,10 @@ def extract_context_from_request(prefix, request_args):
         raw = request_args.get(param_name)
         if raw not in (None, ""):
             value = raw
-        elif name == "device":
-            value = "laptop"
         else:
             defaults = {
                 "weather": "sunny",
                 "connection": "strong",
-                "season": "summer",
             }
             value = defaults.get(name, "")
         
@@ -167,11 +252,17 @@ def extract_context_from_request(prefix, request_args):
     return context, form_values
 
 
-def build_demo_result(user, context):
+def build_demo_result(user, context, user_label=None):
     """Build a demo result dictionary from user and context"""
     exact_matches, suggestions, display_settings, active_rules = adapt_trails(user, context)
     return {
-        "scenario": {"title": "Custom Scenario", "description": "User-defined context"},
+        "scenario": {
+            "title": f"{user.get('name', 'User')} · {user.get('experience', '')} profile",
+            "description": "User-defined context",
+            "user_id": user.get("id")
+        },
+        "user_id": user.get("id"),
+        "user_label": user_label or f"User {user.get('id')}",
         "context": context,
         "exact": exact_matches,
         "suggestions": suggestions,
@@ -196,7 +287,10 @@ def index():
         device = request.form.get("device", "laptop")
         weather = request.form.get("weather", "sunny")
         connection = request.form.get("connection", "strong")
-        season = request.form.get("season", "summer")
+        # Get season from form, or determine from hike date, or use current season
+        season = request.form.get("season")
+        if not season:
+            season = get_season_from_date(hike_start_date)
         
         # Build query string
         params = {
@@ -242,7 +336,10 @@ def recommendations(user_id):
     device = request.args.get("device", "laptop")
     weather = request.args.get("weather", "sunny")
     connection = request.args.get("connection", "strong")
-    season = request.args.get("season", "summer")
+    # Get season from request, or determine from hike date, or use current season
+    season = request.args.get("season")
+    if not season:
+        season = get_season_from_date(hike_start_date)
 
     context = {
         "hike_start_date": hike_start_date,
@@ -318,7 +415,10 @@ def trail_detail(user_id, trail_id):
     days = int(request.args.get("time_available_days", 0))
     hours = int(request.args.get("time_available_hours", 1))
     time_available = days * 24 * 60 + hours * 60  # Convert to minutes
-    season = request.args.get("season", "summer")
+    # Get season from request, or determine from hike date, or use current season
+    season = request.args.get("season")
+    if not season:
+        season = get_season_from_date(hike_start_date)
 
     context = {
         "device": device,
@@ -419,8 +519,32 @@ def admin_rules():
 @app.route("/trails")
 def all_trails():
     """Page showing all available trails in list and map views"""
+    from datetime import date
+    
     trails = get_all_trails()
-    return render_template("all_trails.html", trails=trails)
+    
+    # Get optional date parameters for weather forecast
+    hike_start_date = request.args.get("hike_start_date")
+    hike_end_date = request.args.get("hike_end_date")
+    
+    # If no date specified, use today's date
+    if not hike_start_date:
+        hike_start_date = date.today().isoformat()
+    if not hike_end_date:
+        hike_end_date = hike_start_date
+    
+    # PERFORMANCE FIX: Don't fetch weather on initial page load
+    # Weather will be loaded asynchronously via AJAX when user requests it
+    # This makes the page load instantly instead of waiting for 50+ API calls
+    for trail in trails:
+        trail["forecast_weather"] = None
+    
+    return render_template(
+        "all_trails.html", 
+        trails=trails,
+        hike_start_date=hike_start_date,
+        hike_end_date=hike_end_date
+    )
 
 
 @app.route("/api/trails")
@@ -428,6 +552,79 @@ def api_trails():
     """Return all curated trails as JSON for the demo UI."""
     trails = get_all_trails()
     return jsonify({"trails": trails})
+
+
+@app.route("/api/weather/batch")
+def api_weather_batch():
+    """
+    Fetch weather forecasts for multiple trails in parallel.
+    Much faster than sequential requests.
+    
+    Query params:
+        - trail_ids: Comma-separated trail IDs
+        - date: Target date (YYYY-MM-DD)
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from backend.weather_service import get_weather_forecast
+    from datetime import date
+    import time
+    
+    # Get parameters
+    trail_ids_param = request.args.get("trail_ids", "")
+    target_date = request.args.get("date")
+    
+    if not target_date:
+        target_date = date.today().isoformat()
+    
+    # Parse trail IDs
+    trail_ids = [tid.strip() for tid in trail_ids_param.split(",") if tid.strip()]
+    
+    if not trail_ids:
+        return jsonify({"error": "No trail IDs provided"}), 400
+    
+    # Get trail data
+    trails = get_all_trails()
+    trail_dict = {str(t.get("trail_id")): t for t in trails}
+    
+    # Function to fetch weather for a single trail
+    def fetch_trail_weather(trail_id):
+        trail = trail_dict.get(trail_id)
+        if not trail:
+            return trail_id, None
+        
+        lat = trail.get("latitude")
+        lon = trail.get("longitude")
+        
+        if not lat or not lon:
+            return trail_id, None
+        
+        try:
+            forecast = get_weather_forecast(float(lat), float(lon), target_date)
+            return trail_id, forecast
+        except Exception as e:
+            print(f"Error fetching weather for trail {trail_id}: {e}")
+            return trail_id, None
+    
+    # Fetch weather in parallel using thread pool
+    # Max 20 concurrent requests to avoid overwhelming the API
+    weather_results = {}
+    start_time = time.time()
+    
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        future_to_trail = {executor.submit(fetch_trail_weather, tid): tid for tid in trail_ids}
+        
+        for future in as_completed(future_to_trail):
+            trail_id, forecast = future.result()
+            weather_results[trail_id] = forecast
+    
+    elapsed = time.time() - start_time
+    print(f"Fetched weather for {len(trail_ids)} trails in {elapsed:.2f}s")
+    
+    return jsonify({
+        "weather": weather_results,
+        "date": target_date,
+        "elapsed_seconds": round(elapsed, 2)
+    })
 
 
 @app.route("/api/trail/<trail_id>")
@@ -472,11 +669,16 @@ def demo():
     # Compare mode is determined by whether user_id_b is present
     compare_mode = user_id_b is not None
 
+    # Check if there are any actual search parameters (context fields with prefix a_ or b_)
+    # If there are no search parameters, don't perform a search - just show the form
+    has_search_params = any(key.startswith("a_") or key.startswith("b_") for key in request.args.keys())
+    
     context_a, form_a = extract_context_from_request("a", request.args)
     context_b, form_b = extract_context_from_request("b", request.args)
 
-    primary_result = build_demo_result(user_a, context_a)
-    secondary_result = build_demo_result(user_b, context_b) if compare_mode and user_b else None
+    # Only build results if search parameters are present
+    primary_result = build_demo_result(user_a, context_a, user_label="User A") if has_search_params else None
+    secondary_result = build_demo_result(user_b, context_b, user_label="User B") if has_search_params and compare_mode and user_b else None
 
     return render_template(
         "demo.html",
@@ -524,9 +726,9 @@ def api_demo_results():
     context_a, _ = extract_context_from_request("a", request.args)
     context_b, _ = extract_context_from_request("b", request.args)
     
-    primary_result = build_demo_result(user_a, context_a)
-    secondary_result = build_demo_result(user_b, context_b) if compare_mode and user_b else None
-    
+    primary_result = build_demo_result(user_a, context_a, user_label="User A")
+    secondary_result = build_demo_result(user_b, context_b, user_label="User B") if compare_mode and user_b else None
+
     return jsonify({
         "primary_result": primary_result,
         "secondary_result": secondary_result,

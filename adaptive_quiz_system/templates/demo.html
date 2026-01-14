@@ -1,778 +1,329 @@
 {% extends "base.html" %}
 {% block title %}Adaptive Trails · Demo Mode{% endblock %}
-{% block page_class %}detail-page demo-page{% endblock %}
+{% block page_class %}demo-page{% endblock %}
+{% block extra_head %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        /* Demo-specific styles */
+        .demo-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .demo-page .app-header {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .demo-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-xl) var(--container-padding);
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+            color: white;
+        }
+
+        .demo-header__title {
+            font-size: var(--font-size-4xl);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-md);
+            color: white;
+        }
+
+        .demo-header__subtitle {
+            font-size: var(--font-size-lg);
+            opacity: 0.9;
+            max-width: 60ch;
+            margin: 0 auto;
+        }
+
+        .demo-controls {
+            background: white;
+            border-radius: var(--radius-2xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            box-shadow: var(--shadow-2xl);
+        }
+
+        .demo-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+
+        .user-scenarios {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+
+        .user-scenario {
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            background: var(--color-bg-secondary);
+        }
+
+        .user-scenario__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-lg);
+        }
+
+        .user-scenario__title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text);
+        }
+
+        .user-scenario__fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .demo-actions {
+            display: flex;
+            gap: var(--space-md);
+            justify-content: flex-end;
+            padding-top: var(--space-lg);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .demo-results {
+            display: grid;
+            gap: var(--space-xl);
+        }
+
+        .demo-results.compare {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        @media (max-width: 1024px) {
+            .demo-results.compare {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-panel {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .result-panel__header {
+            margin-bottom: var(--space-lg);
+        }
+
+        .result-panel__title {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--space-sm);
+        }
+
+        .result-panel__description {
+            color: var(--color-text-secondary);
+        }
+
+        .context-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+            padding: var(--space-sm);
+            background: var(--color-bg-secondary);
+            border-radius: var(--radius-lg);
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        .trail-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .trail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--space-lg);
+        }
+
+        .trail-item {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            transition: all var(--transition-base);
+        }
+
+        .trail-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .trail-item.recommended {
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .trail-item.suggested {
+            border-left: 4px solid var(--color-accent);
+        }
+
+        .map-container {
+            width: 100%;
+            height: 500px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: var(--space-lg);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--space-3xl);
+            color: var(--color-text-muted);
+        }
+    </style>
+{% endblock %}
 {% block content %}
-    <div class="detail-shell">
-        <header class="page-header">
-            <div class="page-header__left">
-                <h1>Contextual trail recommendations</h1>
-                <p class="subtitle">Switch personas, craft bespoke contexts, and showcase how the engine adapts.</p>
-            </div>
+    <div class="demo-container">
+        <header class="demo-header">
+            <h1 class="demo-header__title">Contextual Trail Recommendations</h1>
+            <p class="demo-header__subtitle">Switch personas, craft bespoke contexts, and showcase how the engine adapts.</p>
         </header>
 
-        <div class="demo-controls-header" id="demo-controls-header">
-            <form method="get" class="demo-form" id="demo-form">
-                <div class="scenarios-horizontal-container">
-                    <div class="user-rows-wrapper">
-                        <div class="fields-horizontal-scroll">
-                            <div class="fields-table">
-                                <div class="fields-header-row">
-                                    {% if compare_mode %}
-                                    <div class="field-column field-column-delete field-header">
-                                        <span></span>
-                                    </div>
+        <section class="demo-controls">
+            <form class="demo-form" id="demo-form" method="get">
+                <div class="user-scenarios" id="user-scenarios">
+                    <!-- User A -->
+                    <div class="user-scenario" data-user-index="a">
+                        <div class="user-scenario__header">
+                            <h3 class="user-scenario__title">User A</h3>
+                            <button type="button" class="btn btn-ghost btn-remove-user" data-user="a" aria-label="Remove user A" style="display: none;">×</button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">User Profile</label>
+                            <select name="user_id_a" class="form-select">
+                                {% for person in users %}
+                                    <option value="{{ person.id }}" {% if person.id == selected_user_id_a %}selected{% endif %}>
+                                        {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="user-scenario__fields">
+                            {% for field in context_fields %}
+                                {% set value = context_form_values['a'][field.name] %}
+                                <div class="form-group">
+                                    <label class="form-label">{{ field.label }}</label>
+                                    {% if field.type == 'select' %}
+                                        <select name="a_{{ field.name }}" class="form-select">
+                                            {% for option in field.options %}
+                                                <option value="{{ option }}" {% if option == value %}selected{% endif %}>
+                                                    {{ option.replace('_', ' ')|title }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    {% else %}
+                                        <input type="{{ field.type }}" name="a_{{ field.name }}" value="{{ value }}" class="form-input"
+                                               {% if field.min %}min="{{ field.min }}"{% endif %}
+                                               {% if field.max %}max="{{ field.max }}"{% endif %}
+                                               {% if field.step %}step="{{ field.step }}"{% endif %}>
                                     {% endif %}
-                                    <div class="field-column user-profile-field field-header">
-                                        <span>User profile</span>
-                                    </div>
-                                    {% for field in context_fields %}
-                                        <div class="field-column field-header" style="min-width: 120px; width: 120px;">
-                                            <span>{{ field.label }}</span>
-                                        </div>
-                                    {% endfor %}
                                 </div>
-                                
-                                <div class="user-row" data-user-index="1">
-                                    <div class="fields-row">
-                                        {% if compare_mode %}
-                                        <div class="field-column field-column-delete">
-                                            <span></span>
-                                            <button type="button" class="btn-delete-user-inline" data-delete-user="a" title="Remove this user">×</button>
-                                        </div>
-                                        {% endif %}
-                                        <label class="field-column user-profile-field">
-                                            <select name="user_id_a">
-                                                {% for person in users %}
-                                                    <option value="{{ person.id }}" {% if person.id == selected_user_id_a %}selected{% endif %}>
-                                                        {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}
-                                                    </option>
-                                                {% endfor %}
-                                            </select>
-                                        </label>
-                                        {% for field in context_fields %}
-                                            {% set value = context_form_values['a'][field.name] %}
-                                            <label class="field-column">
-                                                {% if field.type == 'select' %}
-                                                <select name="a_{{ field.name }}">
-                                                    {% for option in field.options %}
-                                                    <option value="{{ option }}" {% if option == value %}selected{% endif %}>{{ option.replace('_', ' ')|title }}</option>
-                                                    {% endfor %}
-                                                </select>
-                                                {% else %}
-                                                <input type="{{ field.type }}" name="a_{{ field.name }}" value="{{ value }}" {% if field.min %}min="{{ field.min }}"{% endif %} {% if field.max %}max="{{ field.max }}"{% endif %} {% if field.step %}step="{{ field.step }}"{% endif %}>
-                                                {% endif %}
-                                            </label>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-
-                                <div class="user-row {% if not compare_mode %}is-hidden{% endif %}" id="user-row-2" data-user-index="2">
-                                    <div class="fields-row">
-                                        <div class="field-column field-column-delete">
-                                            <span></span>
-                                            <button type="button" class="btn-delete-user-inline" data-delete-user="b" title="Remove this user">×</button>
-                                        </div>
-                                        <label class="field-column user-profile-field">
-                                            <select name="user_id_b" {% if not compare_mode %}disabled{% endif %}>
-                                                {% for person in users %}
-                                                    <option value="{{ person.id }}" {% if person.id == selected_user_id_b %}selected{% endif %}>
-                                                        {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}
-                                                    </option>
-                                                {% endfor %}
-                                            </select>
-                                        </label>
-                                        {% for field in context_fields %}
-                                            {% set value = context_form_values['b'][field.name] %}
-                                            {% set isSmallField = field.name in ['time_available_days', 'time_available_hours'] %}
-                                            <label class="field-column {% if isSmallField %}field-column-small{% endif %}">
-                                                {% if field.type == 'select' %}
-                                                <select name="b_{{ field.name }}" {% if not compare_mode %}disabled{% endif %}>
-                                                    {% for option in field.options %}
-                                                    <option value="{{ option }}" {% if option == value %}selected{% endif %}>{{ option.replace('_', ' ')|title }}</option>
-                                                    {% endfor %}
-                                                </select>
-                                                {% else %}
-                                                <input type="{{ field.type }}" name="b_{{ field.name }}" value="{{ value }}" {% if not compare_mode %}disabled{% endif %} {% if field.min %}min="{{ field.min }}"{% endif %} {% if field.max %}max="{{ field.max }}"{% endif %} {% if field.step %}step="{{ field.step }}"{% endif %}>
-                                                {% endif %}
-                                            </label>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
-                    <div class="table-actions-row">
-                        <div class="table-actions-left">
-                            <button type="button" class="btn-add-another-user {% if compare_mode %}is-hidden{% endif %}" id="btn-add-another-user" title="Add another user">
-                                + Add another user
-                            </button>
+
+                    <!-- User B (hidden by default) -->
+                    <div class="user-scenario hidden" data-user-index="b" id="user-scenario-b">
+                        <div class="user-scenario__header">
+                            <h3 class="user-scenario__title">User B</h3>
+                            <button type="button" class="btn btn-ghost btn-remove-user" data-user="b" aria-label="Remove user B">×</button>
                         </div>
-                        <div class="table-actions-right">
-                            <button type="button" class="btn-primary" id="btn-get-trails">
-                                <span class="btn-text">Get my trails</span>
-                                <span class="btn-loading is-hidden">Loading...</span>
-                            </button>
+                        <div class="form-group">
+                            <label class="form-label">User Profile</label>
+                            <select name="user_id_b" class="form-select" disabled>
+                                {% for person in users %}
+                                    <option value="{{ person.id }}" {% if person.id == selected_user_id_b %}selected{% endif %}>
+                                        {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="user-scenario__fields">
+                            {% for field in context_fields %}
+                                {% set value = context_form_values['b'][field.name] %}
+                                <div class="form-group">
+                                    <label class="form-label">{{ field.label }}</label>
+                                    {% if field.type == 'select' %}
+                                        <select name="b_{{ field.name }}" class="form-select" disabled>
+                                            {% for option in field.options %}
+                                                <option value="{{ option }}" {% if option == value %}selected{% endif %}>
+                                                    {{ option.replace('_', ' ')|title }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    {% else %}
+                                        <input type="{{ field.type }}" name="b_{{ field.name }}" value="{{ value }}" class="form-input" disabled
+                                               {% if field.min %}min="{{ field.min }}"{% endif %}
+                                               {% if field.max %}max="{{ field.max }}"{% endif %}
+                                               {% if field.step %}step="{{ field.step }}"{% endif %}>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
-            </form>
-        </div>
 
-        <div class="demo-results-container" id="demo-results-container">
-            <section class="demo-results-panel">
-                <section class="demo-scenarios {% if compare_mode %}compare{% endif %}" id="demo-scenarios">
-                    <div class="demo-column" id="demo-column-1">
-                        {% set result = primary_result %}
-                        {% include 'partials/demo_panel.html' %}
-                    </div>
-                    {% if compare_mode and secondary_result %}
-                    <div class="demo-column" id="demo-column-2">
-                        {% set result = secondary_result %}
-                        {% include 'partials/demo_panel.html' %}
-                    </div>
-                    {% endif %}
-                </section>
-            </section>
-        </div>
+                <div class="demo-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-add-user" aria-label="Add another user">
+                        + Add Another User
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btn-get-trails">
+                        <span class="btn-text">Get My Trails</span>
+                        <span class="btn-loading hidden">Loading...</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="demo-results {% if compare_mode %}compare{% endif %}" id="demo-results">
+            {% if primary_result %}
+                <div class="result-panel" data-user="a">
+                    {% set result = primary_result %}
+                    {% include 'partials/demo_panel.html' %}
+                </div>
+            {% endif %}
+            {% if compare_mode and secondary_result %}
+                <div class="result-panel" data-user="b">
+                    {% set result = secondary_result %}
+                    {% include 'partials/demo_panel.html' %}
+                </div>
+            {% endif %}
+        </section>
     </div>
 {% endblock %}
 {% block extra_scripts %}
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script>
-        // Enable/disable form fields in second user row based on visibility
-        function updateSecondUserFieldsState() {
-            const userRow2 = document.getElementById('user-row-2');
-            const isVisible = userRow2 && !userRow2.classList.contains('is-hidden');
-            const bInputs = document.querySelectorAll('[name^="b_"]');
-            bInputs.forEach(input => {
-                input.disabled = !isVisible;
-            });
-        }
-        
-        // Update on page load
-        updateSecondUserFieldsState();
-        
-        // Handle date range logic and calculate days/hours in background for both user A and B
-        function setupDateHoursLogic(prefix) {
-            const startDateInput = document.querySelector(`input[name="${prefix}_hike_start_date"]`);
-            const endDateInput = document.querySelector(`input[name="${prefix}_hike_end_date"]`);
-            // Create hidden inputs for days and hours if they don't exist
-            let daysInput = document.querySelector(`input[name="${prefix}_time_available_days"]`);
-            let hoursInput = document.querySelector(`input[name="${prefix}_time_available_hours"]`);
-            
-            if (!startDateInput) return;
-            
-            // Create hidden inputs if they don't exist
-            if (!daysInput) {
-                daysInput = document.createElement('input');
-                daysInput.type = 'hidden';
-                daysInput.name = `${prefix}_time_available_days`;
-                daysInput.id = `${prefix}_time_available_days`;
-                daysInput.value = '0';
-                startDateInput.parentElement.appendChild(daysInput);
-            }
-            
-            if (!hoursInput) {
-                hoursInput = document.createElement('input');
-                hoursInput.type = 'hidden';
-                hoursInput.name = `${prefix}_time_available_hours`;
-                hoursInput.id = `${prefix}_time_available_hours`;
-                hoursInput.value = '0';
-                startDateInput.parentElement.appendChild(hoursInput);
-            }
-            
-            // Set default start date to today if not set
-            if (!startDateInput.value) {
-                const today = new Date().toISOString().split('T')[0];
-                startDateInput.value = today;
-            }
-            
-            // Set end date min to start date
-            if (startDateInput) {
-                startDateInput.addEventListener('change', function() {
-                    if (endDateInput) {
-                        endDateInput.min = startDateInput.value;
-                        if (endDateInput.value && endDateInput.value < startDateInput.value) {
-                            endDateInput.value = startDateInput.value;
-                        }
-                    }
-                    calculateTimeAvailable();
-                });
-            }
-            
-            if (endDateInput) {
-                endDateInput.addEventListener('change', calculateTimeAvailable);
-            }
-            
-            function calculateTimeAvailable() {
-                const startDate = startDateInput ? startDateInput.value : null;
-                const endDate = endDateInput ? (endDateInput.value || startDate) : startDate;
-                
-                if (!startDate) return;
-                
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-                start.setHours(0, 0, 0, 0);
-                end.setHours(0, 0, 0, 0);
-                
-                const diffTime = end - start;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
-                if (daysInput) {
-                    daysInput.value = Math.max(0, diffDays).toString();
-                }
-                // Hours always 0 since we removed hours input
-                if (hoursInput) {
-                    hoursInput.value = '0';
-                }
-            }
-            
-            // Set initial min for end date
-            if (startDateInput.value && endDateInput) {
-                endDateInput.min = startDateInput.value;
-            }
-            
-            calculateTimeAvailable(); // Initial call
-        }
-        
-        // Function to get current season based on date
-        function getCurrentSeason(date) {
-            const month = date.getMonth() + 1; // getMonth() returns 0-11
-            if (month >= 3 && month <= 5) return 'spring';
-            if (month >= 6 && month <= 8) return 'summer';
-            if (month >= 9 && month <= 11) return 'fall';
-            return 'winter'; // December, January, February
-        }
-        
-        // Set season to current season for both users
-        function setupSeasonAutoFill() {
-            const currentSeason = getCurrentSeason(new Date());
-            const seasonSelectA = document.querySelector('select[name="a_season"]');
-            const seasonSelectB = document.querySelector('select[name="b_season"]');
-            
-            if (seasonSelectA && !seasonSelectA.value) {
-                seasonSelectA.value = currentSeason;
-            }
-            if (seasonSelectB && !seasonSelectB.value) {
-                seasonSelectB.value = currentSeason;
-            }
-        }
-        
-        // Setup for both users
-        setupDateHoursLogic('a');
-        setupDateHoursLogic('b');
-        setupSeasonAutoFill();
-        
-        // Prevent default form submission - we use AJAX instead
-        const demoForm = document.getElementById('demo-form');
-        if (demoForm) {
-            demoForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                // Trigger the "Get my trails" button click instead
-                const getTrailsBtn = document.getElementById('btn-get-trails');
-                if (getTrailsBtn) {
-                    getTrailsBtn.click();
-                }
-            });
-        }
-        
-        // Function to fetch and update results
-        async function fetchAndUpdateResults() {
-            const form = document.getElementById('demo-form');
-            const getTrailsBtn = document.getElementById('btn-get-trails');
-            const btnText = getTrailsBtn?.querySelector('.btn-text');
-            const btnLoading = getTrailsBtn?.querySelector('.btn-loading');
-            
-            // Show loading state if button exists
-            if (getTrailsBtn) {
-                getTrailsBtn.disabled = true;
-                if (btnText) btnText.classList.add('is-hidden');
-                if (btnLoading) btnLoading.classList.remove('is-hidden');
-            }
-            
-            // Check if user B is visible
-            const userRow2 = document.getElementById('user-row-2');
-            const isUserBVisible = userRow2 && !userRow2.classList.contains('is-hidden');
-            
-            // Collect form data
-            const params = new URLSearchParams();
-            const allInputs = form.querySelectorAll('input, select');
-            allInputs.forEach(input => {
-                if (input.name && !input.disabled) {
-                    // Only include b_ fields and user_id_b if user B is visible
-                    if (input.name.startsWith('b_') || input.name === 'user_id_b') {
-                        if (isUserBVisible) {
-                            params.append(input.name, input.value);
-                        }
-                        // Skip b_ fields if user B is not visible
-                    } else {
-                        // Always include a_ fields and user_id_a
-                        params.append(input.name, input.value);
-                    }
-                }
-            });
-            
-            try {
-                const response = await fetch(`{{ url_for('api_demo_results') }}?${params.toString()}`);
-                const data = await response.json();
-                
-                if (data.error) {
-                    console.error('Error:', data.error);
-                    return;
-                }
-                
-                // Update results container
-                updateResults(data);
-                
-                // Update URL without reload
-                const newUrl = new URL(window.location);
-                params.forEach((value, key) => {
-                    newUrl.searchParams.set(key, value);
-                });
-                window.history.pushState({}, '', newUrl);
-                
-            } catch (error) {
-                console.error('Error fetching results:', error);
-            } finally {
-                // Hide loading state
-                if (getTrailsBtn) {
-                    getTrailsBtn.disabled = false;
-                    if (btnText) btnText.classList.remove('is-hidden');
-                    if (btnLoading) btnLoading.classList.add('is-hidden');
-                }
-            }
-        }
-        
-        // Function to add delete button for user A
-        function addDeleteButtonForUserA() {
-            const userRow1 = document.querySelector('.user-row[data-user-index="1"]');
-            const fieldsRow1 = userRow1?.querySelector('.fields-row');
-            
-            // Check if delete button already exists
-            const existingDeleteBtn = fieldsRow1?.querySelector('.field-column-delete button[data-delete-user="a"]');
-            if (existingDeleteBtn) {
-                return; // Already exists, don't add again
-            }
-            
-            // Only add if it doesn't exist
-            if (fieldsRow1) {
-                // Add to header row first
-                const headerRow = document.querySelector('.fields-header-row');
-                if (headerRow) {
-                    const existingHeaderDelete = headerRow.querySelector('.field-column-delete.field-header');
-                    if (!existingHeaderDelete) {
-                        const headerDeleteColumn = document.createElement('div');
-                        headerDeleteColumn.className = 'field-column field-column-delete field-header';
-                        headerDeleteColumn.innerHTML = '<span></span>';
-                        headerRow.insertBefore(headerDeleteColumn, headerRow.firstChild);
-                    }
-                }
-                
-                // Add to user A row
-                const deleteColumn = document.createElement('div');
-                deleteColumn.className = 'field-column field-column-delete';
-                deleteColumn.innerHTML = `
-                    <span></span>
-                    <button type="button" class="btn-delete-user-inline" data-delete-user="a" title="Remove this user">×</button>
-                `;
-                
-                // Insert at the beginning of the fields row
-                fieldsRow1.insertBefore(deleteColumn, fieldsRow1.firstChild);
-                
-                // Add event listener to the new button
-                const deleteBtn = deleteColumn.querySelector('[data-delete-user="a"]');
-                if (deleteBtn) {
-                    attachDeleteButtonListener(deleteBtn);
-                }
-            }
-        }
-        
-        // Function to remove delete button for user A
-        function removeDeleteButtonForUserA() {
-            const userRow1 = document.querySelector('.user-row[data-user-index="1"]');
-            const fieldsRow1 = userRow1?.querySelector('.fields-row');
-            
-            // Find delete column for user A and remove it
-            const deleteColumns = fieldsRow1?.querySelectorAll('.field-column-delete');
-            if (deleteColumns) {
-                deleteColumns.forEach(col => {
-                    const btn = col.querySelector('button[data-delete-user="a"]');
-                    if (btn) {
-                        col.remove();
-                    }
-                });
-            }
-            
-            // Remove from header row (only when going back to single user)
-            const userRow2 = document.getElementById('user-row-2');
-            const isUserBVisible = userRow2 && !userRow2.classList.contains('is-hidden');
-            if (!isUserBVisible) {
-                const headerRow = document.querySelector('.fields-header-row');
-                if (headerRow) {
-                    const headerDeleteColumn = headerRow.querySelector('.field-column-delete.field-header');
-                    if (headerDeleteColumn) {
-                        headerDeleteColumn.remove();
-                    }
-                }
-            }
-        }
-        
-        // Function to attach delete button event listener
-        function attachDeleteButtonListener(btn) {
-            btn.addEventListener('click', async function() {
-                const userToDelete = this.getAttribute('data-delete-user');
-                const form = document.getElementById('demo-form');
-                const url = new URL(window.location);
-                
-                if (userToDelete === 'a') {
-                    // Move user B to user A position - copy all B's values to A's fields
-                    const userBSelect = form.querySelector('select[name="user_id_b"]');
-                    const userASelect = form.querySelector('select[name="user_id_a"]');
-                    
-                    if (userBSelect && userASelect) {
-                        // Copy user B's profile to user A
-                        const userBValue = userBSelect.value;
-                        userASelect.value = userBValue;
-                        url.searchParams.set('user_id_a', userBValue);
-                        url.searchParams.delete('user_id_b');
-                        
-                        // Copy all 'b_' field values to 'a_' fields in the DOM
-                        const bInputs = form.querySelectorAll('[name^="b_"]');
-                        bInputs.forEach(bInput => {
-                            const fieldName = bInput.name.substring(2); // Remove 'b_' prefix
-                            const aInput = form.querySelector(`[name="a_${fieldName}"]`);
-                            
-                            if (aInput) {
-                                // Copy the value from B to A
-                                aInput.value = bInput.value;
-                                url.searchParams.set('a_' + fieldName, bInput.value);
-                            }
-                        });
-                        
-                        // Remove all 'b_' params from URL
-                        const keysToDelete = [];
-                        url.searchParams.forEach((value, key) => {
-                            if (key.startsWith('b_')) {
-                                keysToDelete.push(key);
-                            }
-                        });
-                        keysToDelete.forEach(key => url.searchParams.delete(key));
-                        
-                        // Hide second user row and show add button
-                        const userRow2 = document.getElementById('user-row-2');
-                        if (userRow2) {
-                            userRow2.classList.add('is-hidden');
-                            // Disable all b_ fields
-                            const bInputs = form.querySelectorAll('[name^="b_"]');
-                            bInputs.forEach(input => input.disabled = true);
-                        }
-                        const addBtn = document.getElementById('btn-add-another-user');
-                        if (addBtn) {
-                            addBtn.classList.remove('is-hidden');
-                        }
-                        
-                        // Remove delete button from user A
-                        removeDeleteButtonForUserA();
-                    }
-                } else if (userToDelete === 'b') {
-                    // Remove user B, but preserve user A's current form values
-                    url.searchParams.delete('user_id_b');
-                    
-                    // Read all 'a_' field values from the form DOM to preserve them
-                    const aInputs = form.querySelectorAll('[name^="a_"]');
-                    aInputs.forEach(input => {
-                        const fieldName = input.name.substring(2);
-                        url.searchParams.set('a_' + fieldName, input.value);
-                    });
-                    
-                    // Also preserve user_id_a
-                    const userASelect = form.querySelector('select[name="user_id_a"]');
-                    if (userASelect) {
-                        url.searchParams.set('user_id_a', userASelect.value);
-                    }
-                    
-                    // Remove all 'b_' params from URL
-                    const keysToDelete = [];
-                    url.searchParams.forEach((value, key) => {
-                        if (key.startsWith('b_')) {
-                            keysToDelete.push(key);
-                        }
-                    });
-                    keysToDelete.forEach(key => url.searchParams.delete(key));
-                    
-                    // Hide second user row and show add button
-                    const userRow2 = document.getElementById('user-row-2');
-                    if (userRow2) {
-                        userRow2.classList.add('is-hidden');
-                        // Disable all b_ fields
-                        const bInputs = form.querySelectorAll('[name^="b_"]');
-                        bInputs.forEach(input => input.disabled = true);
-                    }
-                    const addBtn = document.getElementById('btn-add-another-user');
-                    if (addBtn) {
-                        addBtn.classList.remove('is-hidden');
-                    }
-                    
-                    // Remove delete button from user A (only one user now)
-                    removeDeleteButtonForUserA();
-                }
-                
-                // Update URL
-                window.history.pushState({}, '', url);
-                
-                // Fetch and update results
-                await fetchAndUpdateResults();
-            });
-        }
-        
-        // Handle add another user button
-        const addAnotherUserBtn = document.getElementById('btn-add-another-user');
-        
-        if (addAnotherUserBtn && !addAnotherUserBtn.classList.contains('is-hidden')) {
-            addAnotherUserBtn.addEventListener('click', async function() {
-                const form = document.getElementById('demo-form');
-                const url = new URL(window.location);
-                
-                // Get current user_id_a from form
-                const userA = form.querySelector('select[name="user_id_a"]').value;
-                url.searchParams.set('user_id_a', userA);
-                url.searchParams.set('user_id_b', userA);
-                
-                // Copy all 'a_' field values from the form to both 'a_' and 'b_' parameters
-                const aInputs = form.querySelectorAll('[name^="a_"]');
-                aInputs.forEach(input => {
-                    const fieldName = input.name.substring(2);
-                    const currentValue = input.value;
-                    url.searchParams.set('a_' + fieldName, currentValue);
-                    url.searchParams.set('b_' + fieldName, currentValue);
-                });
-                
-                // Show the second user row
-                const userRow2 = document.getElementById('user-row-2');
-                if (userRow2) {
-                    userRow2.classList.remove('is-hidden');
-                }
-                
-                // Enable ALL second user fields (including user_id_b select and all b_ fields)
-                const userBSelect = form.querySelector('select[name="user_id_b"]');
-                if (userBSelect) {
-                    userBSelect.disabled = false;
-                }
-                
-                const bInputs = form.querySelectorAll('[name^="b_"]');
-                bInputs.forEach(input => {
-                    input.disabled = false;
-                });
-                
-                // Hide the add button
-                addAnotherUserBtn.classList.add('is-hidden');
-                
-                // Add delete button for user A
-                addDeleteButtonForUserA();
-                
-                // Update URL
-                window.history.pushState({}, '', url);
-                
-                // Fetch and update results
-                await fetchAndUpdateResults();
-            });
-        }
-
-        // Handle delete user buttons - attach listeners to existing buttons
-        document.querySelectorAll('[data-delete-user]').forEach(btn => {
-            attachDeleteButtonListener(btn);
-        });
-        
-        // Handle "Get my trails" button with AJAX
-        const getTrailsBtn = document.getElementById('btn-get-trails');
-        if (getTrailsBtn) {
-            getTrailsBtn.addEventListener('click', async function() {
-                await fetchAndUpdateResults();
-            });
-        }
-        
-        // Function to update results from JSON data
-        function updateResults(data) {
-            const resultsContainer = document.getElementById('demo-results-container');
-            const scenariosContainer = document.getElementById('demo-scenarios');
-            
-            if (!resultsContainer || !scenariosContainer) return;
-            
-            // Clear existing results
-            scenariosContainer.innerHTML = '';
-            
-            // Render primary result
-            const column1 = document.createElement('div');
-            column1.className = 'demo-column';
-            column1.id = 'demo-column-1';
-            column1.innerHTML = renderDemoPanel(data.primary_result);
-            scenariosContainer.appendChild(column1);
-            
-            // Render secondary result if exists
-            if (data.compare_mode && data.secondary_result) {
-                scenariosContainer.classList.add('compare');
-                const column2 = document.createElement('div');
-                column2.className = 'demo-column';
-                column2.id = 'demo-column-2';
-                column2.innerHTML = renderDemoPanel(data.secondary_result);
-                scenariosContainer.appendChild(column2);
-            } else {
-                scenariosContainer.classList.remove('compare');
-            }
-        }
-        
-        // Helper function to format duration in minutes to human-readable format
-        function formatDuration(minutes) {
-            if (!minutes || minutes === 0) return '—';
-            const mins = parseInt(minutes) || 0;
-            
-            if (mins < 60) {
-                return `${mins} min`;
-            } else if (mins < 1440) { // Less than 1 day
-                const hours = Math.floor(mins / 60);
-                const remainingMins = mins % 60;
-                if (remainingMins === 0) {
-                    return `${hours} hour${hours !== 1 ? 's' : ''}`;
-                } else {
-                    return `${hours} hour${hours !== 1 ? 's' : ''} ${remainingMins} min`;
-                }
-            } else { // 1 day or more
-                const days = Math.floor(mins / 1440);
-                const remainingMins = mins % 1440;
-                const hours = Math.floor(remainingMins / 60);
-                const remainingMinutes = remainingMins % 60;
-                
-                const parts = [];
-                if (days > 0) {
-                    parts.push(`${days} day${days !== 1 ? 's' : ''}`);
-                }
-                if (hours > 0) {
-                    parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
-                }
-                if (remainingMinutes > 0 && days === 0) { // Only show minutes if less than a day total
-                    parts.push(`${remainingMinutes} min`);
-                }
-                
-                return parts.join(' ') || '—';
-            }
-        }
-        
-        // Function to render demo panel HTML from JSON data
-        function renderDemoPanel(result) {
-            const contextPills = Object.entries(result.context || {}).map(([key, value]) => {
-                if (key === 'time_available') {
-                    // Convert minutes to days and hours
-                    const totalMinutes = parseInt(value) || 0;
-                    const days = Math.floor(totalMinutes / (24 * 60));
-                    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-                    let timeText = '';
-                    if (days > 0) {
-                        timeText += `${days} day${days !== 1 ? 's' : ''}`;
-                    }
-                    if (hours > 0) {
-                        if (days > 0) timeText += ' ';
-                        timeText += `${hours} hour${hours !== 1 ? 's' : ''}`;
-                    }
-                    return `<span class="context-pill">Time Available: <strong>${timeText || '0 hours'}</strong></span>`;
-                } else {
-                    return `<span class="context-pill">${key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}: <strong>${value}</strong></span>`;
-                }
-            }).join('');
-            
-            const exactTrails = (result.exact || []).map(trail => {
-                const difficulty = trail.difficulty || 0;
-                const difficultyClass = difficulty <= 3 ? 'easy' : difficulty <= 6 ? 'medium' : 'hard';
-                const difficultyText = difficulty <= 3 ? 'Easy' : difficulty <= 6 ? 'Medium' : 'Hard';
-                return `
-                    <div class="trail-card modern recommended">
-                        <div class="card-heading">
-                            <strong>${trail.name || 'Unknown'}</strong>
-                            <span class="pill difficulty-${difficultyClass}">${difficultyText}</span>
-                        </div>
-                        <div class="trail-stats">
-                            <span>${trail.distance || '—'} km</span>
-                            <span>${formatDuration(trail.duration)}</span>
-                            <span>${trail.elevation_gain || '—'} m</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            const suggestions = (result.suggestions || []).map(trail => {
-                const relevance = Math.round(trail.relevance_percentage || 0);
-                const unmatched = (trail.unmatched_criteria || []).map(c => `<li class="unmatched-item">${c}</li>`).join('');
-                const unmatchedSection = unmatched ? `
-                    <div class="unmatched-criteria">
-                        <small class="unmatched-label">Missing criteria:</small>
-                        <ul class="unmatched-list">${unmatched}</ul>
-                    </div>
-                ` : '';
-                return `
-                    <div class="trail-card modern suggested">
-                        <div class="card-heading">
-                            <strong>${trail.name || 'Unknown'}</strong>
-                            <span class="relevance-badge">${relevance}%</span>
-                        </div>
-                        <div class="trail-stats">
-                            <span>${trail.distance || '—'} km</span>
-                            <span>${formatDuration(trail.duration)}</span>
-                            <span>${trail.elevation_gain || '—'} m</span>
-                        </div>
-                        ${unmatchedSection}
-                    </div>
-                `;
-            }).join('');
-            
-            const displaySettings = Object.entries(result.display || {}).map(([key, value]) => 
-                `<li><code>${key}</code> → <strong>${value}</strong></li>`
-            ).join('');
-            
-            const activeRules = (result.active_rules || []).map(rule => 
-                `<li><strong>${rule.description || rule.condition || 'Rule'}</strong><span>${rule.condition || ''}</span></li>`
-            ).join('');
-            
-            return `
-                <div class="demo-panel panel-card">
-                    <div class="panel-header">
-                        <div>
-                            <h2>${result.scenario?.title || 'Custom Scenario'}</h2>
-                            <p>${result.scenario?.description || 'User-defined context'}</p>
-                        </div>
-                        <span class="badge">${(result.active_rules || []).length} rules</span>
-                    </div>
-                    <div class="context-pill-group">${contextPills}</div>
-                    <div class="demo-results">
-                        <div class="result-section">
-                            <div class="section-header">
-                                <h3>🎯 Recommended (${(result.exact || []).length})</h3>
-                                <small>Perfect matches for this situation</small>
-                            </div>
-                            ${(result.exact || []).length > 0 ? `<div class="trail-list modern">${exactTrails}</div>` : '<p class="empty">No direct matches for this scenario.</p>'}
-                        </div>
-                        <div class="result-section">
-                            <div class="section-header">
-                                <h3>✨ Additional suggestions (${(result.suggestions || []).length})</h3>
-                                <small>High potential even if slightly off the brief</small>
-                            </div>
-                            ${(result.suggestions || []).length > 0 ? `<div class="trail-list subtle modern">${suggestions}</div>` : '<p class="empty">No additional suggestions for this scenario.</p>'}
-                        </div>
-                        <div class="result-section">
-                            <div class="section-header">
-                                <h3>📐 Display adjustments</h3>
-                                <small>Tunings applied to the UI</small>
-                            </div>
-                            <ul class="display-settings">${displaySettings}</ul>
-                        </div>
-                        <div class="result-section">
-                            <div class="section-header">
-                                <h3>🧠 Matching rules</h3>
-                            </div>
-                            <ul class="rules-list">${activeRules}</ul>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='demo.js') }}"></script>
 {% endblock %}
-

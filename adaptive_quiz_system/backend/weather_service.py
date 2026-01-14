@@ -98,7 +98,7 @@ def get_weather_forecast(latitude: float, longitude: float, target_date: str) ->
             "end_date": target_date,  # End date (same as start for single day)
         }
         
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, timeout=3)  # Reduced timeout for faster response
         response.raise_for_status()
         data = response.json()
         

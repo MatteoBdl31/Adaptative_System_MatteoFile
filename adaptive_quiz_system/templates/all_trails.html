@@ -1,79 +1,108 @@
 {% extends "base.html" %}
 {% block title %}All Available Trails{% endblock %}
-{% block page_class %}list-page{% endblock %}
+{% block page_class %}all-trails-page{% endblock %}
 {% block extra_head %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 {% endblock %}
 {% block content %}
-    <div class="container">
-        <header>
-            <h1>🗺️ All Available Trails</h1>
-            <nav class="nav-links">
-                <a href="{{ url_for('demo') }}">Demo</a>
-                <a href="{{ url_for('admin_rules') }}">Admin Rules</a>
+    <div class="all-trails-container">
+        <header class="all-trails-header">
+            <h1 class="all-trails-header__title">🗺️ All Available Trails</h1>
+            <p class="all-trails-header__subtitle">Explore our complete collection of hiking trails with real-time weather forecasts</p>
+            <nav class="all-trails-header__nav">
+                <a href="{{ url_for('demo') }}" class="btn btn-secondary">🎯 Demo</a>
+                <a href="{{ url_for('admin_rules') }}" class="btn btn-secondary">⚙️ Admin Rules</a>
             </nav>
         </header>
 
+        <div class="all-trails-content">
         <div class="filter-section">
-            <h3>Filter Trails</h3>
-            <div class="filter-group">
-                <label for="filter-difficulty">Difficulty:</label>
-                <select id="filter-difficulty">
-                    <option value="">All</option>
-                    <option value="easy">Easy (≤3)</option>
-                    <option value="medium">Medium (4-6)</option>
-                    <option value="hard">Hard (≥7)</option>
-                </select>
+            <h3>Filter Trails & Weather</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-lg);">
+                <div class="filter-group">
+                    <label for="hike-start-date">🗓️ Hike Start Date</label>
+                    <input type="date" id="hike-start-date" value="{{ hike_start_date }}">
+                </div>
+                <div class="filter-group">
+                    <label for="hike-end-date">🗓️ Hike End Date</label>
+                    <input type="date" id="hike-end-date" value="{{ hike_end_date }}">
+                </div>
+                <div class="filter-group">
+                    <label for="filter-difficulty">⛰️ Difficulty</label>
+                    <select id="filter-difficulty">
+                        <option value="">All Levels</option>
+                        <option value="easy">Easy (≤3)</option>
+                        <option value="medium">Medium (4-6)</option>
+                        <option value="hard">Hard (≥7)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-landscape">🏞️ Landscape</label>
+                    <select id="filter-landscape">
+                        <option value="">All Landscapes</option>
+                        <option value="lake">🏔️ Lake</option>
+                        <option value="forest">🌲 Forest</option>
+                        <option value="peaks">⛰️ Peaks</option>
+                        <option value="mountain">🗻 Mountain</option>
+                        <option value="alpine">🏔️ Alpine</option>
+                        <option value="river">🏞️ River</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-type">🚶 Trail Type</label>
+                    <select id="filter-type">
+                        <option value="">All Types</option>
+                        <option value="loop">🔄 Loop</option>
+                        <option value="one_way">➡️ One Way</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-distance">📏 Max Distance (km)</label>
+                    <input type="number" id="filter-distance" placeholder="No limit" min="0" step="0.5">
+                </div>
             </div>
-            <div class="filter-group">
-                <label for="filter-landscape">Landscape:</label>
-                <select id="filter-landscape">
-                    <option value="">All</option>
-                    <option value="lake">Lake</option>
-                    <option value="forest">Forest</option>
-                    <option value="peaks">Peaks</option>
-                    <option value="mountain">Mountain</option>
-                    <option value="alpine">Alpine</option>
-                    <option value="river">River</option>
-                </select>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); margin-top: var(--space-lg);">
+                <button onclick="updateWeather()" class="btn-secondary">🌦️ Update Weather</button>
+                <button onclick="applyFilters()" class="btn-primary">🔍 Apply Filters</button>
+                <button onclick="clearFilters()" class="btn-secondary">✖️ Clear Filters</button>
             </div>
-            <div class="filter-group">
-                <label for="filter-type">Type:</label>
-                <select id="filter-type">
-                    <option value="">All</option>
-                    <option value="loop">Loop</option>
-                    <option value="one_way">One Way</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="filter-distance">Max Distance (km):</label>
-                <input type="number" id="filter-distance" placeholder="No limit" min="0" step="0.5">
-            </div>
-            <button onclick="applyFilters()" class="btn-secondary" style="margin-top: 20px;">Apply Filters</button>
-            <button onclick="clearFilters()" class="btn-secondary" style="margin-top: 20px;">Clear Filters</button>
         </div>
 
-        <div class="connection-status" id="connection-status" style="margin: 20px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; display: none;">
+        <div class="connection-status" id="connection-status" style="display: none;">
             <span id="connection-indicator">📶</span>
             <span id="connection-text">Detecting connection...</span>
         </div>
 
         <div class="view-toggle">
-            <button onclick="showView('map')" id="btn-map" class="active">🗺️ Map View</button>
-            <button onclick="showView('list')" id="btn-list">📋 List View</button>
-            <button onclick="showView('cards')" id="btn-cards" style="display: none;">🃏 Card View</button>
+            <button onclick="showView('map')" id="btn-map" class="active">
+                🗺️ Map View
+            </button>
+            <button onclick="showView('list')" id="btn-list">
+                📋 List View
+            </button>
+            <button onclick="showView('cards')" id="btn-cards" style="display: none;">
+                🃏 Card View
+            </button>
         </div>
 
         <!-- Map View -->
         <div id="map-view" class="view-section active">
-            <h2>Trail Locations on Map</h2>
+            <h2>🗺️ Trail Locations on Map</h2>
+            <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--space-lg);">
+                Explore all available trails on an interactive map. Click on markers to see trail details.
+            </p>
             <div id="trails-map"></div>
         </div>
 
         <!-- Card View (for strong connection) -->
         <div id="cards-view" class="view-section">
-            <h2>All Trails ({{ trails|length }})</h2>
+            <h2>🃏 All Trails ({{ trails|length }})</h2>
+            <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--space-xl);">
+                Browse trails with interactive mini-maps. Perfect for exploring details at a glance.
+            </p>
             <div class="trails-card-view" id="trails-cards">
                 {% for trail in trails %}
                 <div class="trail-card-with-map" data-difficulty="{{ trail.difficulty }}" 
@@ -88,34 +117,47 @@
                         <h3>{{ trail.name }}</h3>
                         <div class="trail-stats">
                             <span class="difficulty-badge difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
-                                {% if trail.difficulty <= 3 %}Easy
-                                {% elif trail.difficulty <= 6 %}Medium
-                                {% else %}Hard{% endif %}
+                                {% if trail.difficulty <= 3 %}✅ Easy
+                                {% elif trail.difficulty <= 6 %}⚠️ Medium
+                                {% else %}🔴 Hard{% endif %}
                             </span>
                             <span>📏 {{ trail.distance }} km</span>
                             <span>⏱️ {{ trail.duration|format_duration }}</span>
-                            <span>⛰️ {{ trail.elevation_gain }}m</span>
+                            <span>⛰️ {{ trail.elevation_gain }}m ↑</span>
+                            {% if trail.forecast_weather %}
+                                <span class="badge" title="Weather forecast for {{ hike_start_date }}">
+                                    {% if trail.forecast_weather == 'sunny' %}☀️
+                                    {% elif trail.forecast_weather == 'cloudy' %}☁️
+                                    {% elif trail.forecast_weather == 'rainy' %}🌧️
+                                    {% elif trail.forecast_weather == 'snowy' %}❄️
+                                    {% elif trail.forecast_weather == 'storm_risk' %}⛈️
+                                    {% else %}🌤️{% endif %}
+                                    {{ trail.forecast_weather|title }}
+                                </span>
+                            {% else %}
+                                <span class="badge" style="opacity: 0.5;" title="Weather data unavailable">🌤️ N/A</span>
+                            {% endif %}
                         </div>
                         <p class="trail-description">{{ trail.description }}</p>
                         <div class="trail-features">
                             <div class="landscapes">
                                 {% for landscape in trail.landscapes.split(',') %}
-                                <span class="landscape-tag">{{ landscape.strip() }}</span>
+                                <span class="landscape-tag">🏞️ {{ landscape.strip() }}</span>
                                 {% endfor %}
                             </div>
                             <div class="accessibility">
                                 {% if trail.accessibility %}
-                                <span class="access-tag">{{ trail.accessibility.split(',')[0] }}</span>
+                                <span class="access-tag">♿ {{ trail.accessibility.split(',')[0] }}</span>
                                 {% endif %}
                             </div>
                         </div>
-                        <div style="margin-top: 10px;">
-                            <strong>Type:</strong> {{ trail.trail_type.replace('_', ' ').title() }} | 
-                            <strong>Popularity:</strong> ⭐ {{ trail.popularity }}/10
+                        <div style="margin-top: var(--space-md); display: flex; gap: var(--space-lg); color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                            <span><strong>Type:</strong> {{ trail.trail_type.replace('_', ' ').title() }}</span>
+                            <span><strong>Popularity:</strong> ⭐ {{ trail.popularity }}/10</span>
                         </div>
                         {% if trail.latitude and trail.longitude %}
                         <a href="#" onclick="showTrailOnMap({{ trail.latitude }}, {{ trail.longitude }}); return false;" 
-                           class="btn-secondary" style="margin-top: 10px;">📍 Show on Map</a>
+                           class="btn-primary" style="margin-top: var(--space-md); width: 100%;">📍 View on Map</a>
                         {% endif %}
                     </div>
                 </div>
@@ -125,7 +167,10 @@
 
         <!-- List View (for weak connection) -->
         <div id="list-view" class="view-section">
-            <h2>All Trails ({{ trails|length }})</h2>
+            <h2>📋 All Trails ({{ trails|length }})</h2>
+            <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--space-xl);">
+                A lightweight list view optimized for slower connections. All essential trail information at your fingertips.
+            </p>
             <div class="trails-list-view" id="trails-list">
                 {% for trail in trails %}
                 <div class="trail-card" data-difficulty="{{ trail.difficulty }}" 
@@ -140,39 +185,56 @@
                         <h3>{{ trail.name }}</h3>
                         <div class="trail-stats">
                             <span class="difficulty-badge difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
-                                {% if trail.difficulty <= 3 %}Easy
-                                {% elif trail.difficulty <= 6 %}Medium
-                                {% else %}Hard{% endif %}
+                                {% if trail.difficulty <= 3 %}✅ Easy
+                                {% elif trail.difficulty <= 6 %}⚠️ Medium
+                                {% else %}🔴 Hard{% endif %}
                             </span>
                             <span>📏 {{ trail.distance }} km</span>
                             <span>⏱️ {{ trail.duration|format_duration }}</span>
-                            <span>⛰️ {{ trail.elevation_gain }}m</span>
+                            <span>⛰️ {{ trail.elevation_gain }}m ↑</span>
+                            {% if trail.forecast_weather %}
+                                <span class="badge" title="Weather forecast for {{ hike_start_date }}">
+                                    {% if trail.forecast_weather == 'sunny' %}☀️
+                                    {% elif trail.forecast_weather == 'cloudy' %}☁️
+                                    {% elif trail.forecast_weather == 'rainy' %}🌧️
+                                    {% elif trail.forecast_weather == 'snowy' %}❄️
+                                    {% elif trail.forecast_weather == 'storm_risk' %}⛈️
+                                    {% else %}🌤️{% endif %}
+                                    {{ trail.forecast_weather|title }}
+                                </span>
+                            {% else %}
+                                <span class="badge" style="opacity: 0.5;" title="Weather data unavailable">🌤️ N/A</span>
+                            {% endif %}
                         </div>
                         <p class="trail-description">{{ trail.description }}</p>
                         <div class="trail-features">
                             <div class="landscapes">
                                 {% for landscape in trail.landscapes.split(',') %}
-                                <span class="landscape-tag">{{ landscape.strip() }}</span>
+                                <span class="landscape-tag">🏞️ {{ landscape.strip() }}</span>
                                 {% endfor %}
                             </div>
                             <div class="accessibility">
                                 {% if trail.accessibility %}
-                                <span class="access-tag">{{ trail.accessibility.split(',')[0] }}</span>
+                                <span class="access-tag">♿ {{ trail.accessibility.split(',')[0] }}</span>
                                 {% endif %}
                             </div>
                         </div>
-                        <div style="margin-top: 10px;">
-                            <strong>Type:</strong> {{ trail.trail_type.replace('_', ' ').title() }} | 
-                            <strong>Popularity:</strong> ⭐ {{ trail.popularity }}/10
+                        <div style="margin-top: var(--space-md); display: flex; gap: var(--space-lg); color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                            <span><strong>Type:</strong> {{ trail.trail_type.replace('_', ' ').title() }}</span>
+                            <span><strong>Popularity:</strong> ⭐ {{ trail.popularity }}/10</span>
                         </div>
                         {% if trail.latitude and trail.longitude %}
                         <a href="#" onclick="showTrailOnMap({{ trail.latitude }}, {{ trail.longitude }}); return false;" 
-                           class="btn-secondary" style="margin-top: 10px;">📍 Show on Map</a>
+                           class="btn-primary" style="margin-top: var(--space-md);">📍 View on Map</a>
                         {% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
+        </div>
+        
+        <!-- Scroll to Top Button -->
+        <button class="scroll-to-top" id="scroll-to-top" onclick="scrollToTop()">↑</button>
         </div>
     </div>
 {% endblock %}
@@ -185,6 +247,20 @@
         var currentTrails = [];
         var connectionStrength = 'strong'; // Default to strong, will be detected
         var miniMaps = {}; // Store mini maps for card view
+        
+        // Helper function to format duration
+        function formatDuration(minutes) {
+            if (!minutes) return 'N/A';
+            var hours = Math.floor(minutes / 60);
+            var mins = minutes % 60;
+            if (hours > 0 && mins > 0) {
+                return hours + 'h ' + mins + 'm';
+            } else if (hours > 0) {
+                return hours + 'h';
+            } else {
+                return mins + 'm';
+            }
+        }
         
         // Connection detection function
         function detectConnection() {
@@ -381,10 +457,77 @@
             });
         }
         
+        // Auto-load weather in background (non-blocking)
+        function autoLoadWeather() {
+            var startDate = document.getElementById('hike-start-date').value;
+            
+            if (!startDate) {
+                return; // Skip if no date
+            }
+            
+            // Show loading indicator in connection status
+            var statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = '<span id="connection-indicator">⏳</span><span id="connection-text">Loading weather forecasts...</span>';
+            }
+            
+            // Collect all trail IDs
+            var trailIds = [];
+            var trailCards = document.querySelectorAll('[data-trail-id]');
+            trailCards.forEach(function(card) {
+                var trailId = card.getAttribute('data-trail-id');
+                if (trailId) {
+                    trailIds.push(trailId);
+                }
+            });
+            
+            if (trailIds.length === 0) {
+                return;
+            }
+            
+            // Fetch weather data in background
+            var apiUrl = '/api/weather/batch?trail_ids=' + trailIds.join(',') + '&date=' + encodeURIComponent(startDate);
+            
+            fetch(apiUrl)
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Weather API request failed');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    var weather = data.weather || {};
+                    console.log('Auto-loaded weather for ' + Object.keys(weather).length + ' trails in ' + data.elapsed_seconds + 's');
+                    
+                    // Update weather badges
+                    updateWeatherBadges(weather);
+                    updateMapWeather(weather);
+                    
+                    // Hide loading indicator
+                    if (statusEl) {
+                        setTimeout(function() {
+                            statusEl.style.display = 'none';
+                        }, 1000);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error auto-loading weather:', error);
+                    // Silently fail - user can manually refresh
+                    if (statusEl) {
+                        statusEl.style.display = 'none';
+                    }
+                });
+        }
+        
         // Wait for DOM and Leaflet to be ready before initializing map
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize connection detection first
             initializeConnection();
+            
+            // Auto-load weather in background after page loads
+            // This doesn't block the page render
+            setTimeout(autoLoadWeather, 500);
             
             // Check if Leaflet is loaded
             if (typeof L === 'undefined') {
@@ -454,7 +597,8 @@
                     type: {{ trail.trail_type|tojson }},
                     description: {{ trail.description|tojson }},
                     popularity: {{ trail.popularity }},
-                    coordinates: {% if trail.coordinates %}{{ trail.coordinates|tojson }}{% else %}null{% endif %}
+                    coordinates: {% if trail.coordinates %}{{ trail.coordinates|tojson }}{% else %}null{% endif %},
+                    forecast_weather: {% if trail.forecast_weather %}{{ trail.forecast_weather|tojson }}{% else %}null{% endif %}
                 }{% if not loop.last %},{% endif %}
                 {% endif %}
                 {% endfor %}
@@ -502,6 +646,20 @@
 
             var bounds = [];
             trails.forEach(function(trail) {
+                // Build weather info for popup
+                var weatherInfo = '';
+                if (trail.forecast_weather) {
+                    var weatherIcon = '';
+                    if (trail.forecast_weather === 'sunny') weatherIcon = '☀️';
+                    else if (trail.forecast_weather === 'cloudy') weatherIcon = '☁️';
+                    else if (trail.forecast_weather === 'rainy') weatherIcon = '🌧️';
+                    else if (trail.forecast_weather === 'snowy') weatherIcon = '❄️';
+                    else if (trail.forecast_weather === 'storm_risk') weatherIcon = '⛈️';
+                    else weatherIcon = '🌤️';
+                    
+                    weatherInfo = 'Weather: ' + weatherIcon + ' ' + trail.forecast_weather.charAt(0).toUpperCase() + trail.forecast_weather.slice(1) + '<br>';
+                }
+                
                 var marker = L.marker([trail.lat, trail.lon])
                     .addTo(map)
                     .bindPopup(
@@ -510,6 +668,7 @@
                         'Distance: ' + (trail.distance !== null ? trail.distance + ' km' : 'N/A') + '<br>' +
                         'Duration: ' + formatDuration(trail.duration) + '<br>' +
                         'Elevation: ' + (trail.elevation !== null ? trail.elevation + 'm' : 'N/A') + '<br>' +
+                        weatherInfo +
                         '⭐ ' + trail.popularity + '/10'
                     );
                 markers.push(marker);
@@ -630,6 +789,7 @@
 
         function filterList(filteredTrails) {
             var trailCards = document.querySelectorAll('.trail-card, .trail-card-with-map');
+            var visibleCount = 0;
             
             trailCards.forEach(function(card) {
                 var trailId = card.getAttribute('data-trail-id');
@@ -656,6 +816,21 @@
                 if (distanceFilter && distance > parseFloat(distanceFilter)) show = false;
 
                 card.style.display = show ? 'block' : 'none';
+                if (show) visibleCount++;
+            });
+            
+            // Update count in headers
+            updateTrailCount(visibleCount);
+        }
+        
+        function updateTrailCount(count) {
+            var headers = document.querySelectorAll('.view-section h2');
+            headers.forEach(function(header) {
+                // Extract the icon and text
+                var text = header.textContent;
+                var icon = text.match(/^[^\w\s]+/)[0]; // Get emoji at start
+                var baseText = text.replace(/\([^)]+\)/, '').trim(); // Remove old count
+                header.textContent = icon + ' All Trails (' + count + ')';
             });
         }
 
@@ -671,6 +846,141 @@
                 card.style.display = 'block';
             });
         }
+        
+        // Fetch weather data asynchronously via AJAX (much faster!)
+        function updateWeather() {
+            var startDate = document.getElementById('hike-start-date').value;
+            var endDate = document.getElementById('hike-end-date').value;
+            
+            if (!startDate) {
+                alert('⚠️ Please select a start date');
+                return;
+            }
+            
+            // Show loading state
+            var btn = event.target;
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Loading Weather...';
+            btn.disabled = true;
+            
+            // Collect all trail IDs
+            var trailIds = [];
+            var trailCards = document.querySelectorAll('[data-trail-id]');
+            trailCards.forEach(function(card) {
+                var trailId = card.getAttribute('data-trail-id');
+                if (trailId) {
+                    trailIds.push(trailId);
+                }
+            });
+            
+            if (trailIds.length === 0) {
+                alert('No trails found to update weather');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+            
+            // Fetch weather data in parallel via API
+            var apiUrl = '/api/weather/batch?trail_ids=' + trailIds.join(',') + '&date=' + encodeURIComponent(startDate);
+            
+            fetch(apiUrl)
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Weather API request failed');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    var weather = data.weather || {};
+                    console.log('Fetched weather for ' + Object.keys(weather).length + ' trails in ' + data.elapsed_seconds + 's');
+                    
+                    // Update weather badges in all views
+                    updateWeatherBadges(weather);
+                    
+                    // Update map popup content
+                    updateMapWeather(weather);
+                    
+                    // Show success message
+                    btn.innerHTML = '✅ Weather Updated!';
+                    setTimeout(function() {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }, 2000);
+                })
+                .catch(function(error) {
+                    console.error('Error fetching weather:', error);
+                    alert('❌ Failed to fetch weather data. Please try again.');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+        }
+        
+        // Update weather badges in trail cards
+        function updateWeatherBadges(weatherData) {
+            // Update all trail cards (both list and card views)
+            var trailCards = document.querySelectorAll('[data-trail-id]');
+            
+            trailCards.forEach(function(card) {
+                var trailId = card.getAttribute('data-trail-id');
+                var weather = weatherData[trailId];
+                
+                // Find weather badge in this card
+                var weatherBadges = card.querySelectorAll('.trail-stats .badge');
+                
+                weatherBadges.forEach(function(badge) {
+                    // Check if this is a weather badge (contains weather emoji)
+                    var text = badge.textContent;
+                    if (text.includes('☀️') || text.includes('☁️') || text.includes('🌧️') || 
+                        text.includes('❄️') || text.includes('⛈️') || text.includes('🌤️') || text.includes('N/A')) {
+                        
+                        if (weather) {
+                            var icon = '🌤️';
+                            var label = weather;
+                            
+                            if (weather === 'sunny') icon = '☀️';
+                            else if (weather === 'cloudy') icon = '☁️';
+                            else if (weather === 'rainy') icon = '🌧️';
+                            else if (weather === 'snowy') icon = '❄️';
+                            else if (weather === 'storm_risk') icon = '⛈️';
+                            
+                            badge.innerHTML = icon + ' ' + label.charAt(0).toUpperCase() + label.slice(1);
+                            badge.style.opacity = '1';
+                            badge.title = 'Weather forecast';
+                        } else {
+                            badge.innerHTML = '🌤️ N/A';
+                            badge.style.opacity = '0.5';
+                            badge.title = 'Weather data unavailable';
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Update weather in map popups
+        function updateMapWeather(weatherData) {
+            // Note: Map popups are generated dynamically
+            // We'll update them when markers are clicked
+            // Store weather data globally for map access
+            window.currentWeatherData = weatherData;
+        }
+        
+        // Scroll to top functionality
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        
+        // Show/hide scroll to top button based on scroll position
+        window.addEventListener('scroll', function() {
+            var scrollBtn = document.getElementById('scroll-to-top');
+            if (window.pageYOffset > 300) {
+                scrollBtn.classList.add('visible');
+            } else {
+                scrollBtn.classList.remove('visible');
+            }
+        });
     </script>
 {% endblock %}
 
