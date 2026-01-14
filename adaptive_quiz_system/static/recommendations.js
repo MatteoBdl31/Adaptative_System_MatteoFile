@@ -113,9 +113,24 @@
                     ? window.recommendationDetailUrl(trail.trail_id) 
                     : '#';
                 
+                // Build weather info for popup
+                let weatherInfo = '';
+                if (trail.forecast_weather) {
+                    let weatherIcon = '';
+                    if (trail.forecast_weather === 'sunny') weatherIcon = '☀️';
+                    else if (trail.forecast_weather === 'cloudy') weatherIcon = '☁️';
+                    else if (trail.forecast_weather === 'rainy') weatherIcon = '🌧️';
+                    else if (trail.forecast_weather === 'snowy') weatherIcon = '❄️';
+                    else if (trail.forecast_weather === 'storm_risk') weatherIcon = '⛈️';
+                    else weatherIcon = '🌤️';
+                    
+                    const weatherText = trail.forecast_weather.charAt(0).toUpperCase() + trail.forecast_weather.slice(1);
+                    weatherInfo = `<br/>${weatherIcon} ${weatherText}`;
+                }
+                
                 marker.bindPopup(`
                     <strong><a href="${detailUrl}">${trail.name}</a></strong><br/>
-                    ${trail.distance || '—'} km · ${trail.trail_type || ''}
+                    ${trail.distance || '—'} km · ${trail.trail_type || ''}${weatherInfo}
                 `);
                 bounds.push([lat, lon]);
 

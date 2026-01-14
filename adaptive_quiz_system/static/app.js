@@ -131,8 +131,11 @@ class MapManager {
             onMarkerClick = null 
         } = options;
 
+        // Store trail data for interactivity
+        const trailDataMap = new Map();
+
         trails.forEach(trail => {
-            const { latitude, longitude, name, distance, view_type, trail_id } = trail;
+            const { latitude, longitude, name, distance, duration, elevation_gain, difficulty, description, view_type, trail_id, elevation_profile, forecast_weather } = trail;
             
             if (!latitude || !longitude) return;
 
@@ -155,12 +158,130 @@ class MapManager {
 
             const marker = L.marker([latitude, longitude], { icon }).addTo(map);
             
+            // Format difficulty
+            const difficultyValue = difficulty || 0;
+            const difficultyText = difficultyValue <= 3 ? 'Easy' : difficultyValue <= 6 ? 'Medium' : 'Hard';
+            const difficultyClass = difficultyValue <= 3 ? 'easy' : difficultyValue <= 6 ? 'medium' : 'hard';
+            
+            // Format duration using Utils if available
+            let durationText = '—';
+            if (duration && typeof Utils !== 'undefined' && Utils.formatDuration) {
+                durationText = Utils.formatDuration(duration);
+            } else if (duration) {
+                const mins = parseInt(duration) || 0;
+                if (mins < 60) {
+                    durationText = `${mins} min`;
+                } else {
+                    const hours = Math.floor(mins / 60);
+                    const remainingMins = mins % 60;
+                    durationText = remainingMins === 0 
+                        ? `${hours} hour${hours !== 1 ? 's' : ''}` 
+                        : `${hours} hour${hours !== 1 ? 's' : ''} ${remainingMins} min`;
+                }
+            }
+            
+            // Build elevation profile SVG if available
+            let elevationProfileSVG = '';
+            let profileData = elevation_profile;
+            let polyline = null;
+            let trailCoordinates = null;
+            
+            // Parse elevation_profile if it's a JSON string
+            if (profileData && typeof profileData === 'string') {
+                try {
+                    profileData = JSON.parse(profileData);
+                } catch (e) {
+                    console.warn('Failed to parse elevation_profile:', e);
+                    profileData = null;
+                }
+            }
+            
+            // Parse coordinates for trail line
+            if (trail.coordinates) {
+                try {
+                    trailCoordinates = typeof trail.coordinates === 'string' 
+                        ? JSON.parse(trail.coordinates) 
+                        : trail.coordinates;
+                } catch (e) {
+                    console.warn('Failed to parse trail coordinates:', e);
+                }
+            }
+            
+            if (profileData && Array.isArray(profileData) && profileData.length > 0) {
+                elevationProfileSVG = this.renderElevationProfile(profileData, distance, trail_id);
+            }
+            
+            // Format weather info
+            let weatherIcon = '';
+            let weatherText = '';
+            if (forecast_weather) {
+                const weatherIcons = {
+                    'sunny': '☀️',
+                    'cloudy': '☁️',
+                    'rainy': '🌧️',
+                    'snowy': '❄️',
+                    'storm_risk': '⛈️'
+                };
+                weatherIcon = weatherIcons[forecast_weather] || '🌤️';
+                weatherText = forecast_weather.charAt(0).toUpperCase() + forecast_weather.slice(1).replace('_', ' ');
+            }
+            
+            // Build popup content with all trail information
             const popupContent = `
-                <strong>${name || 'Unknown'}</strong><br/>
-                ${distance || '—'} km
+                <div class="trail-popup">
+                    <div class="trail-popup__header">
+                        <h3 class="trail-popup__title">${name || 'Unknown'}</h3>
+                        <span class="trail-popup__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                    </div>
+                    ${description ? `<p class="trail-popup__description">${description}</p>` : ''}
+                    <div class="trail-popup__stats">
+                        <div class="trail-popup__stat">
+                            <span class="trail-popup__stat-icon">📏</span>
+                            <span class="trail-popup__stat-label">Distance:</span>
+                            <span class="trail-popup__stat-value">${distance || '—'} km</span>
+                        </div>
+                        <div class="trail-popup__stat">
+                            <span class="trail-popup__stat-icon">⏱</span>
+                            <span class="trail-popup__stat-label">Duration:</span>
+                            <span class="trail-popup__stat-value">${durationText}</span>
+                        </div>
+                        <div class="trail-popup__stat">
+                            <span class="trail-popup__stat-icon">⛰</span>
+                            <span class="trail-popup__stat-label">Elevation:</span>
+                            <span class="trail-popup__stat-value">${elevation_gain || '—'} m</span>
+                        </div>
+                        ${forecast_weather ? `
+                        <div class="trail-popup__stat">
+                            <span class="trail-popup__stat-icon">${weatherIcon}</span>
+                            <span class="trail-popup__stat-label">Weather:</span>
+                            <span class="trail-popup__stat-value">${weatherText}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${elevationProfileSVG ? `<div class="trail-popup__elevation">${elevationProfileSVG}</div>` : ''}
+                </div>
             `;
             
-            marker.bindPopup(popupContent);
+            marker.bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'trail-popup-wrapper'
+            });
+            
+            // Store popup reference for later interaction setup
+            marker.on('popupopen', () => {
+                // Setup interactivity after popup opens
+                // Get polyline from stored trail data
+                const storedData = map._trailDataMap?.get(trail_id);
+                if (profileData && storedData && storedData.polyline) {
+                    this.setupElevationProfileInteractivity(
+                        trail_id, 
+                        profileData, 
+                        storedData.polyline, 
+                        storedData.coordinates,
+                        storedData.distance
+                    );
+                }
+            });
             
             if (onMarkerClick && trail_id) {
                 marker.on('click', () => onMarkerClick(trail_id));
@@ -169,22 +290,28 @@ class MapManager {
             bounds.push([latitude, longitude]);
 
             // Add trail path if coordinates available
-            if (trail.coordinates) {
-                try {
-                    const coords = typeof trail.coordinates === 'string' 
-                        ? JSON.parse(trail.coordinates) 
-                        : trail.coordinates;
-                    
-                    if (coords && coords.coordinates && Array.isArray(coords.coordinates)) {
-                        const latLngs = coords.coordinates.map(coord => [coord[1], coord[0]]);
-                        L.polyline(latLngs, {
-                            color: color,
-                            weight: 3,
-                            opacity: 0.8
-                        }).addTo(map);
-                    }
-                } catch (e) {
-                    console.warn('Failed to parse trail coordinates:', e);
+            if (trailCoordinates && trailCoordinates.coordinates && Array.isArray(trailCoordinates.coordinates)) {
+                const latLngs = trailCoordinates.coordinates.map(coord => [coord[1], coord[0]]);
+                polyline = L.polyline(latLngs, {
+                    color: color,
+                    weight: 3,
+                    opacity: 0.8
+                }).addTo(map);
+                
+                // Store trail data for interactivity
+                const trailData = {
+                    polyline,
+                    profileData,
+                    coordinates: trailCoordinates,
+                    distance,
+                    color,
+                    marker
+                };
+                trailDataMap.set(trail_id, trailData);
+                
+                // Add hover interaction to polyline (only if we have elevation profile)
+                if (profileData && Array.isArray(profileData) && profileData.length > 0) {
+                    this.setupPolylineInteractivity(trail_id, polyline, profileData, trailCoordinates, distance, marker);
                 }
             }
         });
@@ -193,7 +320,336 @@ class MapManager {
             map.fitBounds(bounds, { padding: [20, 20] });
         }
 
+        // Store trail data map for later access
+        map._trailDataMap = trailDataMap;
+
         return map;
+    }
+
+    setupPolylineInteractivity(trailId, polyline, profileData, coordinates, totalDistance, marker) {
+        if (!profileData || !Array.isArray(profileData) || profileData.length === 0) return;
+        
+        let hoverMarker = null;
+        let currentProfileIndex = -1;
+        
+        // Calculate cumulative distances along the trail
+        const latLngs = coordinates.coordinates.map(coord => [coord[1], coord[0]]);
+        const distances = [0];
+        for (let i = 1; i < latLngs.length; i++) {
+            const prev = latLngs[i - 1];
+            const curr = latLngs[i];
+            const dist = L.latLng(prev).distanceTo(L.latLng(curr)) / 1000; // km
+            distances.push(distances[i - 1] + dist);
+        }
+        
+        polyline.on('mouseover', (e) => {
+            if (!e.latlng) return;
+            
+            // Find closest point on polyline
+            let minDist = Infinity;
+            let closestIndex = 0;
+            let closestPoint = latLngs[0];
+            
+            latLngs.forEach((point, index) => {
+                const dist = L.latLng(point).distanceTo(e.latlng);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestIndex = index;
+                    closestPoint = point;
+                }
+            });
+            
+            // Calculate distance along trail
+            const distanceAlongTrail = distances[closestIndex];
+            
+            // Find corresponding point in elevation profile
+            const profileIndex = this.findProfileIndexForDistance(profileData, distanceAlongTrail * 1000);
+            
+            if (profileIndex >= 0 && profileIndex !== currentProfileIndex) {
+                currentProfileIndex = profileIndex;
+                
+                // Create or update hover marker
+                if (!hoverMarker) {
+                    hoverMarker = L.circleMarker(closestPoint, {
+                        radius: 8,
+                        color: '#ef4444',
+                        fillColor: '#fff',
+                        fillOpacity: 1,
+                        weight: 2
+                    }).addTo(polyline._map);
+                } else {
+                    hoverMarker.setLatLng(closestPoint);
+                }
+                
+                // Highlight on elevation profile
+                this.highlightElevationProfile(trailId, profileIndex);
+            }
+        });
+        
+        polyline.on('mouseout', () => {
+            if (hoverMarker) {
+                hoverMarker.remove();
+                hoverMarker = null;
+            }
+            currentProfileIndex = -1;
+            this.clearElevationProfileHighlight(trailId);
+        });
+    }
+
+    setupElevationProfileInteractivity(trailId, profileData, polyline, coordinates, totalDistance) {
+        if (!profileData || !Array.isArray(profileData) || profileData.length === 0) return;
+        if (!polyline || !coordinates) return;
+        
+        const svg = document.querySelector(`#elevation-chart-${trailId}`);
+        if (!svg) return;
+        
+        const latLngs = coordinates.coordinates.map(coord => [coord[1], coord[0]]);
+        
+        // Calculate cumulative distances along the trail
+        const distances = [0];
+        for (let i = 1; i < latLngs.length; i++) {
+            const prev = latLngs[i - 1];
+            const curr = latLngs[i];
+            const dist = L.latLng(prev).distanceTo(L.latLng(curr)) / 1000; // km
+            distances.push(distances[i - 1] + dist);
+        }
+        
+        let hoverMarker = null;
+        let currentProfileIndex = -1;
+        
+        // Add invisible hover areas over the elevation line
+        const points = profileData.map(p => ({
+            distance: p.distance_m || 0,
+            elevation: p.elevation_m || 0
+        }));
+        
+        const width = 280;
+        const height = 100;
+        const padding = { top: 8, right: 8, bottom: 20, left: 40 };
+        const maxDistance = points[points.length - 1].distance / 1000;
+        const minElevation = Math.min(...points.map(p => p.elevation));
+        const maxElevation = Math.max(...points.map(p => p.elevation));
+        const elevationRange = maxElevation - minElevation || 1;
+        const xScale = (width - padding.left - padding.right) / maxDistance;
+        const yScale = (height - padding.top - padding.bottom) / elevationRange;
+        
+        // Create hover areas
+        points.forEach((point, index) => {
+            if (index === 0) return; // Skip first point
+            
+            const x1 = padding.left + (points[index - 1].distance / 1000) * xScale;
+            const x2 = padding.left + (point.distance / 1000) * xScale;
+            const y1 = padding.top;
+            const y2 = height - padding.bottom;
+            
+            const hoverArea = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            hoverArea.setAttribute('x', Math.min(x1, x2));
+            hoverArea.setAttribute('y', y1);
+            hoverArea.setAttribute('width', Math.abs(x2 - x1));
+            hoverArea.setAttribute('height', y2 - y1);
+            hoverArea.setAttribute('fill', 'transparent');
+            hoverArea.setAttribute('style', 'cursor: crosshair;');
+            hoverArea.classList.add('elevation-hover-area');
+            
+            hoverArea.addEventListener('mouseenter', () => {
+                if (index !== currentProfileIndex) {
+                    currentProfileIndex = index;
+                    
+                    // Find corresponding point on trail
+                    const distanceKm = point.distance / 1000;
+                    const trailIndex = this.findTrailIndexForDistance(distances, distanceKm);
+                    
+                    if (trailIndex >= 0 && trailIndex < latLngs.length) {
+                        const trailPoint = latLngs[trailIndex];
+                        
+                        // Create or update hover marker on trail
+                        if (!hoverMarker) {
+                            hoverMarker = L.circleMarker(trailPoint, {
+                                radius: 8,
+                                color: '#ef4444',
+                                fillColor: '#fff',
+                                fillOpacity: 1,
+                                weight: 2
+                            }).addTo(polyline._map);
+                        } else {
+                            hoverMarker.setLatLng(trailPoint);
+                        }
+                        
+                        // Highlight on elevation profile
+                        this.highlightElevationProfile(trailId, index);
+                    }
+                }
+            });
+            
+            hoverArea.addEventListener('mouseleave', () => {
+                if (hoverMarker) {
+                    hoverMarker.remove();
+                    hoverMarker = null;
+                }
+                currentProfileIndex = -1;
+                this.clearElevationProfileHighlight(trailId);
+            });
+            
+            svg.appendChild(hoverArea);
+        });
+    }
+
+    findProfileIndexForDistance(profileData, distanceM) {
+        for (let i = 0; i < profileData.length; i++) {
+            if (profileData[i].distance_m >= distanceM) {
+                return i;
+            }
+        }
+        return profileData.length - 1;
+    }
+
+    findTrailIndexForDistance(distances, distanceKm) {
+        for (let i = 0; i < distances.length; i++) {
+            if (distances[i] >= distanceKm) {
+                return i;
+            }
+        }
+        return distances.length - 1;
+    }
+
+    highlightElevationProfile(trailId, index) {
+        const marker = document.querySelector(`#elevation-marker-${trailId}`);
+        if (marker) {
+            marker.setAttribute('display', 'block');
+            const profileData = JSON.parse(marker.getAttribute('data-profile'));
+            if (profileData && profileData[index]) {
+                const point = profileData[index];
+                const width = 280;
+                const height = 100;
+                const padding = { top: 8, right: 8, bottom: 20, left: 40 };
+                const maxDistance = profileData[profileData.length - 1].distance_m / 1000;
+                const minElevation = Math.min(...profileData.map(p => p.elevation_m));
+                const maxElevation = Math.max(...profileData.map(p => p.elevation_m));
+                const elevationRange = maxElevation - minElevation || 1;
+                const xScale = (width - padding.left - padding.right) / maxDistance;
+                const yScale = (height - padding.top - padding.bottom) / elevationRange;
+                
+                const x = padding.left + (point.distance_m / 1000) * xScale;
+                const y = padding.top + (maxElevation - point.elevation_m) * yScale;
+                
+                marker.setAttribute('cx', x);
+                marker.setAttribute('cy', y);
+            }
+        }
+    }
+
+    clearElevationProfileHighlight(trailId) {
+        const marker = document.querySelector(`#elevation-marker-${trailId}`);
+        if (marker) {
+            marker.setAttribute('display', 'none');
+        }
+    }
+
+    renderElevationProfile(elevationProfile, totalDistance, trailId) {
+        if (!elevationProfile || !Array.isArray(elevationProfile) || elevationProfile.length === 0) {
+            return '';
+        }
+
+        // Parse elevation profile data
+        const points = elevationProfile.map(p => ({
+            distance: p.distance_m || 0,
+            elevation: p.elevation_m || 0
+        }));
+
+        // Chart dimensions
+        const width = 280;
+        const height = 100;
+        const padding = { top: 8, right: 8, bottom: 20, left: 40 };
+
+        // Calculate scales
+        const maxDistance = points[points.length - 1].distance / 1000; // Convert to km
+        const minElevation = Math.min(...points.map(p => p.elevation));
+        const maxElevation = Math.max(...points.map(p => p.elevation));
+        const elevationRange = maxElevation - minElevation || 1;
+
+        // Scale factors
+        const xScale = (width - padding.left - padding.right) / maxDistance;
+        const yScale = (height - padding.top - padding.bottom) / elevationRange;
+
+        // Generate path
+        let pathData = '';
+        points.forEach((point, index) => {
+            const x = padding.left + (point.distance / 1000) * xScale;
+            const y = padding.top + (maxElevation - point.elevation) * yScale;
+            if (index === 0) {
+                pathData += `M ${x} ${y}`;
+            } else {
+                pathData += ` L ${x} ${y}`;
+            }
+        });
+
+        // Generate area fill path (closed path for fill)
+        const areaPath = pathData + 
+            ` L ${padding.left + maxDistance * xScale} ${height - padding.bottom}` +
+            ` L ${padding.left} ${height - padding.bottom} Z`;
+
+        // Format elevation labels
+        const formatElevation = (elev) => Math.round(elev);
+
+        const uniqueGradientId = `elevationGradient-${trailId || 'default'}`;
+        
+        return `
+            <div class="trail-popup__elevation-header">
+                <span class="trail-popup__elevation-title">Elevation Profile</span>
+                <span class="trail-popup__elevation-range">${formatElevation(minElevation)}m - ${formatElevation(maxElevation)}m</span>
+            </div>
+            <svg class="trail-popup__elevation-chart" id="elevation-chart-${trailId || 'default'}" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
+                <!-- Grid lines -->
+                <defs>
+                    <linearGradient id="${uniqueGradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.3" />
+                        <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0.05" />
+                    </linearGradient>
+                </defs>
+                
+                <!-- Area fill -->
+                <path d="${areaPath}" fill="url(#${uniqueGradientId})" />
+                
+                <!-- Elevation line -->
+                <path d="${pathData}" 
+                      fill="none" 
+                      stroke="#6366f1" 
+                      stroke-width="2" 
+                      stroke-linecap="round" 
+                      stroke-linejoin="round" />
+                
+                <!-- Hover marker (hidden by default) -->
+                <circle id="elevation-marker-${trailId || 'default'}" 
+                        r="4" 
+                        fill="#ef4444" 
+                        stroke="#fff" 
+                        stroke-width="2"
+                        display="none"
+                        data-profile='${JSON.stringify(elevationProfile)}' />
+                
+                <!-- Y-axis labels -->
+                <text x="${padding.left - 5}" y="${padding.top + 2}" 
+                      text-anchor="end" 
+                      font-size="9" 
+                      fill="#64748b" 
+                      alignment-baseline="hanging">${formatElevation(maxElevation)}m</text>
+                <text x="${padding.left - 5}" y="${height - padding.bottom - 2}" 
+                      text-anchor="end" 
+                      font-size="9" 
+                      fill="#64748b" 
+                      alignment-baseline="baseline">${formatElevation(minElevation)}m</text>
+                
+                <!-- X-axis labels -->
+                <text x="${padding.left}" y="${height - padding.bottom + 15}" 
+                      text-anchor="start" 
+                      font-size="9" 
+                      fill="#64748b">0 km</text>
+                <text x="${padding.left + maxDistance * xScale}" y="${height - padding.bottom + 15}" 
+                      text-anchor="end" 
+                      font-size="9" 
+                      fill="#64748b">${maxDistance.toFixed(1)} km</text>
+            </svg>
+        `;
     }
 
     invalidateSize(mapId) {
@@ -456,6 +912,7 @@ const Utils = {
 window.AppState = AppState;
 window.ApiClient = ApiClient;
 window.MapManager = MapManager;
+window.Utils = Utils;
 window.FormManager = FormManager;
 window.ViewManager = ViewManager;
 window.Utils = Utils;
