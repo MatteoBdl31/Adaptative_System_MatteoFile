@@ -221,13 +221,24 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">User Profile</label>
-                            <select name="user_id_a" class="form-select">
+                            <select name="user_id_a" class="form-select" id="user-select-a">
                                 {% for person in users %}
-                                    <option value="{{ person.id }}" {% if person.id == selected_user_id_a %}selected{% endif %}>
-                                        {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}
+                                    <option value="{{ person.id }}" 
+                                            {% if person.id == selected_user_id_a %}selected{% endif %}
+                                            data-profile="{{ person.detected_profile or '' }}"
+                                            data-profile-name="{{ person.detected_profile|profile_name_en if person.detected_profile else '' }}">
+                                        {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}{% if person.detected_profile %} / {{ person.detected_profile|profile_name_short }}{% endif %}
                                     </option>
                                 {% endfor %}
                             </select>
+                            <div class="user-profile-badge" id="profile-badge-a" style="margin-top: 8px; padding: 8px 12px; background-color: #f0f0f0; border-radius: 6px; display: {% if selected_user_a and selected_user_a.detected_profile %}inline-block{% else %}none{% endif %};">
+                                <strong>Detected Profile:</strong> 
+                                <span style="color: #667eea; font-weight: 600;" id="profile-name-a">
+                                    {% if selected_user_a and selected_user_a.detected_profile %}
+                                        {{ selected_user_a.detected_profile|profile_name_en }}
+                                    {% endif %}
+                                </span>
+                            </div>
                         </div>
                         <div class="user-scenario__fields">
                             {% for field in context_fields %}
@@ -261,13 +272,24 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">User Profile</label>
-                            <select name="user_id_b" class="form-select" disabled>
+                            <select name="user_id_b" class="form-select" disabled id="user-select-b">
                                 {% for person in users %}
-                                    <option value="{{ person.id }}" {% if person.id == selected_user_id_b %}selected{% endif %}>
-                                        {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}
+                                    <option value="{{ person.id }}" 
+                                            {% if person.id == selected_user_id_b %}selected{% endif %}
+                                            data-profile="{{ person.detected_profile or '' }}"
+                                            data-profile-name="{{ person.detected_profile|profile_name_en if person.detected_profile else '' }}">
+                                        {{ person.name }} · {{ person.experience }} / {{ person.fitness_level }}{% if person.detected_profile %} / {{ person.detected_profile|profile_name_short }}{% endif %}
                                     </option>
                                 {% endfor %}
                             </select>
+                            <div class="user-profile-badge" id="profile-badge-b" style="margin-top: 8px; padding: 8px 12px; background-color: #f0f0f0; border-radius: 6px; display: {% if selected_user_b and selected_user_b.detected_profile %}inline-block{% else %}none{% endif %};">
+                                <strong>Detected Profile:</strong> 
+                                <span style="color: #667eea; font-weight: 600;" id="profile-name-b">
+                                    {% if selected_user_b and selected_user_b.detected_profile %}
+                                        {{ selected_user_b.detected_profile|profile_name_en }}
+                                    {% endif %}
+                                </span>
+                            </div>
                         </div>
                         <div class="user-scenario__fields">
                             {% for field in context_fields %}

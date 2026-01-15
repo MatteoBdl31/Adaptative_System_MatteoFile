@@ -98,7 +98,7 @@ def seed_rules() -> None:
 def seed_users(example_trails: List[dict]) -> None:
     conn = sqlite3.connect(USERS_DB)
     cur = conn.cursor()
-    for table in ["users", "preferences", "performance", "completed_trails", "trail_history"]:
+    for table in ["users", "preferences", "performance", "completed_trails", "trail_history", "user_profiles"]:
         cur.execute(f"DROP TABLE IF EXISTS {table}")
 
     cur.execute(
@@ -158,6 +158,17 @@ def seed_users(example_trails: List[dict]) -> None:
             trail_id TEXT,
             viewed_at TEXT,
             abandoned INTEGER,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE user_profiles (
+            user_id INTEGER PRIMARY KEY,
+            primary_profile TEXT,
+            profile_scores TEXT,
+            last_updated TEXT,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
         """
@@ -252,23 +263,74 @@ def seed_users(example_trails: List[dict]) -> None:
         return available_ids[offset % len(available_ids)]
 
     completed_trails = [
+        # User 101 (Alice) - Advanced, High fitness - 4 trails
         (101, pick(0), "2024-01-15", 110, 5),
         (101, pick(1), "2024-01-20", 180, 5),
-        (102, pick(2), "2024-01-10", 40, 4),
-        (103, pick(3), "2024-01-12", 95, 4),
-        (104, pick(4), "2024-01-08", 25, 3),
-        (105, pick(5), "2024-01-25", 150, 5),
-        (105, pick(6), "2024-01-18", 140, 5),
-        (106, pick(7), "2024-01-11", 70, 4),
-        (107, pick(8), "2024-01-09", 32, 4),
-        (108, pick(9), "2024-01-16", 105, 4),
-        (109, pick(10), "2024-01-13", 48, 4),
-        (110, pick(11), "2024-01-14", 38, 4),
-        (111, pick(12), "2024-01-22", 145, 5),
-        (112, pick(13), "2024-01-17", 88, 4),
-        (113, pick(14), "2024-01-07", 28, 3),
-        (114, pick(15), "2024-01-24", 155, 5),
+        (101, pick(2), "2024-02-10", 165, 5),
+        (101, pick(3), "2024-02-25", 200, 4),
+        # User 102 (Bob) - Beginner, Medium fitness - 3 trails
+        (102, pick(4), "2024-01-10", 40, 4),
+        (102, pick(5), "2024-01-25", 45, 4),
+        (102, pick(6), "2024-02-05", 50, 3),
+        # User 103 (Carol) - Intermediate, High fitness - 3 trails
+        (103, pick(7), "2024-01-12", 95, 4),
+        (103, pick(8), "2024-01-28", 100, 5),
+        (103, pick(9), "2024-02-15", 90, 4),
+        # User 104 (David) - Beginner, Low fitness - 3 trails
+        (104, pick(10), "2024-01-08", 25, 3),
+        (104, pick(11), "2024-01-22", 30, 3),
+        (104, pick(12), "2024-02-08", 28, 4),
+        # User 105 (Emma) - Advanced, High fitness - 5 trails
+        (105, pick(13), "2024-01-25", 150, 5),
+        (105, pick(14), "2024-01-18", 140, 5),
+        (105, pick(15), "2024-02-12", 160, 5),
+        (105, pick(16), "2024-02-28", 175, 5),
+        (105, pick(0), "2024-03-10", 155, 4),
+        # User 106 (Frank) - Intermediate, Medium fitness - 3 trails
+        (106, pick(1), "2024-01-11", 70, 4),
+        (106, pick(2), "2024-01-27", 75, 4),
+        (106, pick(3), "2024-02-14", 68, 5),
+        # User 107 (Grace) - Beginner, Low fitness - 3 trails
+        (107, pick(4), "2024-01-09", 32, 4),
+        (107, pick(5), "2024-01-24", 35, 4),
+        (107, pick(6), "2024-02-09", 30, 3),
+        # User 108 (Henry) - Advanced, Medium fitness - 4 trails
+        (108, pick(7), "2024-01-16", 105, 4),
+        (108, pick(8), "2024-02-01", 110, 4),
+        (108, pick(9), "2024-02-18", 115, 5),
+        (108, pick(10), "2024-03-05", 108, 4),
+        # User 109 (Iris) - Intermediate, Low fitness - 3 trails
+        (109, pick(11), "2024-01-13", 48, 4),
+        (109, pick(12), "2024-01-30", 50, 4),
+        (109, pick(13), "2024-02-16", 45, 3),
+        # User 110 (Jack) - Beginner, High fitness - 3 trails
+        (110, pick(14), "2024-01-14", 38, 4),
+        (110, pick(15), "2024-01-29", 42, 4),
+        (110, pick(16), "2024-02-17", 40, 5),
+        # User 111 (Kate) - Advanced, High fitness - 4 trails
+        (111, pick(0), "2024-01-22", 145, 5),
+        (111, pick(1), "2024-02-08", 150, 5),
+        (111, pick(2), "2024-02-24", 140, 5),
+        (111, pick(3), "2024-03-12", 155, 4),
+        # User 112 (Liam) - Intermediate, Medium fitness - 3 trails
+        (112, pick(4), "2024-01-17", 88, 4),
+        (112, pick(5), "2024-02-03", 92, 4),
+        (112, pick(6), "2024-02-20", 85, 5),
+        # User 113 (Mia) - Beginner, Medium fitness - 3 trails
+        (113, pick(7), "2024-01-07", 28, 3),
+        (113, pick(8), "2024-01-23", 30, 3),
+        (113, pick(9), "2024-02-11", 32, 4),
+        # User 114 (Noah) - Advanced, High fitness - 6 trails
+        (114, pick(10), "2024-01-24", 155, 5),
+        (114, pick(11), "2024-02-09", 160, 5),
+        (114, pick(12), "2024-02-26", 165, 5),
+        (114, pick(13), "2024-03-14", 170, 5),
+        (114, pick(14), "2024-03-28", 158, 4),
+        (114, pick(15), "2024-04-10", 162, 5),
+        # User 115 (Olivia) - Intermediate, High fitness - 3 trails
         (115, pick(16), "2024-01-19", 92, 4),
+        (115, pick(0), "2024-02-06", 95, 5),
+        (115, pick(1), "2024-02-22", 90, 4),
     ]
     cur.executemany(
         "INSERT INTO completed_trails (user_id, trail_id, completion_date, actual_duration, rating) "
