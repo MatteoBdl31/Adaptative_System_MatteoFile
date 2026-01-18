@@ -80,16 +80,21 @@ def create_diverse_completed_trails(trails: List[dict]) -> List[tuple]:
     """
     Create a diverse set of completed trails that will trigger different profiles.
     
+    To ensure reproducibility, trails are sorted by trail_id before processing.
+    
     Returns:
         List of (user_id, trail_id, completion_date, actual_duration, rating) tuples
     """
+    # Sort trails deterministically by trail_id to ensure reproducible selection
+    trails_sorted = sorted(trails, key=lambda t: t.get("trail_id", ""))
+    
     completed = []
     used_trails = set()  # Track used trails to avoid duplicates
     
     # Helper to pick unused trail with fallback
     def pick_unused(criteria: Dict, fallback_criteria: Dict = None, require_match: bool = False) -> Optional[str]:
-        # Try strict criteria first - search through all available trails
-        all_matching = [t for t in trails if t.get("trail_id") not in used_trails]
+        # Try strict criteria first - search through all available trails (sorted for reproducibility)
+        all_matching = [t for t in trails_sorted if t.get("trail_id") not in used_trails]
         for trail in all_matching:
             trail_id = pick_trail_by_criteria([trail], criteria)  # Check if this single trail matches
             if trail_id:

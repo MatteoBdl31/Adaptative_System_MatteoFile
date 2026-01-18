@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sqlite3
@@ -95,7 +96,7 @@ def seed_rules() -> None:
     print("rules.db initialized with adaptive ruleset")
 
 
-def seed_users(example_trails: List[dict]) -> None:
+def seed_users(example_trails: List[dict], use_reference: bool = False) -> None:
     conn = sqlite3.connect(USERS_DB)
     cur = conn.cursor()
     for table in ["users", "preferences", "performance", "completed_trails", "user_profiles"]:
@@ -249,7 +250,23 @@ def seed_users(example_trails: List[dict]) -> None:
     from backend.diversify_profiles import create_diverse_completed_trails
     from backend.db import _insert_completed_trail_sql
     
-    completed_trails = create_diverse_completed_trails(example_trails)
+    # Check for reference JSON file
+    completed_trails_ref_path = BASE_DIR.parent / "data" / "seed" / "completed_trails_reference.json"
+    
+    if use_reference and completed_trails_ref_path.exists():
+        # Load from reference JSON for reproducibility
+        print("Loading completed trails from reference JSON for reproducibility...")
+        with open(completed_trails_ref_path, "r", encoding="utf-8") as f:
+            completed_trails_data = json.load(f)
+        # Convert to tuples for compatibility
+        completed_trails = [
+            (ct["user_id"], ct["trail_id"], ct["completion_date"], 
+             ct["actual_duration"], ct["rating"])
+            for ct in completed_trails_data
+        ]
+    else:
+        # Generate dynamically (current behavior)
+        completed_trails = create_diverse_completed_trails(example_trails)
     
     # Insert completed trails using shared function to avoid code duplication
     # Pass existing connection for efficiency (single commit at the end)
@@ -282,7 +299,28 @@ def seed_users(example_trails: List[dict]) -> None:
     print("users.db initialized with demo hikers and contextual history")
 
 
-def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT) -> List[dict]:
+def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT, use_reference: bool = False) -> List[dict]:
+    """
+    Load trails from shapefile or reference JSON.
+    
+    Args:
+        limit: Maximum number of trails to load (ignored if use_reference=True)
+        use_reference: If True, load from trails_reference.json instead of shapefile
+    
+    Returns:
+        List of trail dictionaries
+    """
+    # Check for reference JSON file
+    reference_path = BASE_DIR.parent / "data" / "seed" / "trails_reference.json"
+    
+    if use_reference and reference_path.exists():
+        # Load from reference JSON for reproducibility
+        print("Loading trails from reference JSON for reproducibility...")
+        with open(reference_path, "r", encoding="utf-8") as f:
+            trails = json.load(f)
+        print(f"Loaded {len(trails)} trails from reference")
+        return trails
+    
     # Load trails from multiple regions for variety
     # This ensures diverse trail types for better user profile detection
     from data_pipeline.alps_trails_loader import load_french_trails
@@ -398,10 +436,24 @@ def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT) -> List[dict]:
 
 
 def main() -> None:
+    """Main function to initialize databases."""
+    parser = argparse.ArgumentParser(description="Initialize hiking trail databases")
+    parser.add_argument(
+        "--use-reference",
+        action="store_true",
+        help="Use reference JSON files for reproducible data generation"
+    )
+    args = parser.parse_args()
+    
     print("Initializing adaptive hiking datasets...")
-    trail_records = seed_trails()
+    if args.use_reference:
+        print("Mode: Using reference data for reproducibility")
+    else:
+        print("Mode: Generating fresh data from shapefile")
+    
+    trail_records = seed_trails(use_reference=args.use_reference)
     seed_rules()
-    seed_users(trail_records)
+    seed_users(trail_records, use_reference=args.use_reference)
     print("Initialization complete.")
 
 

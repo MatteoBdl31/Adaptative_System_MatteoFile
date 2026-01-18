@@ -362,7 +362,17 @@ def load_french_trails(
     all_trails: List[Dict] = []
     region_counts: Dict[str, int] = {r["name"]: 0 for r in regions_to_load}
 
-    for shape, record in zip(reader.shapes(), reader.records()):
+    # Process shapes in a deterministic order for reproducibility
+    # Convert to list and sort by a stable identifier (osm_id) for deterministic order
+    shapes_and_records = list(zip(reader.shapes(), reader.records()))
+    # Sort by osm_id if available, otherwise by first coordinate for stability
+    shapes_and_records.sort(key=lambda x: (
+        dict(zip([field[0] for field in reader.fields[1:]], x[1])).get("osm_id") or 0,
+        x[0].points[0][0] if x[0].points else 0,  # First X coordinate as tiebreaker
+        x[0].points[0][1] if x[0].points else 0  # First Y coordinate as second tiebreaker
+    ))
+
+    for shape, record in shapes_and_records:
         if total_limit and len(all_trails) >= total_limit:
             break
         if shape.shapeType != shapefile.POLYLINE:
