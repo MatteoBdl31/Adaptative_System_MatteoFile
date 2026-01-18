@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Utilities to extract real French Alps trails from the local hiking shapefile.
+Utilities to extract real French hiking trails from the local shapefile.
 
 The loader focuses exclusively on high-quality routes that:
-  • fall inside the French Alps bounding box
+  • fall inside specified French region bounding boxes
   • expose a meaningful name/title
   • include geometry samples that allow building an elevation profile
 
@@ -27,11 +27,47 @@ import shapefile  # type: ignore
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data" / "source"
 SHAPEFILE_PATH = DATA_DIR / "hiking_foot_routes_lineLine.shp"
-DEFAULT_OUTPUT = BASE_DIR / "data_pipeline" / "french_alps_trails.json"
+DEFAULT_OUTPUT = BASE_DIR / "data_pipeline" / "french_trails.json"
 TRAILS_DB = BASE_DIR / "backend" / "trails.db"
 
-# Approximate geographic envelope for the French Alps region
-FRENCH_ALPS_BBOX = (5.0, 44.0, 7.9, 46.8)  # min_lon, min_lat, max_lon, max_lat
+# Geographic envelopes for various French regions (min_lon, min_lat, max_lon, max_lat)
+FRENCH_REGIONS = {
+    "french_alps": {
+        "bbox": (5.0, 44.0, 7.9, 46.8),
+        "description": "French Alps - High mountain terrain with peaks and glaciers"
+    },
+    "pyrenees": {
+        "bbox": (-1.5, 42.2, 3.2, 43.3),
+        "description": "Pyrenees - Mountain range with diverse landscapes"
+    },
+    "massif_central": {
+        "bbox": (2.0, 44.5, 4.5, 46.0),
+        "description": "Massif Central - Volcanic mountains and plateaus"
+    },
+    "jura": {
+        "bbox": (5.5, 46.0, 7.5, 47.5),
+        "description": "Jura Mountains - Forested mountains and valleys"
+    },
+    "vosges": {
+        "bbox": (6.5, 47.5, 7.5, 48.5),
+        "description": "Vosges Mountains - Forested peaks and lakes"
+    },
+    "provence": {
+        "bbox": (4.5, 43.0, 7.0, 44.5),
+        "description": "Provence - Mediterranean landscapes and hills"
+    },
+    "brittany": {
+        "bbox": (-5.5, 47.0, -1.0, 48.8),
+        "description": "Brittany - Coastal paths and inland trails"
+    },
+    "normandy": {
+        "bbox": (-1.8, 48.2, 1.8, 49.7),
+        "description": "Normandy - Coastal and countryside trails"
+    }
+}
+
+# Default: French Alps (for backward compatibility)
+FRENCH_ALPS_BBOX = FRENCH_REGIONS["french_alps"]["bbox"]
 MAX_ELEVATION_SAMPLES = 180
 MIN_NAMED_DISTANCE_KM = 2.0
 
@@ -277,20 +313,57 @@ def _trail_type_from_coords(coords: Sequence[Tuple[float, float]]) -> str:
     return "loop" if close_enough else "one_way"
 
 
-def load_french_alps_trails(
+def load_french_trails(
     shapefile_path: Path = SHAPEFILE_PATH,
     *,
-    bbox: Tuple[float, float, float, float] = FRENCH_ALPS_BBOX,
-    limit: int | None = None,
+    regions: List[str] | None = None,
+    bbox: Tuple[float, float, float, float] | None = None,
+    limit_per_region: int | None = None,
+    total_limit: int | None = None,
 ) -> List[Dict]:
-    """Parse the shapefile and return curated French Alps trails."""
+    """
+    Parse the shapefile and return curated French trails from specified regions.
+    
+    Args:
+        shapefile_path: Path to the shapefile
+        regions: List of region names to load (e.g., ["french_alps", "pyrenees"]). 
+                 If None and bbox is None, loads all regions.
+        bbox: Optional single bounding box (for backward compatibility)
+        limit_per_region: Maximum trails per region
+        total_limit: Maximum total trails across all regions
+    
+    Returns:
+        List of trail dictionaries
+    """
     _verify_shapefile(shapefile_path)
     reader = shapefile.Reader(str(shapefile_path), encoding="latin1")
     fields = [field[0] for field in reader.fields[1:]]
 
-    trails: List[Dict] = []
+    # Determine which regions to load
+    if bbox:
+        # Backward compatibility: single bbox
+        regions_to_load = [{"bbox": bbox, "name": "french_alps", "description": "French Alps"}]
+    elif regions:
+        # Load specified regions
+        regions_to_load = [
+            {"bbox": FRENCH_REGIONS[r]["bbox"], "name": r, "description": FRENCH_REGIONS[r]["description"]}
+            for r in regions if r in FRENCH_REGIONS
+        ]
+    else:
+        # Load all regions
+        regions_to_load = [
+            {"bbox": info["bbox"], "name": name, "description": info["description"]}
+            for name, info in FRENCH_REGIONS.items()
+        ]
+
+    if not regions_to_load:
+        return []
+
+    all_trails: List[Dict] = []
+    region_counts: Dict[str, int] = {r["name"]: 0 for r in regions_to_load}
+
     for shape, record in zip(reader.shapes(), reader.records()):
-        if limit and len(trails) >= limit:
+        if total_limit and len(all_trails) >= total_limit:
             break
         if shape.shapeType != shapefile.POLYLINE:
             continue
@@ -299,7 +372,18 @@ def load_french_alps_trails(
         coords_wgs84 = [_mercator_to_wgs84(x, y) for x, y in coords_mercator]
         if not coords_wgs84 or len(coords_wgs84) < 2:
             continue
-        if bbox and not _is_in_bbox(coords_wgs84, bbox):
+
+        # Find which region this trail belongs to
+        matching_region = None
+        for region_info in regions_to_load:
+            if _is_in_bbox(coords_wgs84, region_info["bbox"]):
+                # Check if we've reached the limit for this region
+                if limit_per_region and region_counts[region_info["name"]] >= limit_per_region:
+                    continue
+                matching_region = region_info
+                break
+
+        if not matching_region:
             continue
 
         props = dict(zip(fields, record))
@@ -356,38 +440,56 @@ def load_french_alps_trails(
             # Use the parsed difficulty from source data (even if it's 5.0 from a match)
             difficulty = raw_difficulty
 
-        trail_id = f"alps_{props.get('osm_id') or props.get('id') or len(trails)}"
+        region_name = matching_region["name"]
+        trail_id = f"{region_name}_{props.get('osm_id') or props.get('id') or len(all_trails)}"
         description = _coerce_str(props.get("note") or props.get("description"))
         if not description:
-            description = f"Authentic French Alps itinerary along {name}."
+            description = f"Authentic {matching_region['description']} itinerary along {name}."
         popularity = round(min(9.8, 6.0 + total_distance_km / 5.0 + difficulty / 10.0), 1)
 
-        trails.append(
+        # Ensure all fields are non-null with default values
+        all_trails.append(
             {
-                "trail_id": trail_id,
-                "name": name,
-                "description": description,
-                "difficulty": difficulty,
-                "distance": round(total_distance_km, 2),
-                "duration": duration,
-                "elevation_gain": elevation_gain,
-                "elevation_profile": elevation_profile,
-                "trail_type": trail_type,
-                "landscapes": landscapes,
-                "popularity": popularity,
-                "safety_risks": safety,
-                "accessibility": accessibility,
+                "trail_id": trail_id or f"trail_{len(all_trails)}",
+                "name": name or "Unnamed Trail",
+                "description": description or f"Hiking trail in {region_name}",
+                "difficulty": float(difficulty) if difficulty is not None else 5.0,
+                "distance": round(float(total_distance_km), 2) if total_distance_km is not None else 5.0,
+                "duration": int(duration) if duration is not None else 120,
+                "elevation_gain": int(elevation_gain) if elevation_gain is not None else 0,
+                "elevation_profile": elevation_profile if elevation_profile is not None else [],
+                "trail_type": trail_type or "one_way",
+                "landscapes": landscapes or "alpine",
+                "popularity": float(popularity) if popularity is not None else 6.0,
+                "safety_risks": safety or "none",
+                "accessibility": accessibility or "",
                 "closed_seasons": "",
-                "latitude": centroid_lat,
-                "longitude": centroid_lon,
-                "coordinates": _build_geojson(coords_wgs84),
-                "region": "french_alps",
+                "latitude": float(centroid_lat) if centroid_lat is not None else 0.0,
+                "longitude": float(centroid_lon) if centroid_lon is not None else 0.0,
+                "coordinates": _build_geojson(coords_wgs84) if coords_wgs84 else json.dumps({"type": "LineString", "coordinates": []}),
+                "region": region_name or "unknown",
                 "source": "french_osm_shapefile",
                 "is_real": 1,
             }
         )
+        region_counts[region_name] += 1
 
-    return trails
+    return all_trails
+
+
+# Backward compatibility alias
+def load_french_alps_trails(
+    shapefile_path: Path = SHAPEFILE_PATH,
+    *,
+    bbox: Tuple[float, float, float, float] = FRENCH_ALPS_BBOX,
+    limit: int | None = None,
+) -> List[Dict]:
+    """Backward compatibility: Load only French Alps trails."""
+    return load_french_trails(
+        shapefile_path=shapefile_path,
+        bbox=bbox,
+        total_limit=limit
+    )
 
 
 def save_trails_to_json(trails: Sequence[Dict], output_path: Path = DEFAULT_OUTPUT) -> Path:
@@ -459,14 +561,21 @@ def write_trails_to_db(trails: Sequence[Dict], db_path: Path = TRAILS_DB) -> Non
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Extract real French Alps trails from the local shapefile.")
-    parser.add_argument("--limit", type=int, default=None, help="Optional limit for the number of trails to load.")
+    parser = argparse.ArgumentParser(description="Extract real French trails from the local shapefile.")
+    parser.add_argument("--limit", type=int, default=None, help="Optional limit for the total number of trails to load.")
+    parser.add_argument(
+        "--regions",
+        type=str,
+        nargs="+",
+        choices=list(FRENCH_REGIONS.keys()),
+        help="Regions to load (e.g., french_alps pyrenees). If not specified, loads all regions.",
+    )
     parser.add_argument(
         "--bbox",
         type=float,
         nargs=4,
         metavar=("MIN_LON", "MIN_LAT", "MAX_LON", "MAX_LAT"),
-        help="Restrict extraction to a custom bounding box.",
+        help="Restrict extraction to a custom bounding box (overrides --regions).",
     )
     parser.add_argument(
         "--output",
@@ -484,14 +593,32 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    bbox = tuple(args.bbox) if args.bbox else FRENCH_ALPS_BBOX
-    trails = load_french_alps_trails(bbox=bbox, limit=args.limit)
+    if args.bbox:
+        # Backward compatibility: single bbox
+        bbox = tuple(args.bbox)
+        trails = load_french_trails(bbox=bbox, total_limit=args.limit)
+    elif args.regions:
+        # Load specified regions
+        trails = load_french_trails(regions=args.regions, total_limit=args.limit)
+    else:
+        # Load all regions by default
+        trails = load_french_trails(regions=None, total_limit=args.limit)
+    
     if not trails:
         print("No matching trails found. Check the bounding box or shapefile path.")
         return
 
     output_path = save_trails_to_json(trails, args.output)
     print(f"Saved {len(trails)} real trails to {output_path}")
+    
+    # Print region breakdown
+    region_counts: Dict[str, int] = {}
+    for trail in trails:
+        region = trail.get("region", "unknown")
+        region_counts[region] = region_counts.get(region, 0) + 1
+    print("Region breakdown:")
+    for region, count in sorted(region_counts.items()):
+        print(f"  {region}: {count} trails")
 
     if args.write_db:
         write_trails_to_db(trails)

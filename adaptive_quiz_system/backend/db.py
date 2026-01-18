@@ -108,27 +108,48 @@ def get_user(user_id):
     
     return user
 
-def record_trail_view(user_id, trail_id, abandoned=False):
-    """Record when a user views a trail"""
-    conn = sqlite3.connect(USERS_DB)
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO trail_history (user_id, trail_id, viewed_at, abandoned)
-        VALUES (?, ?, ?, ?)
-    """, (user_id, trail_id, datetime.now().isoformat(), 1 if abandoned else 0))
-    conn.commit()
-    conn.close()
-
-def record_trail_completion(user_id, trail_id, actual_duration, rating):
-    """Record when a user completes a trail and update profile"""
-    conn = sqlite3.connect(USERS_DB)
+def _insert_completed_trail_sql(user_id, trail_id, completion_date, actual_duration, rating, conn=None):
+    """
+    Helper function to insert a completed trail into the database.
+    This is the shared SQL insertion logic used by both record_trail_completion()
+    and seed_users() to avoid code duplication.
+    
+    Args:
+        user_id: User ID
+        trail_id: Trail ID
+        completion_date: ISO format date string
+        actual_duration: Duration in minutes
+        rating: Rating (1-5)
+        conn: Optional existing database connection. If None, creates and closes a new one.
+    
+    Returns:
+        None
+    """
+    should_close = False
+    if conn is None:
+        conn = sqlite3.connect(USERS_DB)
+        should_close = True
+    
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO completed_trails (user_id, trail_id, completion_date, actual_duration, rating)
         VALUES (?, ?, ?, ?, ?)
-    """, (user_id, trail_id, datetime.now().isoformat(), actual_duration, rating))
-    conn.commit()
-    conn.close()
+    """, (user_id, trail_id, completion_date, actual_duration, rating))
+    
+    if should_close:
+        conn.commit()
+        conn.close()
+
+def record_trail_completion(user_id, trail_id, actual_duration, rating):
+    """Record when a user completes a trail and update profile"""
+    # Use shared SQL insertion function
+    _insert_completed_trail_sql(
+        user_id, 
+        trail_id, 
+        datetime.now().isoformat(), 
+        actual_duration, 
+        rating
+    )
     
     # Recalculate user profile
     try:

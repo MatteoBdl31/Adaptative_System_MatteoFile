@@ -8,7 +8,6 @@ from backend.db import (
     get_user,
     get_trail,
     get_all_trails,
-    record_trail_view,
     record_trail_completion,
 )
 from adapt_trails import adapt_trails
@@ -428,9 +427,6 @@ def trail_detail(user_id, trail_id):
     trail = get_trail(trail_id)
     if not trail:
         return "Trail not found", 404
-
-    # Record trail view
-    record_trail_view(user_id, trail_id)
 
     # Get context from query params
     device = request.args.get("device", "laptop")

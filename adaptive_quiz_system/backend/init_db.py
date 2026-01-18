@@ -13,13 +13,13 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from data_pipeline.alps_trails_loader import load_french_alps_trails  # noqa: E402
+# Import moved to seed_trails() to use load_french_trails for multi-region support
 
 BASE_DIR = Path(__file__).resolve().parent
 USERS_DB = BASE_DIR / "users.db"
 RULES_DB = BASE_DIR / "rules.db"
 TRAILS_DB = BASE_DIR / "trails.db"
-DEFAULT_TRAIL_LIMIT = int(os.getenv("TRAIL_LIMIT", "45"))
+DEFAULT_TRAIL_LIMIT = int(os.getenv("TRAIL_LIMIT", "100"))
 
 
 def seed_rules() -> None:
@@ -98,7 +98,7 @@ def seed_rules() -> None:
 def seed_users(example_trails: List[dict]) -> None:
     conn = sqlite3.connect(USERS_DB)
     cur = conn.cursor()
-    for table in ["users", "preferences", "performance", "completed_trails", "trail_history", "user_profiles"]:
+    for table in ["users", "preferences", "performance", "completed_trails", "user_profiles"]:
         cur.execute(f"DROP TABLE IF EXISTS {table}")
 
     cur.execute(
@@ -146,18 +146,6 @@ def seed_users(example_trails: List[dict]) -> None:
             completion_date TEXT,
             actual_duration INTEGER,
             rating INTEGER,
-            FOREIGN KEY(user_id) REFERENCES users(id)
-        )
-        """
-    )
-    cur.execute(
-        """
-        CREATE TABLE trail_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            trail_id TEXT,
-            viewed_at TEXT,
-            abandoned INTEGER,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
         """
@@ -257,96 +245,81 @@ def seed_users(example_trails: List[dict]) -> None:
         performance,
     )
 
-    available_ids = [trail["trail_id"] for trail in example_trails] or ["placeholder_id"]
-
-    def pick(offset: int) -> str:
-        return available_ids[offset % len(available_ids)]
-
-    completed_trails = [
-        # User 101 (Alice) - Advanced, High fitness - 4 trails
-        (101, pick(0), "2024-01-15", 110, 5),
-        (101, pick(1), "2024-01-20", 180, 5),
-        (101, pick(2), "2024-02-10", 165, 5),
-        (101, pick(3), "2024-02-25", 200, 4),
-        # User 102 (Bob) - Beginner, Medium fitness - 3 trails
-        (102, pick(4), "2024-01-10", 40, 4),
-        (102, pick(5), "2024-01-25", 45, 4),
-        (102, pick(6), "2024-02-05", 50, 3),
-        # User 103 (Carol) - Intermediate, High fitness - 3 trails
-        (103, pick(7), "2024-01-12", 95, 4),
-        (103, pick(8), "2024-01-28", 100, 5),
-        (103, pick(9), "2024-02-15", 90, 4),
-        # User 104 (David) - Beginner, Low fitness - 3 trails
-        (104, pick(10), "2024-01-08", 25, 3),
-        (104, pick(11), "2024-01-22", 30, 3),
-        (104, pick(12), "2024-02-08", 28, 4),
-        # User 105 (Emma) - Advanced, High fitness - 5 trails
-        (105, pick(13), "2024-01-25", 150, 5),
-        (105, pick(14), "2024-01-18", 140, 5),
-        (105, pick(15), "2024-02-12", 160, 5),
-        (105, pick(16), "2024-02-28", 175, 5),
-        (105, pick(0), "2024-03-10", 155, 4),
-        # User 106 (Frank) - Intermediate, Medium fitness - 3 trails
-        (106, pick(1), "2024-01-11", 70, 4),
-        (106, pick(2), "2024-01-27", 75, 4),
-        (106, pick(3), "2024-02-14", 68, 5),
-        # User 107 (Grace) - Beginner, Low fitness - 3 trails
-        (107, pick(4), "2024-01-09", 32, 4),
-        (107, pick(5), "2024-01-24", 35, 4),
-        (107, pick(6), "2024-02-09", 30, 3),
-        # User 108 (Henry) - Advanced, Medium fitness - 4 trails
-        (108, pick(7), "2024-01-16", 105, 4),
-        (108, pick(8), "2024-02-01", 110, 4),
-        (108, pick(9), "2024-02-18", 115, 5),
-        (108, pick(10), "2024-03-05", 108, 4),
-        # User 109 (Iris) - Intermediate, Low fitness - 3 trails
-        (109, pick(11), "2024-01-13", 48, 4),
-        (109, pick(12), "2024-01-30", 50, 4),
-        (109, pick(13), "2024-02-16", 45, 3),
-        # User 110 (Jack) - Beginner, High fitness - 3 trails
-        (110, pick(14), "2024-01-14", 38, 4),
-        (110, pick(15), "2024-01-29", 42, 4),
-        (110, pick(16), "2024-02-17", 40, 5),
-        # User 111 (Kate) - Advanced, High fitness - 4 trails
-        (111, pick(0), "2024-01-22", 145, 5),
-        (111, pick(1), "2024-02-08", 150, 5),
-        (111, pick(2), "2024-02-24", 140, 5),
-        (111, pick(3), "2024-03-12", 155, 4),
-        # User 112 (Liam) - Intermediate, Medium fitness - 3 trails
-        (112, pick(4), "2024-01-17", 88, 4),
-        (112, pick(5), "2024-02-03", 92, 4),
-        (112, pick(6), "2024-02-20", 85, 5),
-        # User 113 (Mia) - Beginner, Medium fitness - 3 trails
-        (113, pick(7), "2024-01-07", 28, 3),
-        (113, pick(8), "2024-01-23", 30, 3),
-        (113, pick(9), "2024-02-11", 32, 4),
-        # User 114 (Noah) - Advanced, High fitness - 6 trails
-        (114, pick(10), "2024-01-24", 155, 5),
-        (114, pick(11), "2024-02-09", 160, 5),
-        (114, pick(12), "2024-02-26", 165, 5),
-        (114, pick(13), "2024-03-14", 170, 5),
-        (114, pick(14), "2024-03-28", 158, 4),
-        (114, pick(15), "2024-04-10", 162, 5),
-        # User 115 (Olivia) - Intermediate, High fitness - 3 trails
-        (115, pick(16), "2024-01-19", 92, 4),
-        (115, pick(0), "2024-02-06", 95, 5),
-        (115, pick(1), "2024-02-22", 90, 4),
-    ]
-    cur.executemany(
-        "INSERT INTO completed_trails (user_id, trail_id, completion_date, actual_duration, rating) "
-        "VALUES (?, ?, ?, ?, ?)",
-        completed_trails,
-    )
+    # Use diverse trail selection to trigger different user profiles
+    from backend.diversify_profiles import create_diverse_completed_trails
+    from backend.db import _insert_completed_trail_sql
+    
+    completed_trails = create_diverse_completed_trails(example_trails)
+    
+    # Insert completed trails using shared function to avoid code duplication
+    # Pass existing connection for efficiency (single commit at the end)
+    for user_id, trail_id, completion_date, actual_duration, rating in completed_trails:
+        _insert_completed_trail_sql(user_id, trail_id, completion_date, actual_duration, rating, conn=conn)
 
     conn.commit()
     conn.close()
+    
+    # Recalculate profiles for all users after seeding trails
+    # This is done once at the end for efficiency (instead of per-trail)
+    print("Calculating user profiles...")
+    from backend.user_profiling import UserProfiler
+    from backend.db import update_user_profile, get_all_users
+    
+    profiler = UserProfiler()
+    # Get all users (already includes user IDs)
+    users = get_all_users()
+    user_ids = [user["id"] for user in users]
+    
+    for user_id in user_ids:
+        try:
+            primary_profile, scores = profiler.detect_profile(user_id)
+            if primary_profile:
+                update_user_profile(user_id, primary_profile, scores)
+        except Exception as e:
+            # Don't fail if profiling fails for one user
+            print(f"Warning: Could not calculate profile for user {user_id}: {e}")
+    
     print("users.db initialized with demo hikers and contextual history")
 
 
 def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT) -> List[dict]:
-    trails = load_french_alps_trails(limit=limit)
+    # Load trails from multiple regions for variety
+    # This ensures diverse trail types for better user profile detection
+    from data_pipeline.alps_trails_loader import load_french_trails
+    
+    # Load trails from multiple regions, distributing the limit across them
+    # Focus on regions that offer different characteristics:
+    # - Mountains: french_alps, pyrenees, jura, vosges
+    # - Diverse landscapes: provence, massif_central
+    selected_regions = [
+        "french_alps",  # High mountains, peaks, glaciers
+        "pyrenees",     # Mountain range, diverse
+        "massif_central",  # Volcanic, plateaus
+        "jura",         # Forested mountains
+        "provence",     # Mediterranean landscapes
+    ]
+    
+    # Load all selected regions together, with a limit per region to ensure diversity
+    # Increase limit per region to get more variety
+    limit_per_region = max(15, limit // len(selected_regions))
+    
+    trails = load_french_trails(
+        regions=selected_regions,
+        limit_per_region=limit_per_region,
+        total_limit=limit
+    )
+    
     if not trails:
         raise RuntimeError("No trails extracted from shapefile. Ensure the dataset is present locally.")
+    
+    # Print summary
+    region_counts = {}
+    for trail in trails:
+        region = trail.get("region", "unknown")
+        region_counts[region] = region_counts.get(region, 0) + 1
+    print(f"Loaded {len(trails)} trails from {len(region_counts)} regions:")
+    for region, count in sorted(region_counts.items()):
+        print(f"  {region}: {count} trails")
 
     conn = sqlite3.connect(TRAILS_DB)
     cur = conn.cursor()
@@ -382,6 +355,7 @@ def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT) -> List[dict]:
 
     now = datetime.now(timezone.utc).isoformat()
     for trail in trails:
+        # Ensure all fields are non-null with defaults
         cur.execute(
             """
             INSERT INTO trails (
@@ -392,24 +366,24 @@ def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT) -> List[dict]:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                trail.get("trail_id"),
-                trail.get("name"),
-                trail.get("description"),
-                trail.get("difficulty"),
-                trail.get("distance"),
-                trail.get("duration"),
-                trail.get("elevation_gain"),
-                trail.get("trail_type"),
-                trail.get("landscapes"),
-                trail.get("popularity"),
-                trail.get("safety_risks"),
-                trail.get("accessibility"),
-                trail.get("closed_seasons"),
-                trail.get("latitude"),
-                trail.get("longitude"),
-                trail.get("coordinates"),
-                trail.get("region"),
-                trail.get("source"),
+                trail.get("trail_id") or f"trail_{len(trails)}",
+                trail.get("name") or "Unnamed Trail",
+                trail.get("description") or "Hiking trail",
+                float(trail.get("difficulty", 5.0)),
+                float(trail.get("distance", 5.0)),
+                int(trail.get("duration", 120)),
+                int(trail.get("elevation_gain", 0)),
+                trail.get("trail_type") or "one_way",
+                trail.get("landscapes") or "alpine",
+                float(trail.get("popularity", 6.0)),
+                trail.get("safety_risks") or "none",
+                trail.get("accessibility") or "",
+                trail.get("closed_seasons") or "",
+                float(trail.get("latitude", 0.0)),
+                float(trail.get("longitude", 0.0)),
+                trail.get("coordinates") or json.dumps({"type": "LineString", "coordinates": []}),
+                trail.get("region") or "unknown",
+                trail.get("source") or "french_osm_shapefile",
                 trail.get("is_real", 1),
                 json.dumps(trail.get("elevation_profile", [])),
                 now,
