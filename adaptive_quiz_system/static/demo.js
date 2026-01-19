@@ -19,13 +19,17 @@
             this.mapManager = new MapManager();
             this.state = {
                 compareMode: false,
-                loading: false
+                loading: false,
+                connectionStrength: 'medium' // Default to medium until detected
             };
         }
 
-        init() {
+        async init() {
             const form = document.getElementById('demo-form');
             if (!form) return;
+
+            // Detect connection strength first
+            await this.detectConnection();
 
             this.formManager = new FormManager(form);
             this.setupEventListeners();
@@ -60,6 +64,56 @@
             // Get trails button
             if (getTrailsBtn) {
                 getTrailsBtn.addEventListener('click', () => this.fetchResults());
+            }
+
+            // Context info button clicks (using event delegation)
+            document.addEventListener('click', (e) => {
+                const infoBtn = e.target.closest('.context-info-btn');
+                if (infoBtn) {
+                    e.preventDefault();
+                    const userId = infoBtn.dataset.user;
+                    this.openContextModal(userId);
+                    return;
+                }
+
+                // Close modal on backdrop or close button click
+                const backdrop = e.target.closest('.context-modal__backdrop');
+                const closeBtn = e.target.closest('.context-modal__close');
+                if (backdrop || closeBtn) {
+                    e.preventDefault();
+                    const modal = backdrop ? backdrop.closest('.context-modal') : closeBtn.closest('.context-modal');
+                    if (modal) {
+                        this.closeContextModal(modal.id);
+                    }
+                }
+            });
+
+            // Close modal on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openModal = document.querySelector('.context-modal[aria-hidden="false"]');
+                    if (openModal) {
+                        this.closeContextModal(openModal.id);
+                    }
+                }
+            });
+        }
+
+        openContextModal(userId) {
+            const modal = document.getElementById(`context-modal-${userId}`);
+            if (modal) {
+                modal.setAttribute('aria-hidden', 'false');
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        closeContextModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.setAttribute('aria-hidden', 'true');
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
             }
         }
 
@@ -262,47 +316,62 @@
             panel.className = 'result-panel';
             panel.dataset.user = userId;
 
-            const contextPills = Object.entries(result.context || {}).map(([key, value]) => {
-                if (key === 'time_available') {
-                    const totalMinutes = parseInt(value) || 0;
-                    const days = Math.floor(totalMinutes / (24 * 60));
-                    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-                    let timeText = '';
-                    if (days > 0) timeText += `${days} day${days !== 1 ? 's' : ''}`;
-                    if (hours > 0) {
-                        if (days > 0) timeText += ' ';
-                        timeText += `${hours} hour${hours !== 1 ? 's' : ''}`;
-                    }
-                    return `<span class="context-pill">Time: <strong>${timeText || '0 hours'}</strong></span>`;
-                }
-                return `<span class="context-pill">${key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}: <strong>${value}</strong></span>`;
-            }).join('');
+            // Format context for modal display
+            const contextItems = this.formatContextForModal(result.context || {});
 
             const exactCount = (result.exact || []).length;
             const suggestionsCount = (result.suggestions || []).length;
             const isCompareMode = this.state.compareMode;
 
-            // Build view toggle buttons
+            // Determine default view based on connection strength
+            const defaultView = this.getDefaultView();
+
+            // Build view toggle buttons with connection-based default
             const viewToggleButtons = isCompareMode ? `
-                <button type="button" class="view-toggle__button active" data-view="map" data-panel="${userId}">🗺️ Map</button>
-                <button type="button" class="view-toggle__button" data-view="list" data-panel="${userId}">📋 List</button>
+                <button type="button" class="view-toggle__button ${defaultView === 'map' ? 'active' : ''}" data-view="map" data-panel="${userId}">🗺️ Map</button>
+                <button type="button" class="view-toggle__button ${defaultView === 'list' ? 'active' : ''}" data-view="list" data-panel="${userId}">📋 List</button>
             ` : `
-                <button type="button" class="view-toggle__button active" data-view="map" data-panel="${userId}">🗺️ Map</button>
-                <button type="button" class="view-toggle__button" data-view="list" data-panel="${userId}">📋 List</button>
-                <button type="button" class="view-toggle__button" data-view="cards" data-panel="${userId}">🃏 Cards</button>
+                <button type="button" class="view-toggle__button ${defaultView === 'map' ? 'active' : ''}" data-view="map" data-panel="${userId}">🗺️ Map</button>
+                <button type="button" class="view-toggle__button ${defaultView === 'list' ? 'active' : ''}" data-view="list" data-panel="${userId}">📋 List</button>
+                <button type="button" class="view-toggle__button ${defaultView === 'cards' ? 'active' : ''}" data-view="cards" data-panel="${userId}">🃏 Cards</button>
             `;
 
             panel.innerHTML = `
                 <div class="result-panel__header">
-                    <h2 class="result-panel__title">${result.scenario?.title || 'Custom Scenario'}</h2>
-                    <p class="result-panel__description">${result.scenario?.description || 'User-defined context'}</p>
+                    <div class="result-panel__title-wrapper">
+                        <h2 class="result-panel__title">${result.scenario?.title || 'Custom Scenario'}</h2>
+                        <button type="button" class="context-info-btn" aria-label="Show context information" data-user="${userId}">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                <path d="M8 11V8M8 5H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="context-pills">${contextPills}</div>
+                <!-- Context Info Modal -->
+                <div class="context-modal" id="context-modal-${userId}" role="dialog" aria-labelledby="context-modal-title-${userId}" aria-hidden="true">
+                    <div class="context-modal__backdrop"></div>
+                    <div class="context-modal__content">
+                        <div class="context-modal__header">
+                            <h3 class="context-modal__title" id="context-modal-title-${userId}">Search Context</h3>
+                            <button type="button" class="context-modal__close" aria-label="Close modal">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="context-modal__body">
+                            <div class="context-modal__items">
+                                ${contextItems}
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="view-toggle">${viewToggleButtons}</div>
                 <div class="view-sections" data-panel="${userId}">
                     ${this.renderMapView(result, userId, userLabel)}
-                    ${this.renderListView(result)}
-                    ${!isCompareMode ? this.renderCardsView(result) : ''}
+                    ${this.renderListView(result, userId)}
+                    ${!isCompareMode ? this.renderCardsView(result, userId) : ''}
                 </div>
                 <script type="application/json" class="trail-data" data-user="${userId}">
                     ${JSON.stringify({
@@ -317,22 +386,70 @@
             return panel;
         }
 
+        formatContextForModal(context) {
+            const hiddenFields = ['hike_date', 'hike_start_date', 'hike_end_date'];
+            return Object.entries(context)
+                .filter(([key]) => !hiddenFields.includes(key))
+                .map(([key, value]) => {
+                    let displayValue = value;
+                    let label = key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    
+                    if (key === 'time_available') {
+                        const totalMinutes = parseInt(value) || 0;
+                        const days = Math.floor(totalMinutes / (24 * 60));
+                        const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+                        let timeText = '';
+                        if (days > 0) timeText += `${days} day${days !== 1 ? 's' : ''}`;
+                        if (hours > 0) {
+                            if (days > 0) timeText += ' ';
+                            timeText += `${hours} hour${hours !== 1 ? 's' : ''}`;
+                        }
+                        displayValue = timeText || '0 hours';
+                    }
+                    
+                    return `
+                        <div class="context-modal__item">
+                            <span class="context-modal__label">${label}:</span>
+                            <span class="context-modal__value">${displayValue}</span>
+                        </div>
+                    `;
+                }).join('');
+        }
+
         renderMapView(result, userId, userLabel) {
+            const defaultView = this.getDefaultView();
+            const isActive = defaultView === 'map';
+            
             return `
-                <div class="view-section active" data-view="map" data-panel="${userId}">
+                <div class="view-section ${isActive ? 'active' : ''}" data-view="map" data-panel="${userId}">
                     <div class="map-container">
                         <div class="map-canvas" id="demo-map-${userId}"></div>
+                        <div class="map-legend">
+                            <div class="map-legend__title">Trail Types</div>
+                            <div class="map-legend__items">
+                                <div class="map-legend__item">
+                                    <span class="map-legend__marker" style="background-color: #5b8df9;"></span>
+                                    <span class="map-legend__label">Recommended</span>
+                                </div>
+                                <div class="map-legend__item">
+                                    <span class="map-legend__marker" style="background-color: #f59e0b;"></span>
+                                    <span class="map-legend__label">Suggestions</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
         }
 
-        renderListView(result) {
+        renderListView(result, userId) {
+            const defaultView = this.getDefaultView();
+            const isActive = defaultView === 'list';
             const exactTrails = (result.exact || []).map(trail => this.renderTrailItem(trail, 'recommended')).join('');
             const suggestions = (result.suggestions || []).map(trail => this.renderTrailItem(trail, 'suggested')).join('');
 
             return `
-                <div class="view-section" data-view="list">
+                <div class="view-section ${isActive ? 'active' : ''}" data-view="list" data-panel="${userId}">
                     <div class="result-section">
                         <h3>🎯 Recommended (${(result.exact || []).length})</h3>
                         <div class="trail-list">${exactTrails || '<p class="empty-state">No direct matches</p>'}</div>
@@ -345,12 +462,14 @@
             `;
         }
 
-        renderCardsView(result) {
+        renderCardsView(result, userId) {
+            const defaultView = this.getDefaultView();
+            const isActive = defaultView === 'cards';
             const exactTrails = (result.exact || []).map(trail => this.renderTrailCard(trail, 'recommended')).join('');
             const suggestions = (result.suggestions || []).map(trail => this.renderTrailCard(trail, 'suggested')).join('');
 
             return `
-                <div class="view-section" data-view="cards">
+                <div class="view-section ${isActive ? 'active' : ''}" data-view="cards" data-panel="${userId}">
                     <div class="result-section">
                         <h3>🎯 Recommended (${(result.exact || []).length})</h3>
                         <div class="trail-grid">${exactTrails || '<p class="empty-state">No direct matches</p>'}</div>
@@ -367,39 +486,161 @@
             const difficulty = trail.difficulty || 0;
             const difficultyClass = difficulty <= 3 ? 'easy' : difficulty <= 6 ? 'medium' : 'hard';
             const difficultyText = difficulty <= 3 ? 'Easy' : difficulty <= 6 ? 'Medium' : 'Hard';
+            const relevance = type === 'suggested' ? `<span class="trail-item__relevance">${Math.round(trail.relevance_percentage || 0)}% match</span>` : '';
+            
+            // Truncate description if too long
+            let description = trail.description || '';
+            if (description && description.length > 120) {
+                description = description.substring(0, 120) + '...';
+            }
+            
+            // Format landscapes if available
+            let landscapesHTML = '';
+            if (trail.landscapes) {
+                const landscapes = typeof trail.landscapes === 'string' 
+                    ? trail.landscapes.split(',').map(l => l.trim())
+                    : trail.landscapes;
+                if (Array.isArray(landscapes) && landscapes.length > 0) {
+                    landscapesHTML = `
+                        <div class="trail-item__landscapes">
+                            ${landscapes.slice(0, 3).map(landscape => 
+                                `<span class="trail-item__landscape-tag">${landscape.trim().replace(/_/g, ' ')}</span>`
+                            ).join('')}
+                        </div>
+                    `;
+                }
+            }
 
             return `
                 <div class="trail-item ${type}">
                     <div class="trail-item__header">
-                        <h4>${trail.name || 'Unknown'}</h4>
-                        <span class="pill">${difficultyText}</span>
+                        <div class="trail-item__title-group">
+                            <h4 class="trail-item__title">${trail.name || 'Unknown'}</h4>
+                            ${relevance}
+                        </div>
+                        <span class="trail-item__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
                     </div>
-                    <div class="trail-stats">
-                        <span>${trail.distance || '—'} km</span>
-                        <span>${Utils.formatDuration(trail.duration)}</span>
-                        <span>${trail.elevation_gain || '—'} m</span>
+                    ${description ? `<p class="trail-item__description">${description}</p>` : ''}
+                    ${landscapesHTML}
+                    <div class="trail-item__stats">
+                        <div class="trail-item__stat">
+                            <span class="trail-item__stat-icon">📏</span>
+                            <span class="trail-item__stat-label">Distance</span>
+                            <span class="trail-item__stat-value">${trail.distance || '—'} km</span>
+                        </div>
+                        <div class="trail-item__stat">
+                            <span class="trail-item__stat-icon">⏱</span>
+                            <span class="trail-item__stat-label">Duration</span>
+                            <span class="trail-item__stat-value">${Utils.formatDuration(trail.duration)}</span>
+                        </div>
+                        <div class="trail-item__stat">
+                            <span class="trail-item__stat-icon">⛰</span>
+                            <span class="trail-item__stat-label">Elevation</span>
+                            <span class="trail-item__stat-value">${trail.elevation_gain || '—'} m</span>
+                        </div>
+                        ${trail.forecast_weather ? `
+                        <div class="trail-item__stat">
+                            <span class="trail-item__stat-icon">${this.getWeatherIcon(trail.forecast_weather)}</span>
+                            <span class="trail-item__stat-label">Weather</span>
+                            <span class="trail-item__stat-value">${trail.forecast_weather.charAt(0).toUpperCase() + trail.forecast_weather.slice(1).replace('_', ' ')}</span>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
+        }
+
+        getWeatherIcon(weather) {
+            const icons = {
+                'sunny': '☀️',
+                'cloudy': '☁️',
+                'rainy': '🌧️',
+                'snowy': '❄️',
+                'storm_risk': '⛈️'
+            };
+            return icons[weather] || '🌤️';
         }
 
         renderTrailCard(trail, type) {
             const difficulty = trail.difficulty || 0;
             const difficultyClass = difficulty <= 3 ? 'easy' : difficulty <= 6 ? 'medium' : 'hard';
             const difficultyText = difficulty <= 3 ? 'Easy' : difficulty <= 6 ? 'Medium' : 'Hard';
-            const relevance = type === 'suggested' ? `<span class="badge">${Math.round(trail.relevance_percentage || 0)}% match</span>` : '';
+            const relevance = type === 'suggested' ? `<span class="trail-card__relevance">${Math.round(trail.relevance_percentage || 0)}% match</span>` : '';
+
+            // Truncate description if too long
+            let description = trail.description || 'No description available';
+            if (description && description.length > 150) {
+                description = description.substring(0, 150) + '...';
+            }
+
+            // Format landscapes if available
+            let landscapesHTML = '';
+            if (trail.landscapes) {
+                const landscapes = typeof trail.landscapes === 'string'
+                    ? trail.landscapes.split(',').map(l => l.trim())
+                    : trail.landscapes;
+                if (Array.isArray(landscapes) && landscapes.length > 0) {
+                    landscapesHTML = `
+                        <div class="trail-card__landscapes">
+                            ${landscapes.slice(0, 3).map(landscape =>
+                                `<span class="trail-card__landscape-tag">${landscape.trim().replace(/_/g, ' ')}</span>`
+                            ).join('')}
+                        </div>
+                    `;
+                }
+            }
+
+            // Generate unique ID for minimap
+            const mapId = `card-map-${trail.trail_id || Math.random().toString(36).substr(2, 9)}`;
+            
+            // Prepare coordinates for the minimap
+            const coordinatesAttr = trail.coordinates ? `data-coordinates='${JSON.stringify(trail.coordinates)}'` : '';
 
             return `
                 <div class="trail-card ${type}">
-                    <div class="trail-card__header">
-                        <h3 class="trail-card__title">${trail.name || 'Unknown'}</h3>
-                        ${relevance}
+                    <div class="trail-card__map-container">
+                        <div class="trail-card__mini-map" id="${mapId}" data-lat="${trail.latitude}" data-lng="${trail.longitude}" ${coordinatesAttr}></div>
+                        ${relevance ? `<div class="trail-card__relevance-badge">${relevance}</div>` : ''}
                     </div>
-                    <p class="trail-card__description">${trail.description || 'No description'}</p>
-                    <div class="trail-card__stats">
-                        <span>📏 ${trail.distance || '—'} km</span>
-                        <span>⏱ ${Utils.formatDuration(trail.duration)}</span>
-                        <span>⛰ ${trail.elevation_gain || '—'} m</span>
+                    <div class="trail-card__content">
+                        <div class="trail-card__header">
+                            <h3 class="trail-card__title">${trail.name || 'Unknown'}</h3>
+                            <span class="trail-card__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                        </div>
+                        <p class="trail-card__description">${description}</p>
+                        ${landscapesHTML}
+                        <div class="trail-card__stats">
+                            <div class="trail-card__stat">
+                                <span class="trail-card__stat-icon">📏</span>
+                                <div class="trail-card__stat-info">
+                                    <span class="trail-card__stat-label">Distance</span>
+                                    <span class="trail-card__stat-value">${trail.distance || '—'} km</span>
+                                </div>
+                            </div>
+                            <div class="trail-card__stat">
+                                <span class="trail-card__stat-icon">⏱</span>
+                                <div class="trail-card__stat-info">
+                                    <span class="trail-card__stat-label">Duration</span>
+                                    <span class="trail-card__stat-value">${Utils.formatDuration(trail.duration)}</span>
+                                </div>
+                            </div>
+                            <div class="trail-card__stat">
+                                <span class="trail-card__stat-icon">⛰</span>
+                                <div class="trail-card__stat-info">
+                                    <span class="trail-card__stat-label">Elevation</span>
+                                    <span class="trail-card__stat-value">${trail.elevation_gain || '—'} m</span>
+                                </div>
+                            </div>
+                            ${trail.forecast_weather ? `
+                            <div class="trail-card__stat">
+                                <span class="trail-card__stat-icon">${this.getWeatherIcon(trail.forecast_weather)}</span>
+                                <div class="trail-card__stat-info">
+                                    <span class="trail-card__stat-label">Weather</span>
+                                    <span class="trail-card__stat-value">${trail.forecast_weather.charAt(0).toUpperCase() + trail.forecast_weather.slice(1).replace('_', ' ')}</span>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             `;
@@ -421,14 +662,24 @@
                 const mapId = `demo-map-${panel}`;
                 setTimeout(() => this.initializeMap(mapId, panel), 100);
             });
+
+            // Initialize card minimaps for active cards views
+            document.querySelectorAll('.view-section[data-view="cards"].active').forEach(section => {
+                const panel = section.dataset.panel;
+                setTimeout(() => this.initializeCardMinimaps(section), 100);
+            });
         }
 
         switchView(panel, view) {
-            const panelElement = document.querySelector(`[data-panel="${panel}"]`);
-            if (!panelElement) return;
+            // Select the view-sections container specifically, not just any element with data-panel
+            const viewSectionsContainer = document.querySelector(`.view-sections[data-panel="${panel}"]`);
+            
+            if (!viewSectionsContainer) return;
 
             // Update buttons
-            panelElement.closest('.result-panel').querySelectorAll('.view-toggle__button').forEach(btn => {
+            const buttons = viewSectionsContainer.closest('.result-panel').querySelectorAll('.view-toggle__button');
+            
+            buttons.forEach(btn => {
                 if (btn.dataset.panel === panel && btn.dataset.view === view) {
                     btn.classList.add('active');
                 } else if (btn.dataset.panel === panel) {
@@ -437,7 +688,9 @@
             });
 
             // Update sections
-            panelElement.querySelectorAll('.view-section').forEach(section => {
+            const sections = viewSectionsContainer.querySelectorAll('.view-section');
+            
+            sections.forEach(section => {
                 if (section.dataset.view === view && section.dataset.panel === panel) {
                     section.classList.add('active');
                     section.classList.remove('hidden');
@@ -446,6 +699,11 @@
                     if (view === 'map') {
                         const mapId = `demo-map-${panel}`;
                         setTimeout(() => this.initializeMap(mapId, panel), 100);
+                    }
+
+                    // Initialize card minimaps if switching to cards view
+                    if (view === 'cards') {
+                        setTimeout(() => this.initializeCardMinimaps(section), 100);
                     }
                 } else if (section.dataset.panel === panel) {
                     section.classList.remove('active');
@@ -486,6 +744,94 @@
             }
         }
 
+        initializeCardMinimaps(cardsSection) {
+            if (typeof L === 'undefined') return;
+
+            // Find all minimaps in this cards section
+            const minimaps = cardsSection.querySelectorAll('.trail-card__mini-map');
+            
+            minimaps.forEach((minimapDiv, index) => {
+                const mapId = minimapDiv.id;
+                const lat = parseFloat(minimapDiv.dataset.lat);
+                const lng = parseFloat(minimapDiv.dataset.lng);
+                const coordinatesStr = minimapDiv.dataset.coordinates;
+
+                // Skip if coordinates are invalid or map already exists
+                if (!lat || !lng || this.mapManager.maps.has(mapId)) {
+                    if (this.mapManager.maps.has(mapId)) {
+                        this.mapManager.invalidateSize(mapId);
+                    }
+                    return;
+                }
+
+                // Initialize minimap
+                const minimap = this.mapManager.initMap(mapId, {
+                    zoom: 12,
+                    center: [lat, lng],
+                    scrollWheelZoom: false,
+                    dragging: false,
+                    zoomControl: false,
+                    attributionControl: false
+                });
+
+                if (minimap) {
+                    // Force map to recalculate size after it's rendered
+                    setTimeout(() => minimap.invalidateSize(), 50);
+                    // Try to parse and draw the trail coordinates if available
+                    
+                    if (coordinatesStr) {
+                        try {
+                            const parsed = JSON.parse(coordinatesStr);
+                            // The coordinates might be wrapped in an object with a 'coordinates' key
+                            const coordinates = parsed.coordinates || parsed;
+                            
+                            if (Array.isArray(coordinates) && coordinates.length > 0) {
+                                // Draw the trail path
+                                const polyline = L.polyline(coordinates, {
+                                    color: '#5b8df9',
+                                    weight: 3,
+                                    opacity: 0.8
+                                }).addTo(minimap);
+                                
+                                // Fit the map to show the entire trail
+                                minimap.fitBounds(polyline.getBounds(), { padding: [10, 10] });
+                            } else {
+                                // Fall back to marker
+                                L.marker([lat, lng], {
+                                    icon: L.divIcon({
+                                        className: 'trail-marker',
+                                        html: '<div class="trail-marker__pin"></div>',
+                                        iconSize: [24, 24],
+                                        iconAnchor: [12, 24]
+                                    })
+                                }).addTo(minimap);
+                            }
+                        } catch (e) {
+                            // If parsing fails, fall back to a single marker
+                            L.marker([lat, lng], {
+                                icon: L.divIcon({
+                                    className: 'trail-marker',
+                                    html: '<div class="trail-marker__pin"></div>',
+                                    iconSize: [24, 24],
+                                    iconAnchor: [12, 24]
+                                })
+                            }).addTo(minimap);
+                        }
+                    } else {
+                        // No coordinates available, use a marker
+                        L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                className: 'trail-marker',
+                                html: '<div class="trail-marker__pin"></div>',
+                                iconSize: [24, 24],
+                                iconAnchor: [12, 24]
+                            })
+                        }).addTo(minimap);
+                    }
+                }
+            });
+        }
+
         initializeResults() {
             // Initialize results if they exist on page load
             const resultsContainer = document.getElementById('demo-results');
@@ -509,6 +855,147 @@
             // Simple error display - can be enhanced
             console.error('Error:', message);
             alert(`Error: ${message}`);
+        }
+
+        /**
+         * Detect connection strength using Network Information API and fallback methods
+         * @returns {Promise<string>} Connection strength: 'weak', 'medium', or 'strong'
+         */
+        async detectConnection() {
+            try {
+                // Check if navigator.connection is available (Network Information API)
+                if ('connection' in navigator) {
+                    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                    
+                    if (conn && conn.effectiveType) {
+                        const effectiveType = conn.effectiveType;
+                        console.log('Network effectiveType:', effectiveType);
+                        
+                        // Map effectiveType to our connection strength levels
+                        if (effectiveType === 'slow-2g' || effectiveType === '2g') {
+                            this.state.connectionStrength = 'weak';
+                            console.log('Connection detected: weak (2g)');
+                            this.updateConnectionIndicator('weak');
+                            return 'weak';
+                        } else if (effectiveType === '3g') {
+                            this.state.connectionStrength = 'medium';
+                            console.log('Connection detected: medium (3g)');
+                            this.updateConnectionIndicator('medium');
+                            return 'medium';
+                        } else if (effectiveType === '4g') {
+                            // For 4g, test actual speed to determine if medium or strong
+                            const isFast = await this.testConnectionSpeed();
+                            this.state.connectionStrength = isFast ? 'strong' : 'medium';
+                            console.log('Connection detected:', isFast ? 'strong (fast 4g)' : 'medium (slow 4g)');
+                            this.updateConnectionIndicator(this.state.connectionStrength);
+                            return this.state.connectionStrength;
+                        } else {
+                            // Unknown or very fast connection (e.g., 5g, wifi)
+                            this.state.connectionStrength = 'strong';
+                            console.log('Connection detected: strong (fast network)');
+                            this.updateConnectionIndicator('strong');
+                            return 'strong';
+                        }
+                    }
+                }
+                
+                // Fallback: test connection speed with a small download
+                const isFast = await this.testConnectionSpeed();
+                this.state.connectionStrength = isFast ? 'strong' : 'medium';
+                console.log('Connection detected (fallback):', this.state.connectionStrength);
+                this.updateConnectionIndicator(this.state.connectionStrength);
+                return this.state.connectionStrength;
+            } catch (error) {
+                console.warn('Error detecting connection, defaulting to medium:', error);
+                this.state.connectionStrength = 'medium';
+                this.updateConnectionIndicator('medium');
+                return 'medium';
+            }
+        }
+
+        /**
+         * Test connection speed by downloading a small resource
+         * @returns {Promise<boolean>} True if connection is fast, false otherwise
+         */
+        async testConnectionSpeed() {
+            try {
+                const startTime = performance.now();
+                // Try to fetch a small resource from the server
+                const response = await fetch('/static/style.css?t=' + Date.now(), { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                const endTime = performance.now();
+                const duration = endTime - startTime;
+                
+                // If the HEAD request takes more than 500ms, consider it slow
+                const isFast = duration < 500;
+                console.log(`Connection speed test: ${duration.toFixed(0)}ms (${isFast ? 'fast' : 'slow'})`);
+                return isFast;
+            } catch (error) {
+                console.warn('Connection speed test failed, assuming slow connection:', error);
+                // If fetch fails, assume weak connection
+                return false;
+            }
+        }
+
+        /**
+         * Get the default view based on connection strength
+         * @returns {string} View type: 'list', 'cards', or 'map'
+         */
+        getDefaultView() {
+            const strength = this.state.connectionStrength;
+            
+            // Adaptive view selection:
+            // - weak connection: list view (lightweight, no maps)
+            // - medium connection: cards view (some graphics, mini maps optional)
+            // - strong connection: map view (full interactive map)
+            if (strength === 'weak') {
+                console.log('Default view: list (weak connection)');
+                return 'list';
+            } else if (strength === 'medium') {
+                console.log('Default view: cards (medium connection)');
+                return 'cards';
+            } else {
+                console.log('Default view: map (strong connection)');
+                return 'map';
+            }
+        }
+
+        /**
+         * Update the connection indicator UI
+         * @param {string} strength Connection strength: 'weak', 'medium', or 'strong'
+         */
+        updateConnectionIndicator(strength) {
+            const indicator = document.getElementById('connection-indicator');
+            const icon = document.getElementById('connection-icon');
+            const text = document.getElementById('connection-text');
+            
+            if (!indicator || !icon || !text) return;
+            
+            // Update icon and text based on strength
+            const config = {
+                weak: {
+                    icon: '📶',
+                    text: 'Weak connection - Using list view',
+                    color: 'rgba(239, 68, 68, 0.15)' // Red tint
+                },
+                medium: {
+                    icon: '📶',
+                    text: 'Medium connection - Using card view',
+                    color: 'rgba(245, 158, 11, 0.15)' // Orange tint
+                },
+                strong: {
+                    icon: '📶',
+                    text: 'Strong connection - Using map view',
+                    color: 'rgba(34, 197, 94, 0.15)' // Green tint
+                }
+            };
+            
+            const settings = config[strength] || config.medium;
+            icon.textContent = settings.icon;
+            text.textContent = settings.text;
+            indicator.style.background = settings.color;
         }
     }
 })();
