@@ -22,8 +22,9 @@ class FilterBuilder:
             (filters_dict, active_rules_list)
         """
         filters = {
-            "region": "french_alps",
             "is_real": True
+            # Note: region filter removed to allow trails from all French regions
+            # This enables more diverse trail types for better user profile detection
         }
         active_rules = []
         

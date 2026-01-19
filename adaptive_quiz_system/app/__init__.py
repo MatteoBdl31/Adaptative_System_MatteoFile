@@ -8,7 +8,6 @@ from backend.db import (
     get_user,
     get_trail,
     get_all_trails,
-    record_trail_view,
     record_trail_completion,
 )
 from adapt_trails import adapt_trails
@@ -132,6 +131,38 @@ def format_duration(minutes):
 
 # Register the filter for use in templates
 app.jinja_env.filters['format_duration'] = format_duration
+
+@app.template_filter('profile_name_en')
+def profile_name_en_filter(profile_key):
+    """Convert profile key to English display name."""
+    if not profile_key:
+        return None
+    profile_names = {
+        "elevation_lover": "Elevation Enthusiast",
+        "performance_athlete": "Performance Athlete",
+        "contemplative": "Contemplative Hiker",
+        "casual": "Casual Hiker",
+        "family": "Family / Group Hiker",
+        "explorer": "Explorer / Adventurer",
+        "photographer": "Photographer / Content Creator"
+    }
+    return profile_names.get(profile_key, profile_key)
+
+@app.template_filter('profile_name_short')
+def profile_name_short_filter(profile_key):
+    """Convert profile key to short English display name for dropdowns."""
+    if not profile_key:
+        return None
+    profile_names = {
+        "elevation_lover": "Elevation Enthusiast",
+        "performance_athlete": "Performance Athlete",
+        "contemplative": "Contemplative Hiker",
+        "casual": "Casual Hiker",
+        "family": "Family Hiker",
+        "explorer": "Explorer",
+        "photographer": "Photographer"
+    }
+    return profile_names.get(profile_key, profile_key)
 
 # DEMO_CONTEXTS removed - predefined scenarios no longer used
 
@@ -396,9 +427,6 @@ def trail_detail(user_id, trail_id):
     trail = get_trail(trail_id)
     if not trail:
         return "Trail not found", 404
-
-    # Record trail view
-    record_trail_view(user_id, trail_id)
 
     # Get context from query params
     device = request.args.get("device", "laptop")
@@ -685,6 +713,8 @@ def demo():
         users=users,
         selected_user_id_a=user_id_a,
         selected_user_id_b=user_id_b,
+        selected_user_a=user_a,
+        selected_user_b=user_b,
         primary_result=primary_result,
         secondary_result=secondary_result,
         compare_mode=compare_mode,

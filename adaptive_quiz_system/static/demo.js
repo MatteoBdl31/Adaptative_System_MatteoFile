@@ -97,6 +97,18 @@
                     }
                 }
             });
+
+            // Update profile display when user selection changes
+            const userSelectA = document.getElementById('user-select-a');
+            const userSelectB = document.getElementById('user-select-b');
+            
+            if (userSelectA) {
+                userSelectA.addEventListener('change', () => this.updateProfileDisplay('a'));
+            }
+            
+            if (userSelectB) {
+                userSelectB.addEventListener('change', () => this.updateProfileDisplay('b'));
+            }
         }
 
         openContextModal(userId) {
@@ -117,6 +129,24 @@
             }
         }
 
+        updateProfileDisplay(userIndex) {
+            const select = document.getElementById(`user-select-${userIndex}`);
+            const badge = document.getElementById(`profile-badge-${userIndex}`);
+            const nameSpan = document.getElementById(`profile-name-${userIndex}`);
+            
+            if (!select || !badge || !nameSpan) return;
+            
+            const selectedOption = select.options[select.selectedIndex];
+            const profileName = selectedOption.getAttribute('data-profile-name');
+            
+            if (profileName) {
+                nameSpan.textContent = profileName;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
         addUser() {
             const userBScenario = document.getElementById('user-scenario-b');
             const addUserBtn = document.getElementById('btn-add-user');
@@ -134,6 +164,9 @@
 
                 // Copy user A values to user B
                 this.copyUserValues('a', 'b');
+                
+                // Update profile display for user B
+                this.updateProfileDisplay('b');
 
                 // Show remove button for user A
                 const removeUserABtn = document.querySelector('[data-user="a"]');
@@ -202,12 +235,14 @@
                 }
             });
 
-            // Copy user ID
+                // Copy user ID
             const fromUserSelect = form.querySelector(`[name="user_id_${fromPrefix}"]`);
             const toUserSelect = form.querySelector(`[name="user_id_${toPrefix}"]`);
             
             if (fromUserSelect && toUserSelect) {
                 toUserSelect.value = fromUserSelect.value;
+                // Update profile display for the target user
+                this.updateProfileDisplay(toPrefix);
             }
         }
 

@@ -42,6 +42,27 @@ def get_all_users():
         # Get completed trails
         cur.execute("SELECT trail_id, completion_date, rating FROM completed_trails WHERE user_id=? ORDER BY completion_date DESC", (user["id"],))
         user["completed_trails"] = [dict(row) for row in cur.fetchall()]
+        
+        # Get user profile
+        profile = get_user_profile(user["id"])
+        if profile:
+            user["detected_profile"] = profile["primary_profile"]
+            user["profile_scores"] = profile["profile_scores"]
+        else:
+            # Calculate on-the-fly if not stored (but only if user has enough trails)
+            if len(user.get("completed_trails", [])) >= 3:
+                try:
+                    from backend.user_profiling import UserProfiler
+                    profiler = UserProfiler()
+                    primary_profile, scores = profiler.detect_profile(user["id"])
+                    user["detected_profile"] = primary_profile
+                    user["profile_scores"] = scores
+                except Exception:
+                    user["detected_profile"] = None
+                    user["profile_scores"] = {}
+            else:
+                user["detected_profile"] = None
+                user["profile_scores"] = {}
     conn.close()
     return users
 
@@ -63,29 +84,128 @@ def get_user(user_id):
     cur.execute("SELECT trail_id, completion_date, rating FROM completed_trails WHERE user_id=? ORDER BY completion_date DESC", (user_id,))
     user["completed_trails"] = [dict(row) for row in cur.fetchall()]
     conn.close()
+    
+    # Get user profile
+    profile = get_user_profile(user_id)
+    if profile:
+        user["detected_profile"] = profile["primary_profile"]
+        user["profile_scores"] = profile["profile_scores"]
+    else:
+        # Calculate on-the-fly if not stored (but only if user has enough trails)
+        if len(user.get("completed_trails", [])) >= 3:
+            try:
+                from backend.user_profiling import UserProfiler
+                profiler = UserProfiler()
+                primary_profile, scores = profiler.detect_profile(user_id)
+                user["detected_profile"] = primary_profile
+                user["profile_scores"] = scores
+            except Exception:
+                user["detected_profile"] = None
+                user["profile_scores"] = {}
+        else:
+            user["detected_profile"] = None
+            user["profile_scores"] = {}
+    
     return user
 
-def record_trail_view(user_id, trail_id, abandoned=False):
-    """Record when a user views a trail"""
-    conn = sqlite3.connect(USERS_DB)
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO trail_history (user_id, trail_id, viewed_at, abandoned)
-        VALUES (?, ?, ?, ?)
-    """, (user_id, trail_id, datetime.now().isoformat(), 1 if abandoned else 0))
-    conn.commit()
-    conn.close()
-
-def record_trail_completion(user_id, trail_id, actual_duration, rating):
-    """Record when a user completes a trail"""
-    conn = sqlite3.connect(USERS_DB)
+def _insert_completed_trail_sql(user_id, trail_id, completion_date, actual_duration, rating, conn=None):
+    """
+    Helper function to insert a completed trail into the database.
+    This is the shared SQL insertion logic used by both record_trail_completion()
+    and seed_users() to avoid code duplication.
+    
+    Args:
+        user_id: User ID
+        trail_id: Trail ID
+        completion_date: ISO format date string
+        actual_duration: Duration in minutes
+        rating: Rating (1-5)
+        conn: Optional existing database connection. If None, creates and closes a new one.
+    
+    Returns:
+        None
+    """
+    should_close = False
+    if conn is None:
+        conn = sqlite3.connect(USERS_DB)
+        should_close = True
+    
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO completed_trails (user_id, trail_id, completion_date, actual_duration, rating)
         VALUES (?, ?, ?, ?, ?)
-    """, (user_id, trail_id, datetime.now().isoformat(), actual_duration, rating))
+    """, (user_id, trail_id, completion_date, actual_duration, rating))
+    
+    if should_close:
+        conn.commit()
+        conn.close()
+
+def record_trail_completion(user_id, trail_id, actual_duration, rating):
+    """Record when a user completes a trail and update profile"""
+    # Use shared SQL insertion function
+    _insert_completed_trail_sql(
+        user_id, 
+        trail_id, 
+        datetime.now().isoformat(), 
+        actual_duration, 
+        rating
+    )
+    
+    # Recalculate user profile
+    try:
+        from backend.user_profiling import UserProfiler
+        profiler = UserProfiler()
+        primary_profile, scores = profiler.detect_profile(user_id)
+        if primary_profile:
+            update_user_profile(user_id, primary_profile, scores)
+    except Exception as e:
+        # Don't fail if profiling fails
+        print(f"Warning: Could not update user profile for user {user_id}: {e}")
+
+def _ensure_user_profiles_table():
+    """Ensure user_profiles table exists (for migration compatibility)."""
+    conn = sqlite3.connect(USERS_DB)
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_profiles (
+            user_id INTEGER PRIMARY KEY,
+            primary_profile TEXT,
+            profile_scores TEXT,
+            last_updated TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
     conn.commit()
     conn.close()
+
+def update_user_profile(user_id: int, primary_profile: str, profile_scores: dict):
+    """Update user profile in database."""
+    _ensure_user_profiles_table()
+    conn = sqlite3.connect(USERS_DB)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT OR REPLACE INTO user_profiles 
+        (user_id, primary_profile, profile_scores, last_updated)
+        VALUES (?, ?, ?, ?)
+    """, (user_id, primary_profile, json.dumps(profile_scores), 
+          datetime.now().isoformat()))
+    conn.commit()
+    conn.close()
+
+def get_user_profile(user_id: int):
+    """Get user profile from database."""
+    _ensure_user_profiles_table()
+    conn = sqlite3.connect(USERS_DB)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM user_profiles WHERE user_id=?", (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    if row:
+        profile = dict(row)
+        profile["profile_scores"] = json.loads(profile["profile_scores"])
+        return profile
+    return None
 
 # --- Rules ---
 def get_rules():
