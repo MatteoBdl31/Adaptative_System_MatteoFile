@@ -4,8 +4,11 @@ Ranking system for trail recommendations.
 Separates exact matches from suggestions and ranks them.
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from backend.weather_service import weather_matches
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TrailRanker:
@@ -24,7 +27,8 @@ class TrailRanker:
         trails: List[Dict], 
         filters: Dict, 
         user: Dict, 
-        context: Dict
+        context: Dict,
+        debugger=None
     ) -> Tuple[List[Dict], List[Dict]]:
         """
         Rank trails and separate into exact matches and suggestions.
@@ -34,24 +38,33 @@ class TrailRanker:
             filters: Active filters
             user: User profile
             context: Context data
+            debugger: Optional RecommendationDebugger instance for logging
         
         Returns:
             (exact_matches, suggestions)
         """
+        logger.debug(f"Ranking {len(trails)} trails with threshold {self.exact_match_threshold}%")
+        
         # Apply hard filters (safety, season, fear of heights)
-        filtered_trails = self._apply_hard_filters(trails, filters, user, context)
+        filtered_trails = self._apply_hard_filters(trails, filters, user, context, debugger)
         
         # Separate exact matches from suggestions
         exact_matches = []
         suggestions = []
+        below_threshold_count = 0
+        filter_failed_count = 0
         
         for trail in filtered_trails:
             relevance = trail.get("relevance_percentage", 0.0)
             
             # Check if it's an exact match
-            if self._is_exact_match(trail, filters, user, context, relevance):
+            if relevance < self.exact_match_threshold:
+                below_threshold_count += 1
+                suggestions.append(trail)
+            elif self._is_exact_match(trail, filters, user, context, relevance):
                 exact_matches.append(trail)
             else:
+                filter_failed_count += 1
                 suggestions.append(trail)
         
         # Sort exact matches by relevance, then popularity
@@ -66,6 +79,9 @@ class TrailRanker:
             reverse=True
         )
         
+        logger.debug(f"Ranking results: {len(exact_matches)} exact matches, {len(suggestions)} suggestions "
+                     f"(below threshold: {below_threshold_count}, filter failed: {filter_failed_count})")
+        
         return exact_matches, suggestions
     
     def _apply_hard_filters(
@@ -73,39 +89,74 @@ class TrailRanker:
         trails: List[Dict], 
         filters: Dict, 
         user: Dict, 
-        context: Dict
+        context: Dict,
+        debugger=None
     ) -> List[Dict]:
         """Apply hard filters that cannot be violated."""
         filtered = []
+        filtered_out_count = {
+            "season": 0,
+            "fear_of_heights": 0,
+            "weather": 0
+        }
         
         for trail in trails:
+            trail_id = trail.get("trail_id", "unknown")
+            filtered_out = False
+            filter_reason = None
+            
             # Season filter
             if filters.get("avoid_closed") and context.get("season"):
                 season = context["season"].lower()
                 closed_seasons = (trail.get("closed_seasons") or "").lower()
                 if season in closed_seasons:
+                    filtered_out_count["season"] += 1
+                    filtered_out = True
+                    filter_reason = f"Closed in {season}"
+                    if debugger:
+                        debugger.log_trail_filtered_out(trail_id, filter_reason, "season")
+                    logger.debug(f"Trail {trail_id} filtered: {filter_reason}")
                     continue
             
             # Fear of heights
             if user.get("fear_of_heights"):
                 safety_risks = (trail.get("safety_risks") or "").lower()
                 if "heights" in safety_risks:
+                    filtered_out_count["fear_of_heights"] += 1
+                    filtered_out = True
+                    filter_reason = "Contains heights exposure"
+                    if debugger:
+                        debugger.log_trail_filtered_out(trail_id, filter_reason, "fear_of_heights")
+                    logger.debug(f"Trail {trail_id} filtered: {filter_reason}")
                     continue
             
             # Weather filter (if forecast available and doesn't match)
+            # Only filter out truly dangerous weather conditions
             hike_date = context.get("hike_start_date") or context.get("hike_date")
-            desired_weather = context.get("weather", "sunny")
+            desired_weather = (context.get("weather", "sunny") or "").lower()
             forecast_weather = trail.get("forecast_weather")
             
             if hike_date and desired_weather and forecast_weather:
-                # Only filter out if forecast exists and doesn't match
-                # Don't penalize for missing forecasts
-                if not weather_matches(desired_weather, forecast_weather):
-                    # Move to suggestions instead of filtering out completely
-                    # This allows users to see trails even if weather doesn't match
-                    pass
+                forecast_weather = forecast_weather.lower()
+                # Only filter out truly dangerous weather (storm_risk)
+                # Other mismatches are handled by scoring, allowing flexibility
+                if forecast_weather == "storm_risk":
+                    # Storm risk is dangerous regardless of desired weather
+                    filtered_out_count["weather"] += 1
+                    filtered_out = True
+                    filter_reason = "Storm risk forecast"
+                    if debugger:
+                        debugger.log_trail_filtered_out(trail_id, filter_reason, "weather")
+                    logger.debug(f"Trail {trail_id} filtered: {filter_reason}")
+                    continue
+                
+                # For other weather conditions, let them through
+                # They'll be scored appropriately by WeatherCriterion
+                # This allows users to see trails even if weather isn't perfect
             
             filtered.append(trail)
+        
+        logger.debug(f"Hard filters applied: {len(filtered)}/{len(trails)} trails passed. Filtered out: {filtered_out_count}")
         
         return filtered
     
@@ -163,11 +214,25 @@ class TrailRanker:
             if trail_difficulty > filters["max_difficulty"]:
                 return False
         
-        # Distance filter
+        # Distance filter - Note: max_distance should already be removed for multi-day trips by FilterBuilder
+        # This check is a safety net in case max_distance somehow still exists
         if "max_distance" in filters:
             trail_distance = trail.get("distance")
-            if trail_distance and trail_distance > filters["max_distance"]:
-                return False
+            trail_duration = trail.get("duration", 0)
+            time_available = context.get("time_available", 0)
+            
+            if trail_distance:
+                # For multi-day hikes, be lenient (though max_distance should be removed by FilterBuilder)
+                is_multi_day = (trail_duration >= 1440) or (time_available >= 1440)
+                if is_multi_day:
+                    # Allow up to 3x the limit for multi-day (safety net)
+                    max_allowed = filters["max_distance"] * 3
+                    if trail_distance > max_allowed:
+                        return False
+                else:
+                    # Single-day hikes: strict limit
+                    if trail_distance > filters["max_distance"]:
+                        return False
         
         # Elevation filter
         if "max_elevation" in filters:

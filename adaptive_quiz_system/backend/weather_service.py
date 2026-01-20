@@ -5,7 +5,7 @@ Uses Open-Meteo API (free, no API key required).
 """
 
 import requests
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Optional, Dict, List
 
 
@@ -98,7 +98,7 @@ def get_weather_forecast(latitude: float, longitude: float, target_date: str) ->
             "end_date": target_date,  # End date (same as start for single day)
         }
         
-        response = requests.get(url, params=params, timeout=3)  # Reduced timeout for faster response
+        response = requests.get(url, params=params, timeout=2)  # Reduced timeout for faster response
         response.raise_for_status()
         data = response.json()
         
@@ -156,6 +156,137 @@ def get_weather_for_trail(trail: Dict, target_date: str) -> Optional[str]:
         return None
     
     return get_weather_forecast(float(lat), float(lon), target_date)
+
+
+def get_weekly_forecast(latitude: float, longitude: float, start_date: Optional[str] = None) -> List[Dict]:
+    """
+    Get 7-day weather forecast for a location.
+    
+    Args:
+        latitude: Latitude of the location
+        longitude: Longitude of the location
+        start_date: Start date in ISO format (YYYY-MM-DD). If None, uses today.
+    
+    Returns:
+        List of forecast dictionaries:
+        [
+            {
+                "date": "YYYY-MM-DD",
+                "weather": "sunny" | "cloudy" | "rainy" | "storm_risk" | "snowy",
+                "weather_code": int
+            },
+            ...
+        ]
+    """
+    try:
+        if start_date is None:
+            start_date = date.today().isoformat()
+        
+        # Calculate end date (7 days from start)
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end = start + timedelta(days=6)
+        end_date = end.isoformat()
+        
+        # Open-Meteo API endpoint
+        url = OPEN_METEO_BASE_URL
+        params = {
+            "latitude": latitude,
+            "longitude": longitude,
+            "daily": "weather_code",  # Get daily weather codes
+            "timezone": "auto",
+            "start_date": start_date,
+            "end_date": end_date,
+        }
+        
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Parse response
+        daily = data.get("daily", {})
+        weather_codes = daily.get("weather_code", [])
+        times = daily.get("time", [])
+        
+        if not weather_codes or not times:
+            return []
+        
+        # Build forecast list
+        forecast = []
+        for i, date_str in enumerate(times):
+            if i < len(weather_codes):
+                weather_code = weather_codes[i]
+                forecast.append({
+                    "date": date_str,
+                    "weather": normalize_weather_condition(weather_code),
+                    "weather_code": weather_code
+                })
+        
+        return forecast
+        
+    except requests.HTTPError as e:
+        if e.response.status_code == 429:
+            print("Weather API error: Rate limit exceeded. Please try again later.")
+        else:
+            print(f"Weather API error: HTTP {e.response.status_code} - {e}")
+        return []
+    except (requests.RequestException, ValueError, KeyError, IndexError) as e:
+        print(f"Weather API error: {e}")
+        return []
+
+
+def get_weather_recommendations(trail: Dict, forecast: List[Dict]) -> Dict:
+    """
+    Get weather-based recommendations for a trail.
+    
+    Args:
+        trail: Trail dictionary
+        forecast: Weekly forecast from get_weekly_forecast()
+    
+    Returns:
+        {
+            "best_days": List[Dict],
+            "avoid_days": List[Dict],
+            "recommendations": List[str]
+        }
+    """
+    if not forecast:
+        return {
+            "best_days": [],
+            "avoid_days": [],
+            "recommendations": ["Weather forecast unavailable"]
+        }
+    
+    best_days = []
+    avoid_days = []
+    recommendations = []
+    
+    # Categorize days
+    for day in forecast:
+        weather = day.get("weather", "cloudy")
+        if weather in ["sunny", "cloudy"]:
+            best_days.append(day)
+        elif weather in ["storm_risk", "snowy"]:
+            avoid_days.append(day)
+    
+    # Generate recommendations
+    if best_days:
+        recommendations.append(f"Best conditions on {len(best_days)} day(s): {', '.join([d['date'] for d in best_days[:3]])}")
+    
+    if avoid_days:
+        recommendations.append(f"Avoid {len(avoid_days)} day(s) with poor conditions: {', '.join([d['date'] for d in avoid_days])}")
+    
+    # Check for elevation-specific recommendations
+    elevation_gain = trail.get("elevation_gain", 0)
+    if elevation_gain > 800:
+        storm_days = [d for d in forecast if d.get("weather") == "storm_risk"]
+        if storm_days:
+            recommendations.append("High elevation trail - avoid storm days for safety")
+    
+    return {
+        "best_days": best_days[:3],  # Top 3 best days
+        "avoid_days": avoid_days,
+        "recommendations": recommendations
+    }
 
 
 def weather_matches(desired_weather: str, forecast_weather: Optional[str]) -> bool:

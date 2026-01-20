@@ -3,7 +3,10 @@
 import sqlite3
 import json
 import os
+import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(__file__)
 USERS_DB = os.path.join(BASE_DIR, "users.db")
@@ -207,6 +210,97 @@ def get_user_profile(user_id: int):
         return profile
     return None
 
+def _ensure_new_tables():
+    """Ensure new tables exist (for migration compatibility)."""
+    conn = sqlite3.connect(USERS_DB)
+    cur = conn.cursor()
+    
+    # Check and extend completed_trails if needed
+    cur.execute("PRAGMA table_info(completed_trails)")
+    columns = [row[1] for row in cur.fetchall()]
+    if "avg_heart_rate" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN avg_heart_rate INTEGER")
+    if "max_heart_rate" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN max_heart_rate INTEGER")
+    if "avg_speed" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN avg_speed REAL")
+    if "max_speed" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN max_speed REAL")
+    if "total_calories" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN total_calories INTEGER")
+    if "uploaded_data_id" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN uploaded_data_id INTEGER")
+    
+    # Create saved_trails table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS saved_trails (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            trail_id TEXT,
+            saved_date TEXT,
+            notes TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            UNIQUE(user_id, trail_id)
+        )
+    """)
+    
+    # Create started_trails table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS started_trails (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            trail_id TEXT,
+            start_date TEXT,
+            last_position TEXT,
+            progress_percentage REAL,
+            pause_points TEXT,
+            estimated_completion_date TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+    
+    # Create trail_performance_data table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS trail_performance_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            completed_trail_id INTEGER,
+            timestamp INTEGER,
+            heart_rate INTEGER,
+            speed REAL,
+            elevation REAL,
+            latitude REAL,
+            longitude REAL,
+            calories INTEGER,
+            cadence INTEGER,
+            FOREIGN KEY(completed_trail_id) REFERENCES completed_trails(id)
+        )
+    """)
+    
+    # Create uploaded_trail_data table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS uploaded_trail_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            trail_id TEXT,
+            upload_date TEXT,
+            original_filename TEXT,
+            data_format TEXT,
+            raw_data TEXT,
+            parsed_data TEXT,
+            status TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+    
+    # Extend user_profiles table if needed
+    cur.execute("PRAGMA table_info(user_profiles)")
+    profile_columns = [row[1] for row in cur.fetchall()]
+    if "pinned_dashboard" not in profile_columns:
+        cur.execute("ALTER TABLE user_profiles ADD COLUMN pinned_dashboard TEXT")
+    
+    conn.commit()
+    conn.close()
+
 # --- Rules ---
 def get_rules():
     conn = sqlite3.connect(RULES_DB)
@@ -238,54 +332,69 @@ def get_trail(trail_id):
 
 def filter_trails(filters):
     """Filter trails based on criteria"""
-    conn = sqlite3.connect(TRAILS_DB)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
+    logger.debug(f"Filtering trails with filters: {filters}")
     
-    query = "SELECT * FROM trails WHERE 1=1"
-    params = []
-    
-    if filters.get("max_difficulty"):
-        query += " AND difficulty <= ?"
-        params.append(float(filters["max_difficulty"]))
-    if filters.get("min_difficulty"):
-        query += " AND difficulty >= ?"
-        params.append(float(filters["min_difficulty"]))
-    if filters.get("max_distance"):
-        query += " AND distance <= ?"
-        params.append(float(filters["max_distance"]))
-    if filters.get("min_distance"):
-        query += " AND distance >= ?"
-        params.append(float(filters["min_distance"]))
-    if filters.get("max_duration"):
-        query += " AND duration <= ?"
-        params.append(int(filters["max_duration"]))
-    if filters.get("max_elevation"):
-        query += " AND elevation_gain <= ?"
-        params.append(int(filters["max_elevation"]))
-    if filters.get("landscape_filter"):
-        query += " AND landscapes LIKE ?"
-        params.append(f"%{filters['landscape_filter']}%")
-    if filters.get("avoid_risky"):
-        query += " AND (safety_risks = 'none' OR safety_risks = 'low')"
-    if filters.get("region"):
-        query += " AND region = ?"
-        params.append(filters["region"])
-    if filters.get("is_real") is not None:
-        query += " AND is_real = ?"
-        params.append(1 if filters["is_real"] else 0)
-    if filters.get("avoid_closed"):
-        # This would need season context - for now just filter out trails with closed_seasons
-        # In a real implementation, you'd check if current season matches closed_seasons
-        pass
-    if filters.get("prefer_short"):
-        query += " ORDER BY distance ASC"
-    elif filters.get("prefer_peaks"):
-        query += " AND landscapes LIKE '%peaks%' ORDER BY difficulty DESC"
-    else:
-        query += " ORDER BY popularity DESC"
-    
-    cur.execute(query, params)
-    trails = [_normalize_trail_row(row) for row in cur.fetchall()]
-    conn.close()
-    return trails
+    try:
+        conn = sqlite3.connect(TRAILS_DB)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        query = "SELECT * FROM trails WHERE 1=1"
+        params = []
+        
+        if filters.get("max_difficulty"):
+            query += " AND difficulty <= ?"
+            params.append(float(filters["max_difficulty"]))
+        if filters.get("min_difficulty"):
+            query += " AND difficulty >= ?"
+            params.append(float(filters["min_difficulty"]))
+        if filters.get("max_distance"):
+            query += " AND distance <= ?"
+            params.append(float(filters["max_distance"]))
+        if filters.get("min_distance"):
+            query += " AND distance >= ?"
+            params.append(float(filters["min_distance"]))
+        if filters.get("max_duration"):
+            query += " AND duration <= ?"
+            params.append(int(filters["max_duration"]))
+        if filters.get("min_duration"):
+            query += " AND duration >= ?"
+            params.append(int(filters["min_duration"]))
+        if filters.get("max_elevation"):
+            query += " AND elevation_gain <= ?"
+            params.append(int(filters["max_elevation"]))
+        if filters.get("landscape_filter"):
+            query += " AND landscapes LIKE ?"
+            params.append(f"%{filters['landscape_filter']}%")
+        if filters.get("avoid_risky"):
+            query += " AND (safety_risks = 'none' OR safety_risks = 'low')"
+        if filters.get("region"):
+            query += " AND region = ?"
+            params.append(filters["region"])
+        if filters.get("is_real") is not None:
+            query += " AND is_real = ?"
+            params.append(1 if filters["is_real"] else 0)
+        if filters.get("avoid_closed"):
+            # This would need season context - for now just filter out trails with closed_seasons
+            # In a real implementation, you'd check if current season matches closed_seasons
+            pass
+        if filters.get("prefer_short"):
+            query += " ORDER BY distance ASC"
+        elif filters.get("prefer_peaks"):
+            query += " AND landscapes LIKE '%peaks%' ORDER BY difficulty DESC"
+        else:
+            query += " ORDER BY popularity DESC"
+        
+        logger.debug(f"Executing query: {query[:200]}... with {len(params)} parameters")
+        cur.execute(query, params)
+        trails = [_normalize_trail_row(row) for row in cur.fetchall()]
+        conn.close()
+        
+        logger.debug(f"Query returned {len(trails)} trails")
+        return trails
+        
+    except Exception as e:
+        logger.error(f"Error filtering trails: {e}")
+        logger.error(f"Filters were: {filters}")
+        # Return empty list on error rather than crashing
+        return []

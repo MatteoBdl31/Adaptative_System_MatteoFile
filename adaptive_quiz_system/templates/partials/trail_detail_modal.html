@@ -1,0 +1,128 @@
+<div class="trail-detail-modal-content">
+    <div class="trail-detail-header">
+        <div class="trail-detail-header-main">
+            <h2 id="trail-detail-name">Trail Name</h2>
+            <div class="trail-detail-basic-info">
+                <span id="trail-detail-distance">-</span> km | 
+                <span id="trail-detail-difficulty">-</span>/10 | 
+                <span id="trail-detail-elevation">-</span>m
+            </div>
+        </div>
+        <!-- Enhanced Header: Quick Stats -->
+        <div class="trail-detail-quick-stats" id="trail-detail-quick-stats"></div>
+        <!-- Status and Actions -->
+        <div class="trail-detail-status-actions" id="trail-detail-status-actions"></div>
+    </div>
+    
+    <div class="trail-detail-tabs" id="trail-detail-tabs">
+        <button class="detail-tab active" data-tab="overview">Overview</button>
+        <button class="detail-tab" data-tab="elevation">Elevation</button>
+        <button class="detail-tab" data-tab="map">Map</button>
+        <button class="detail-tab" data-tab="gallery">Gallery</button>
+        <button class="detail-tab" data-tab="performance">Performance</button>
+        <button class="detail-tab" data-tab="weather">Weather</button>
+        <button class="detail-tab" data-tab="recommendations">Recommendations</button>
+    </div>
+    
+    <div class="trail-detail-content">
+        <div id="overview-tab" class="detail-tab-content active">
+            <div class="tab-summary-section">
+                <div id="trail-description-summary"></div>
+                <div id="trail-key-stats-grid"></div>
+                <div id="trail-landscapes-summary"></div>
+            </div>
+            <div class="tab-expandable-sections">
+                <div class="expandable-section">
+                    <button class="expand-toggle" data-section="full-description">
+                        <span>Show Full Description</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div class="expandable-content" id="trail-description-full" style="display: none;"></div>
+                </div>
+                <div class="expandable-section">
+                    <button class="expand-toggle" data-section="trail-details">
+                        <span>Trail Details</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div class="expandable-content" id="trail-details-expanded" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="elevation-tab" class="detail-tab-content">
+            <div class="tab-summary-section">
+                <div id="elevation-summary"></div>
+            </div>
+            <div class="chart-container">
+                <canvas id="elevation-chart"></canvas>
+            </div>
+        </div>
+        
+        <div id="map-tab" class="detail-tab-content">
+            <div id="trail-map-container" class="trail-map-container"></div>
+        </div>
+        
+        <div id="gallery-tab" class="detail-tab-content">
+            <div class="tab-summary-section">
+                <div id="gallery-summary"></div>
+            </div>
+            <div id="trail-gallery-content" class="trail-gallery-grid"></div>
+        </div>
+        
+        <div id="performance-tab" class="detail-tab-content">
+            <div class="tab-summary-section">
+                <div id="performance-summary-cards" class="performance-summary-cards"></div>
+            </div>
+            <div class="tab-expandable-sections">
+                <div class="expandable-section">
+                    <button class="expand-toggle" data-section="detailed-metrics">
+                        <span>Detailed Metrics</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div class="expandable-content" id="performance-metrics-detailed" style="display: none;"></div>
+                </div>
+                <div class="expandable-section">
+                    <button class="expand-toggle" data-section="performance-chart">
+                        <span>Performance Chart</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div class="expandable-content" id="performance-chart-content" style="display: none;">
+                        <div class="chart-container">
+                            <canvas id="performance-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="weather-tab" class="detail-tab-content">
+            <div class="tab-summary-section">
+                <div id="weather-summary-cards" class="weather-summary-cards"></div>
+            </div>
+            <div class="tab-expandable-sections">
+                <div class="expandable-section">
+                    <button class="expand-toggle" data-section="full-forecast">
+                        <span>Full 7-Day Forecast</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div class="expandable-content" id="weather-forecast-full" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="recommendations-tab" class="detail-tab-content">
+            <div class="tab-summary-section">
+                <div id="recommendations-key-tips"></div>
+            </div>
+            <div class="tab-expandable-sections">
+                <div class="expandable-section">
+                    <button class="expand-toggle" data-section="full-recommendations">
+                        <span>Full Recommendations</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                    <div class="expandable-content" id="ai-recommendations-full" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

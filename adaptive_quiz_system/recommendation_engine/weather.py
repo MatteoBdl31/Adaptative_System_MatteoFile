@@ -12,10 +12,10 @@ from backend.weather_service import get_weather_for_trail
 class WeatherEnricher:
     """Enriches trails with weather forecast data using parallel fetching."""
     
-    def __init__(self, max_workers: int = 5):
+    def __init__(self, max_workers: int = 10):
         """
         Args:
-            max_workers: Maximum number of parallel weather API requests
+            max_workers: Maximum number of parallel weather API requests (increased for better performance)
         """
         self._cache = {}  # Simple in-memory cache: {(lat, lon, date): weather}
         self.max_workers = max_workers

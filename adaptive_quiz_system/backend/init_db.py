@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent
 USERS_DB = BASE_DIR / "users.db"
 RULES_DB = BASE_DIR / "rules.db"
 TRAILS_DB = BASE_DIR / "trails.db"
-DEFAULT_TRAIL_LIMIT = int(os.getenv("TRAIL_LIMIT", "100"))
+DEFAULT_TRAIL_LIMIT = int(os.getenv("TRAIL_LIMIT", "200"))  # Increased from 100 to 200 for more diversity
 
 
 def seed_rules() -> None:
@@ -99,7 +99,8 @@ def seed_rules() -> None:
 def seed_users(example_trails: List[dict], use_reference: bool = False) -> None:
     conn = sqlite3.connect(USERS_DB)
     cur = conn.cursor()
-    for table in ["users", "preferences", "performance", "completed_trails", "user_profiles"]:
+    for table in ["users", "preferences", "performance", "completed_trails", "user_profiles", 
+                   "saved_trails", "started_trails", "trail_performance_data", "uploaded_trail_data"]:
         cur.execute(f"DROP TABLE IF EXISTS {table}")
 
     cur.execute(
@@ -147,6 +148,12 @@ def seed_users(example_trails: List[dict], use_reference: bool = False) -> None:
             completion_date TEXT,
             actual_duration INTEGER,
             rating INTEGER,
+            avg_heart_rate INTEGER,
+            max_heart_rate INTEGER,
+            avg_speed REAL,
+            max_speed REAL,
+            total_calories INTEGER,
+            uploaded_data_id INTEGER,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
         """
@@ -158,6 +165,76 @@ def seed_users(example_trails: List[dict], use_reference: bool = False) -> None:
             primary_profile TEXT,
             profile_scores TEXT,
             last_updated TEXT,
+            pinned_dashboard TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    
+    # Create saved_trails table
+    cur.execute(
+        """
+        CREATE TABLE saved_trails (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            trail_id TEXT,
+            saved_date TEXT,
+            notes TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            UNIQUE(user_id, trail_id)
+        )
+        """
+    )
+    
+    # Create started_trails table
+    cur.execute(
+        """
+        CREATE TABLE started_trails (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            trail_id TEXT,
+            start_date TEXT,
+            last_position TEXT,
+            progress_percentage REAL,
+            pause_points TEXT,
+            estimated_completion_date TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    
+    # Create trail_performance_data table
+    cur.execute(
+        """
+        CREATE TABLE trail_performance_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            completed_trail_id INTEGER,
+            timestamp INTEGER,
+            heart_rate INTEGER,
+            speed REAL,
+            elevation REAL,
+            latitude REAL,
+            longitude REAL,
+            calories INTEGER,
+            cadence INTEGER,
+            FOREIGN KEY(completed_trail_id) REFERENCES completed_trails(id)
+        )
+        """
+    )
+    
+    # Create uploaded_trail_data table
+    cur.execute(
+        """
+        CREATE TABLE uploaded_trail_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            trail_id TEXT,
+            upload_date TEXT,
+            original_filename TEXT,
+            data_format TEXT,
+            raw_data TEXT,
+            parsed_data TEXT,
+            status TEXT,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
         """
@@ -297,6 +374,18 @@ def seed_users(example_trails: List[dict], use_reference: bool = False) -> None:
             print(f"Warning: Could not calculate profile for user {user_id}: {e}")
     
     print("users.db initialized with demo hikers and contextual history")
+    
+    # Generate dummy fitness data for all users (with variations from predictions)
+    print("\nGenerating dummy fitness metrics with realistic variations...")
+    try:
+        from backend.generate_dummy_fitness_data import generate_fitness_data_for_all_users
+        generate_fitness_data_for_all_users()
+        print("✓ Fitness data generated successfully")
+    except Exception as e:
+        print(f"Warning: Could not generate fitness data: {e}")
+        import traceback
+        traceback.print_exc()
+        print("You can run this later using: python generate_fitness_data.py")
 
 
 def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT, use_reference: bool = False) -> List[dict]:
@@ -338,8 +427,9 @@ def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT, use_reference: bool = False) -
     ]
     
     # Load all selected regions together, with a limit per region to ensure diversity
-    # Increase limit per region to get more variety
-    limit_per_region = max(15, limit // len(selected_regions))
+    # Increase limit per region to get more variety, especially for diverse durations/difficulties
+    # Use a higher multiplier to get more candidates before diversity selection
+    limit_per_region = max(30, int(limit * 1.5) // len(selected_regions))  # Get 1.5x candidates for diversity selection
     
     trails = load_french_trails(
         regions=selected_regions,

@@ -69,7 +69,7 @@ FRENCH_REGIONS = {
 # Default: French Alps (for backward compatibility)
 FRENCH_ALPS_BBOX = FRENCH_REGIONS["french_alps"]["bbox"]
 MAX_ELEVATION_SAMPLES = 180
-MIN_NAMED_DISTANCE_KM = 2.0
+MIN_NAMED_DISTANCE_KM = 1.0  # Lowered from 2.0 to allow shorter trails for diversity
 
 
 def _verify_shapefile(path: Path) -> None:
@@ -183,10 +183,36 @@ def _estimate_difficulty_from_characteristics(
     return max(1.0, min(10.0, base_difficulty))
 
 
-def _estimate_duration_minutes(distance_km: float | None) -> int:
+def _estimate_duration_minutes(distance_km: float | None, elevation_gain: int | None = None) -> int:
+    """
+    Estimate duration in minutes based on distance and elevation gain.
+    
+    Accounts for elevation gain which significantly affects hiking time.
+    Uses Naismith's rule: 1 hour per 5 km + 1 hour per 600m elevation gain.
+    """
     if not distance_km or distance_km <= 0:
         return 120
-    return int(max(30, (distance_km / 4.0) * 60))
+    
+    # Base time: Naismith's rule (5 km/h on flat terrain)
+    base_time_minutes = (distance_km / 5.0) * 60
+    
+    # Add time for elevation gain (1 hour per 600m, or 1 minute per 10m)
+    if elevation_gain and elevation_gain > 0:
+        elevation_time_minutes = elevation_gain / 10.0
+        total_time = base_time_minutes + elevation_time_minutes
+    else:
+        # If no elevation data, use simpler formula but account for likely elevation
+        # Assume moderate elevation gain for longer trails
+        if distance_km > 20:
+            # Long trails likely have significant elevation
+            total_time = base_time_minutes * 1.3
+        elif distance_km > 10:
+            total_time = base_time_minutes * 1.2
+        else:
+            total_time = base_time_minutes
+    
+    # Ensure minimum duration (at least 30 minutes for any trail)
+    return int(max(30, total_time))
 
 
 def _parse_landscapes(props: Dict[str, str]) -> str:
@@ -313,6 +339,127 @@ def _trail_type_from_coords(coords: Sequence[Tuple[float, float]]) -> str:
     return "loop" if close_enough else "one_way"
 
 
+def _get_trail_category(trail: Dict) -> Tuple[int, int]:
+    """Get the category (duration, difficulty) for a trail."""
+    duration = trail.get("duration", 120)
+    difficulty = trail.get("difficulty", 5.0)
+    
+    duration_ranges = [
+        (0, 120), (120, 240), (240, 480), (480, 720), (720, 1440), (1440, float('inf'))
+    ]
+    difficulty_ranges = [(0.0, 4.0), (4.0, 7.0), (7.0, 10.0)]
+    
+    dur_cat = 0
+    for i, (min_dur, max_dur) in enumerate(duration_ranges):
+        if min_dur <= duration < max_dur:
+            dur_cat = i
+            break
+    
+    diff_cat = 0
+    for i, (min_diff, max_diff) in enumerate(difficulty_ranges):
+        if min_diff <= difficulty < max_diff:
+            diff_cat = i
+            break
+    
+    return (dur_cat, diff_cat)
+
+
+def _select_diverse_trails(
+    trails: List[Dict], 
+    target_count: int,
+    min_per_category: int = 2
+) -> List[Dict]:
+    """
+    Select diverse trails across duration and difficulty ranges.
+    
+    Ensures we have trails in different categories:
+    - Duration ranges: < 2h, 2-4h, 4-8h, 8-12h, 12-24h, > 24h
+    - Difficulty ranges: Easy (1-4), Medium (4-7), Hard (7-10)
+    
+    Args:
+        trails: List of all candidate trails
+        target_count: Target number of trails to select
+        min_per_category: Minimum trails per category to ensure diversity
+    
+    Returns:
+        List of diverse trails
+    """
+    if len(trails) <= target_count:
+        return trails
+    
+    # Define categories
+    duration_ranges = [
+        (0, 120),      # < 2 hours
+        (120, 240),    # 2-4 hours
+        (240, 480),    # 4-8 hours
+        (480, 720),    # 8-12 hours
+        (720, 1440),   # 12-24 hours
+        (1440, float('inf'))  # > 24 hours (multi-day)
+    ]
+    
+    difficulty_ranges = [
+        (0.0, 4.0),    # Easy
+        (4.0, 7.0),    # Medium
+        (7.0, 10.0)    # Hard
+    ]
+    
+    # Categorize trails
+    categorized: Dict[Tuple[int, int], List[Dict]] = {}
+    for trail in trails:
+        category = _get_trail_category(trail)
+        if category not in categorized:
+            categorized[category] = []
+        categorized[category].append(trail)
+    
+    # Select diverse trails
+    selected: List[Dict] = []
+    used_trail_ids = set()
+    
+    # First pass: ensure minimum per category
+    for category, category_trails in categorized.items():
+        # Sort by popularity/distance for better selection
+        category_trails.sort(key=lambda t: (t.get("popularity", 0), t.get("distance", 0)), reverse=True)
+        for trail in category_trails[:min_per_category]:
+            trail_id = trail.get("trail_id")
+            if trail_id and trail_id not in used_trail_ids:
+                selected.append(trail)
+                used_trail_ids.add(trail_id)
+    
+    # Second pass: fill remaining slots, prioritizing underrepresented categories
+    remaining_slots = target_count - len(selected)
+    if remaining_slots > 0:
+        # Calculate how many trails per category we have
+        category_counts = {cat: len([t for t in selected if _get_trail_category(t) == cat]) 
+                          for cat in categorized.keys()}
+        
+        # Sort categories by how underrepresented they are
+        all_categories = sorted(categorized.keys(), 
+                               key=lambda cat: (category_counts.get(cat, 0), -len(categorized[cat])))
+        
+        for category in all_categories:
+            if len(selected) >= target_count:
+                break
+            for trail in categorized[category]:
+                if len(selected) >= target_count:
+                    break
+                trail_id = trail.get("trail_id")
+                if trail_id and trail_id not in used_trail_ids:
+                    selected.append(trail)
+                    used_trail_ids.add(trail_id)
+    
+    # If we still need more, add any remaining trails
+    if len(selected) < target_count:
+        for trail in trails:
+            if len(selected) >= target_count:
+                break
+            trail_id = trail.get("trail_id")
+            if trail_id and trail_id not in used_trail_ids:
+                selected.append(trail)
+                used_trail_ids.add(trail_id)
+    
+    return selected
+
+
 def load_french_trails(
     shapefile_path: Path = SHAPEFILE_PATH,
     *,
@@ -372,8 +519,13 @@ def load_french_trails(
         x[0].points[0][1] if x[0].points else 0  # First Y coordinate as second tiebreaker
     ))
 
+    # Collect more candidates than needed for diversity selection
+    # We'll apply diversity selection at the end
+    candidate_multiplier = 1.5 if total_limit else 1.0
+    effective_limit = int(total_limit * candidate_multiplier) if total_limit else None
+    
     for shape, record in shapes_and_records:
-        if total_limit and len(all_trails) >= total_limit:
+        if effective_limit and len(all_trails) >= effective_limit:
             break
         if shape.shapeType != shapefile.POLYLINE:
             continue
@@ -426,7 +578,6 @@ def load_french_trails(
         sac_scale = _coerce_str(props.get("sac_scale"))
         raw_difficulty_value = sac_scale or props.get("difficulty")
         raw_difficulty = _parse_difficulty(raw_difficulty_value)
-        duration = _estimate_duration_minutes(total_distance_km)
         landscapes = _parse_landscapes({k: _coerce_str(v) for k, v in props.items()})
         safety = _parse_safety({k: _coerce_str(v) for k, v in props.items()})
         accessibility = _parse_accessibility({k: _coerce_str(v) for k, v in props.items()})
@@ -449,6 +600,9 @@ def load_french_trails(
         else:
             # Use the parsed difficulty from source data (even if it's 5.0 from a match)
             difficulty = raw_difficulty
+        
+        # Estimate duration with elevation gain for more accurate multi-day trail detection
+        duration = _estimate_duration_minutes(total_distance_km, elevation_gain)
 
         region_name = matching_region["name"]
         trail_id = f"{region_name}_{props.get('osm_id') or props.get('id') or len(all_trails)}"
@@ -484,6 +638,42 @@ def load_french_trails(
         )
         region_counts[region_name] += 1
 
+    # Apply diversity selection if we have a total_limit
+    # This ensures we get trails across different duration and difficulty ranges
+    if total_limit and len(all_trails) > total_limit:
+        print(f"Selecting {total_limit} diverse trails from {len(all_trails)} candidates...")
+        all_trails = _select_diverse_trails(all_trails, total_limit, min_per_category=1)
+        print(f"Selected {len(all_trails)} diverse trails")
+        
+        # Print diversity summary
+        duration_counts = {}
+        difficulty_counts = {}
+        for trail in all_trails:
+            dur = trail.get("duration", 120)
+            diff = trail.get("difficulty", 5.0)
+            if dur < 120:
+                duration_counts["< 2h"] = duration_counts.get("< 2h", 0) + 1
+            elif dur < 240:
+                duration_counts["2-4h"] = duration_counts.get("2-4h", 0) + 1
+            elif dur < 480:
+                duration_counts["4-8h"] = duration_counts.get("4-8h", 0) + 1
+            elif dur < 720:
+                duration_counts["8-12h"] = duration_counts.get("8-12h", 0) + 1
+            elif dur < 1440:
+                duration_counts["12-24h"] = duration_counts.get("12-24h", 0) + 1
+            else:
+                duration_counts["> 24h"] = duration_counts.get("> 24h", 0) + 1
+            
+            if diff < 4.0:
+                difficulty_counts["Easy"] = difficulty_counts.get("Easy", 0) + 1
+            elif diff < 7.0:
+                difficulty_counts["Medium"] = difficulty_counts.get("Medium", 0) + 1
+            else:
+                difficulty_counts["Hard"] = difficulty_counts.get("Hard", 0) + 1
+        
+        print("Duration diversity:", duration_counts)
+        print("Difficulty diversity:", difficulty_counts)
+    
     return all_trails
 
 

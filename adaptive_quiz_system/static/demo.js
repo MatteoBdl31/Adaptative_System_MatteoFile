@@ -34,6 +34,170 @@
             this.formManager = new FormManager(form);
             this.setupEventListeners();
             this.initializeResults();
+            this.setupDateInputs();
+        }
+
+        setupDateInputs() {
+            // Replace all date inputs with custom DD/MM/YYYY inputs
+            this.replaceDateInputs();
+            
+            // Use MutationObserver to handle dynamically added date inputs
+            const observer = new MutationObserver(() => {
+                this.replaceDateInputs();
+            });
+            
+            const form = document.getElementById('demo-form');
+            if (form) {
+                observer.observe(form, { childList: true, subtree: true });
+            }
+        }
+
+        replaceDateInputs() {
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                // Skip if already replaced
+                if (input.dataset.replaced === 'true') {
+                    return;
+                }
+                
+                // Mark as replaced
+                input.dataset.replaced = 'true';
+                
+                // Create a text input that displays DD/MM/YYYY
+                const textInput = document.createElement('input');
+                textInput.type = 'text';
+                textInput.className = input.className;
+                textInput.name = input.name + '_display';
+                textInput.placeholder = 'DD/MM/YYYY';
+                textInput.style.cssText = input.style.cssText || '';
+                
+                // Convert YYYY-MM-DD to DD/MM/YYYY for display
+                if (input.value) {
+                    const [year, month, day] = input.value.split('-');
+                    if (year && month && day) {
+                        textInput.value = `${day}/${month}/${year}`;
+                    }
+                }
+                
+                // Hide the original date input but keep it for form submission
+                input.style.position = 'absolute';
+                input.style.opacity = '0';
+                input.style.width = '1px';
+                input.style.height = '1px';
+                input.style.pointerEvents = 'none';
+                
+                // Create a wrapper div for the input group
+                const wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                wrapper.style.display = 'flex';
+                wrapper.style.alignItems = 'center';
+                wrapper.style.gap = '8px';
+                wrapper.style.width = '100%';
+                
+                // Create calendar button
+                const calendarBtn = document.createElement('button');
+                calendarBtn.type = 'button';
+                calendarBtn.innerHTML = '📅';
+                calendarBtn.style.cssText = 'background: none; border: 1px solid #ddd; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 1.2em; flex-shrink: 0;';
+                calendarBtn.title = 'Open calendar';
+                calendarBtn.addEventListener('click', () => {
+                    input.showPicker?.();
+                });
+                
+                // Insert wrapper before input
+                input.parentNode.insertBefore(wrapper, input);
+                
+                // Move inputs into wrapper
+                wrapper.appendChild(textInput);
+                wrapper.appendChild(calendarBtn);
+                wrapper.appendChild(input);
+                
+                // Make text input take available space
+                textInput.style.flex = '1';
+                
+                // Handle text input changes - convert DD/MM/YYYY to YYYY-MM-DD
+                textInput.addEventListener('input', (e) => {
+                    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                    if (value.length <= 8) {
+                        // Format as DD/MM/YYYY
+                        let formatted = value;
+                        if (value.length > 2) {
+                            formatted = value.substring(0, 2) + '/' + value.substring(2);
+                        }
+                        if (value.length > 4) {
+                            formatted = value.substring(0, 2) + '/' + value.substring(2, 4) + '/' + value.substring(4);
+                        }
+                        e.target.value = formatted;
+                        
+                        // Update hidden date input if valid
+                        if (value.length === 8) {
+                            const day = value.substring(0, 2);
+                            const month = value.substring(2, 4);
+                            const year = value.substring(4, 8);
+                            
+                            // Validate date
+                            if (this.isValidDate(day, month, year)) {
+                                input.value = `${year}-${month}-${day}`;
+                                // Trigger change event on original input for other listeners
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        }
+                    }
+                });
+                
+                // Handle blur - validate and format
+                textInput.addEventListener('blur', () => {
+                    const value = textInput.value.replace(/\D/g, '');
+                    if (value.length === 8) {
+                        const day = value.substring(0, 2);
+                        const month = value.substring(2, 4);
+                        const year = value.substring(4, 8);
+                        
+                        if (this.isValidDate(day, month, year)) {
+                            input.value = `${year}-${month}-${day}`;
+                            textInput.value = `${day}/${month}/${year}`;
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else {
+                            // Invalid date, revert to original
+                            if (input.value) {
+                                const [y, m, d] = input.value.split('-');
+                                textInput.value = `${d}/${m}/${y}`;
+                            } else {
+                                textInput.value = '';
+                            }
+                        }
+                    } else if (value.length > 0 && value.length < 8) {
+                        // Incomplete date, clear if not valid
+                        textInput.value = '';
+                        input.value = '';
+                    }
+                });
+                
+                // Sync when date input changes (from other sources)
+                input.addEventListener('change', () => {
+                    if (input.value) {
+                        const [year, month, day] = input.value.split('-');
+                        if (year && month && day) {
+                            textInput.value = `${day}/${month}/${year}`;
+                        }
+                    } else {
+                        textInput.value = '';
+                    }
+                });
+            });
+        }
+
+        isValidDate(day, month, year) {
+            const d = parseInt(day, 10);
+            const m = parseInt(month, 10);
+            const y = parseInt(year, 10);
+            
+            if (d < 1 || d > 31 || m < 1 || m > 12 || y < 1900 || y > 2100) {
+                return false;
+            }
+            
+            const date = new Date(y, m - 1, d);
+            return date.getDate() === d && date.getMonth() === m - 1 && date.getFullYear() === y;
         }
 
         setupEventListeners() {
@@ -71,8 +235,36 @@
                 const infoBtn = e.target.closest('.context-info-btn');
                 if (infoBtn) {
                     e.preventDefault();
-                    const userId = infoBtn.dataset.user;
+                    // Try to get user ID from button, or from parent panel
+                    let userId = infoBtn.dataset.user || infoBtn.dataset.userIdx;
+                    if (!userId) {
+                        const panel = infoBtn.closest('.result-panel, .demo-panel');
+                        userId = panel?.dataset.user || 'a';
+                    }
                     this.openContextModal(userId);
+                    return;
+                }
+
+                // Tab switching
+                const tab = e.target.closest('.context-modal__tab');
+                if (tab) {
+                    e.preventDefault();
+                    const modal = tab.closest('.context-modal');
+                    if (modal) {
+                        this.switchTab(modal, tab.dataset.tab);
+                    }
+                    return;
+                }
+
+                // Trail explanation button clicks
+                const trailExplanationBtn = e.target.closest('.trail-explanation-btn');
+                if (trailExplanationBtn) {
+                    e.preventDefault();
+                    const trailId = trailExplanationBtn.dataset.trailId;
+                    const userId = trailExplanationBtn.dataset.userIdx || 
+                                 trailExplanationBtn.closest('.result-panel, .demo-panel')?.dataset.user || 
+                                 'a';
+                    this.toggleTrailExplanation(trailId, userId, trailExplanationBtn);
                     return;
                 }
 
@@ -103,11 +295,23 @@
             const userSelectB = document.getElementById('user-select-b');
             
             if (userSelectA) {
-                userSelectA.addEventListener('change', () => this.updateProfileDisplay('a'));
+                userSelectA.addEventListener('change', () => {
+                    this.updateProfileDisplay('a');
+                    this.updateProfileLink('a');
+                });
             }
             
             if (userSelectB) {
-                userSelectB.addEventListener('change', () => this.updateProfileDisplay('b'));
+                userSelectB.addEventListener('change', () => {
+                    this.updateProfileDisplay('b');
+                    this.updateProfileLink('b');
+                });
+            }
+            
+            // Initial update of profile links
+            this.updateProfileLink('a');
+            if (userSelectB && !userSelectB.disabled) {
+                this.updateProfileLink('b');
             }
         }
 
@@ -129,6 +333,227 @@
             }
         }
 
+        switchTab(modal, tabName) {
+            // Update tab buttons
+            const tabs = modal.querySelectorAll('.context-modal__tab');
+            tabs.forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            // Update tab content
+            const contents = modal.querySelectorAll('.context-modal__tab-content');
+            contents.forEach(content => {
+                if (content.dataset.content === tabName) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+
+            // If switching to explanation tab, fetch explanation
+            if (tabName === 'explanation') {
+                const userId = modal.id.replace('context-modal-', '');
+                this.fetchGeneralExplanation(userId, modal);
+            }
+        }
+
+        async fetchGeneralExplanation(userId, modal) {
+            // Find the appropriate loading/loaded/error divs (handle both idx and userId patterns)
+            const loadedDiv = modal.querySelector(`#explanation-loaded-${userId}`) || 
+                            modal.querySelector('#explanation-loaded-idx');
+            const loadingDiv = modal.querySelector(`#explanation-loading-${userId}`) || 
+                             modal.querySelector('#explanation-loading-idx');
+            const errorDiv = modal.querySelector(`#explanation-error-${userId}`) || 
+                           modal.querySelector('#explanation-error-idx');
+            
+            if (loadedDiv && loadedDiv.style.display !== 'none') {
+                // Already loaded, don't fetch again
+                return;
+            }
+
+            // Show loading state
+            if (loadingDiv) loadingDiv.style.display = 'block';
+            if (loadedDiv) loadedDiv.style.display = 'none';
+            if (errorDiv) errorDiv.style.display = 'none';
+
+            try {
+                // Build context from current form or URL params
+                const context = this.buildContextFromRequest();
+                
+                // Get user_id from form or URL params
+                const params = new URLSearchParams(window.location.search);
+                const form = document.getElementById('demo-form');
+                const userSelect = form?.querySelector(`#user-select-${userId}`);
+                const user_id = userSelect?.value || params.get(`user_id_${userId}`) || params.get('user_id_a') || '';
+                
+                // Add user_id to context
+                if (user_id) {
+                    context[`user_id_${userId}`] = user_id;
+                }
+                
+                const queryString = new URLSearchParams(context).toString();
+                
+                const response = await fetch(`/api/explanations/general/${userId}?${queryString}`);
+                const data = await response.json();
+
+                if (data.explanation_text) {
+                    // Display explanation
+                    const textEl = modal.querySelector(`#explanation-text-${userId}`) || 
+                                 modal.querySelector('#explanation-text-idx');
+                    const factorsEl = modal.querySelector(`#explanation-factors-${userId}`) || 
+                                    modal.querySelector('#explanation-factors-idx');
+                    
+                    if (textEl) {
+                        textEl.textContent = data.explanation_text;
+                    }
+                    
+                    if (factorsEl && data.key_factors) {
+                        factorsEl.innerHTML = '';
+                        data.key_factors.forEach(factor => {
+                            const li = document.createElement('li');
+                            li.textContent = factor;
+                            factorsEl.appendChild(li);
+                        });
+                    }
+
+                    // Show loaded content
+                    if (loadingDiv) loadingDiv.style.display = 'none';
+                    if (loadedDiv) loadedDiv.style.display = 'block';
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error fetching general explanation:', error);
+                // Show error state
+                if (loadingDiv) loadingDiv.style.display = 'none';
+                if (errorDiv) errorDiv.style.display = 'block';
+            }
+        }
+
+        buildContextFromRequest() {
+            // Build context from current URL params or form
+            const params = new URLSearchParams(window.location.search);
+            const context = {};
+            
+            // Extract context parameters
+            const contextKeys = ['time_available_days', 'time_available_hours', 'device', 'weather', 
+                               'connection', 'season', 'hike_start_date', 'hike_end_date'];
+            
+            contextKeys.forEach(key => {
+                const value = params.get(`a_${key}`) || params.get(key);
+                if (value) {
+                    context[key] = value;
+                }
+            });
+
+            return context;
+        }
+
+        async toggleTrailExplanation(trailId, userId, button) {
+            // Find the explanation content div
+            const explanationDiv = document.getElementById(`trail-explanation-${trailId}`);
+            if (!explanationDiv) return;
+
+            const loadingDiv = explanationDiv.querySelector('.trail-explanation-loading');
+            const loadedDiv = explanationDiv.querySelector('.trail-explanation-loaded');
+            const textEl = loadedDiv?.querySelector('.trail-explanation-text');
+            const factorsEl = loadedDiv?.querySelector('.trail-explanation-factors');
+
+            // Get userId from button or parent panel if not provided
+            if (!userId || userId === 'idx') {
+                const panel = button.closest('.result-panel, .demo-panel');
+                userId = panel?.dataset.user || button.dataset.userIdx || 'a';
+            }
+
+            // Toggle visibility
+            if (explanationDiv.style.display === 'none' || !explanationDiv.style.display) {
+                // Show and fetch explanation
+                explanationDiv.style.display = 'block';
+                
+                // Check if already loaded
+                if (loadedDiv && loadedDiv.style.display !== 'none' && textEl?.textContent) {
+                    return; // Already loaded
+                }
+
+                // Show loading
+                if (loadingDiv) loadingDiv.style.display = 'block';
+                if (loadedDiv) loadedDiv.style.display = 'none';
+                button.classList.add('loading');
+
+                try {
+                    const context = this.buildContextFromRequest();
+                    
+                    // Get user_id from form or URL params
+                    const params = new URLSearchParams(window.location.search);
+                    const form = document.getElementById('demo-form');
+                    const userSelect = form?.querySelector(`#user-select-${userId}`);
+                    const user_id = userSelect?.value || params.get(`user_id_${userId}`) || params.get('user_id_a') || '';
+                    
+                    // Add user_id to context
+                    if (user_id) {
+                        context[`user_id_${userId}`] = user_id;
+                    }
+                    
+                    const queryString = new URLSearchParams(context).toString();
+                    
+                    const response = await fetch(`/api/explanations/trail/${userId}/${trailId}?${queryString}`);
+                    const data = await response.json();
+
+                    if (data.explanation_text) {
+                        // Display explanation
+                        if (textEl) {
+                            textEl.textContent = data.explanation_text;
+                        }
+                        
+                        if (factorsEl && data.key_factors) {
+                            factorsEl.innerHTML = '';
+                            data.key_factors.forEach(factor => {
+                                const li = document.createElement('li');
+                                li.textContent = '• ' + factor;
+                                li.style.padding = 'var(--space-xs) 0';
+                                li.style.color = 'var(--color-text)';
+                                li.style.fontSize = 'var(--font-size-sm)';
+                                factorsEl.appendChild(li);
+                            });
+                        }
+
+                        // Show loaded content
+                        if (loadingDiv) loadingDiv.style.display = 'none';
+                        if (loadedDiv) loadedDiv.style.display = 'block';
+                    } else {
+                        throw new Error('Invalid response format');
+                    }
+                } catch (error) {
+                    console.error('Error fetching trail explanation:', error);
+                    // Show error message
+                    if (loadingDiv) {
+                        loadingDiv.textContent = 'Unable to load explanation. Please try again.';
+                    }
+                } finally {
+                    button.classList.remove('loading');
+                }
+            } else {
+                // Hide explanation
+                explanationDiv.style.display = 'none';
+            }
+        }
+
+        async fetchTrailExplanation(userId, trailId, context) {
+            try {
+                const queryString = new URLSearchParams(context).toString();
+                const response = await fetch(`/api/explanations/trail/${userId}/${trailId}?${queryString}`);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching trail explanation:', error);
+                return null;
+            }
+        }
+
         updateProfileDisplay(userIndex) {
             const select = document.getElementById(`user-select-${userIndex}`);
             const badge = document.getElementById(`profile-badge-${userIndex}`);
@@ -144,6 +569,31 @@
                 badge.style.display = 'inline-block';
             } else {
                 badge.style.display = 'none';
+            }
+        }
+
+        updateProfileLink(userIndex) {
+            const select = document.getElementById(`user-select-${userIndex}`);
+            const userScenario = document.querySelector(`[data-user-index="${userIndex}"]`);
+            
+            if (!select || !userScenario) return;
+            
+            const selectedUserId = select.value;
+            const profileLink = userScenario.querySelector('a[href*="/profile/"]');
+            
+            if (profileLink && selectedUserId) {
+                profileLink.href = `/profile/${selectedUserId}`;
+                profileLink.style.display = 'inline-block';
+            } else if (profileLink) {
+                profileLink.style.display = 'none';
+            }
+            
+            // Also update header profile link if this is user A (primary user)
+            if (userIndex === 'a' && selectedUserId) {
+                const headerProfileLink = document.getElementById('header-profile-link');
+                if (headerProfileLink) {
+                    headerProfileLink.href = `/profile/${selectedUserId}`;
+                }
             }
         }
 
@@ -167,6 +617,7 @@
                 
                 // Update profile display for user B
                 this.updateProfileDisplay('b');
+                this.updateProfileLink('b');
 
                 // Show remove button for user A
                 const removeUserABtn = document.querySelector('[data-user="a"]');
@@ -181,6 +632,9 @@
 
                 this.state.compareMode = true;
                 this.updateResultsLayout();
+                
+                // Replace date inputs for newly added user B
+                this.replaceDateInputs();
             }
         }
 
@@ -272,6 +726,11 @@
             
             allInputs.forEach(input => {
                 if (input.name && !input.disabled) {
+                    // Skip display inputs (they have _display suffix)
+                    if (input.name.endsWith('_display')) {
+                        return;
+                    }
+                    
                     // Only include b_ fields and user_id_b if user B is visible
                     if (input.name.startsWith('b_') || input.name === 'user_id_b') {
                         if (isUserBVisible) {
@@ -358,8 +817,10 @@
             const suggestionsCount = (result.suggestions || []).length;
             const isCompareMode = this.state.compareMode;
 
-            // Determine default view based on connection strength
-            const defaultView = this.getDefaultView();
+            // Determine default view based on connection strength from form/search context
+            // Use connection from result context, fallback to detected connection
+            const connectionFromContext = (result.context || {}).connection || this.state.connectionStrength;
+            const defaultView = this.getDefaultView(connectionFromContext);
 
             // Build view toggle buttons with connection-based default
             const viewToggleButtons = isCompareMode ? `
@@ -375,7 +836,7 @@
                 <div class="result-panel__header">
                     <div class="result-panel__title-wrapper">
                         <h2 class="result-panel__title">${result.scenario?.title || 'Custom Scenario'}</h2>
-                        <button type="button" class="context-info-btn" aria-label="Show context information" data-user="${userId}">
+                        <button type="button" class="context-info-btn" aria-label="Show context information and recommendations" data-user="${userId}">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                 <path d="M8 11V8M8 5H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -383,30 +844,58 @@
                         </button>
                     </div>
                 </div>
-                <!-- Context Info Modal -->
+                <!-- Context Info Modal with Tabs -->
                 <div class="context-modal" id="context-modal-${userId}" role="dialog" aria-labelledby="context-modal-title-${userId}" aria-hidden="true">
                     <div class="context-modal__backdrop"></div>
                     <div class="context-modal__content">
                         <div class="context-modal__header">
-                            <h3 class="context-modal__title" id="context-modal-title-${userId}">Search Context</h3>
+                            <h3 class="context-modal__title" id="context-modal-title-${userId}">Information</h3>
                             <button type="button" class="context-modal__close" aria-label="Close modal">
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                                 </svg>
                             </button>
                         </div>
+                        <div class="context-modal__tabs">
+                            <button type="button" class="context-modal__tab active" data-tab="context">Search Context</button>
+                            <button type="button" class="context-modal__tab" data-tab="explanation">Why Recommended</button>
+                        </div>
                         <div class="context-modal__body">
-                            <div class="context-modal__items">
-                                ${contextItems}
+                            <div class="context-modal__tab-content active" data-content="context">
+                                <div class="context-modal__items">
+                                    ${contextItems}
+                                </div>
+                            </div>
+                            <div class="context-modal__tab-content" data-content="explanation">
+                                <div class="explanation-content" id="explanation-content-${userId}">
+                                    <div class="explanation-loading" id="explanation-loading-${userId}">
+                                        <p style="text-align: center; color: var(--color-text-secondary); padding: var(--space-xl);">
+                                            <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span>
+                                            <br>Generating explanation...
+                                        </p>
+                                    </div>
+                                    <div class="explanation-loaded" id="explanation-loaded-${userId}" style="display: none;">
+                                        <p class="explanation-text" id="explanation-text-${userId}"></p>
+                                        <div class="explanation-details">
+                                            <h4 class="explanation-details__title">Key Matching Factors:</h4>
+                                            <ul class="explanation-details__list" id="explanation-factors-${userId}"></ul>
+                                        </div>
+                                    </div>
+                                    <div class="explanation-error" id="explanation-error-${userId}" style="display: none;">
+                                        <p style="text-align: center; color: var(--color-text-secondary); padding: var(--space-xl);">
+                                            Unable to generate explanation. Please try again later.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="view-toggle">${viewToggleButtons}</div>
                 <div class="view-sections" data-panel="${userId}">
-                    ${this.renderMapView(result, userId, userLabel)}
-                    ${this.renderListView(result, userId)}
-                    ${!isCompareMode ? this.renderCardsView(result, userId) : ''}
+                    ${this.renderMapView(result, userId, userLabel, defaultView)}
+                    ${this.renderListView(result, userId, defaultView)}
+                    ${!isCompareMode ? this.renderCardsView(result, userId, defaultView) : ''}
                 </div>
                 <script type="application/json" class="trail-data" data-user="${userId}">
                     ${JSON.stringify({
@@ -451,8 +940,7 @@
                 }).join('');
         }
 
-        renderMapView(result, userId, userLabel) {
-            const defaultView = this.getDefaultView();
+        renderMapView(result, userId, userLabel, defaultView) {
             const isActive = defaultView === 'map';
             
             return `
@@ -477,8 +965,7 @@
             `;
         }
 
-        renderListView(result, userId) {
-            const defaultView = this.getDefaultView();
+        renderListView(result, userId, defaultView) {
             const isActive = defaultView === 'list';
             const exactTrails = (result.exact || []).map(trail => this.renderTrailItem(trail, 'recommended')).join('');
             const suggestions = (result.suggestions || []).map(trail => this.renderTrailItem(trail, 'suggested')).join('');
@@ -497,8 +984,7 @@
             `;
         }
 
-        renderCardsView(result, userId) {
-            const defaultView = this.getDefaultView();
+        renderCardsView(result, userId, defaultView) {
             const isActive = defaultView === 'cards';
             const exactTrails = (result.exact || []).map(trail => this.renderTrailCard(trail, 'recommended')).join('');
             const suggestions = (result.suggestions || []).map(trail => this.renderTrailCard(trail, 'suggested')).join('');
@@ -552,8 +1038,23 @@
                         <div class="trail-item__title-group">
                             <h4 class="trail-item__title">${trail.name || 'Unknown'}</h4>
                             ${relevance}
+                            <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}" style="margin-left: var(--space-xs);">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                    <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </button>
                         </div>
                         <span class="trail-item__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                    </div>
+                    <div class="trail-explanation-content" id="trail-explanation-${trail.trail_id || ''}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                        <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
+                            <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
+                        </div>
+                        <div class="trail-explanation-loaded" style="display: none;">
+                            <p class="trail-explanation-text" style="margin-bottom: var(--space-sm);"></p>
+                            <ul class="trail-explanation-factors" style="list-style: none; padding: 0; margin: 0;"></ul>
+                        </div>
                     </div>
                     ${description ? `<p class="trail-item__description">${description}</p>` : ''}
                     ${landscapesHTML}
@@ -640,7 +1141,15 @@
                     <div class="trail-card__content">
                         <div class="trail-card__header">
                             <h3 class="trail-card__title">${trail.name || 'Unknown'}</h3>
-                            <span class="trail-card__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                                <span class="trail-card__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                                <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <p class="trail-card__description">${description}</p>
                         ${landscapesHTML}
@@ -675,6 +1184,15 @@
                                 </div>
                             </div>
                             ` : ''}
+                        </div>
+                        <div class="trail-explanation-content" id="trail-explanation-${trail.trail_id || ''}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                            <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
+                                <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
+                            </div>
+                            <div class="trail-explanation-loaded" style="display: none;">
+                                <p class="trail-explanation-text" style="margin-bottom: var(--space-sm);"></p>
+                                <ul class="trail-explanation-factors" style="list-style: none; padding: 0; margin: 0;"></ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -753,8 +1271,13 @@
 
             // Check if map already exists
             if (this.mapManager.maps.has(mapId)) {
-                this.mapManager.invalidateSize(mapId);
-                return;
+                // Remove existing map and reinitialize to ensure fresh state
+                this.mapManager.removeMap(mapId);
+                // Clear container if it has Leaflet ID
+                if (mapContainer._leaflet_id) {
+                    mapContainer.innerHTML = '';
+                    delete mapContainer._leaflet_id;
+                }
             }
 
             const map = this.mapManager.initMap(mapId, {
@@ -773,7 +1296,7 @@
                     ...(trailData.suggestions || []).map(t => ({ ...t, view_type: 'suggested' }))
                 ];
 
-                this.mapManager.addTrailMarkers(map, allTrails);
+                this.mapManager.addTrailMarkers(map, allTrails, { userId: userId });
             } catch (e) {
                 console.error('Failed to parse trail data:', e);
             }
@@ -871,8 +1394,55 @@
             // Initialize results if they exist on page load
             const resultsContainer = document.getElementById('demo-results');
             if (resultsContainer && resultsContainer.children.length > 0) {
+                // Set default view based on connection from server-rendered results
+                this.initializeServerRenderedViews();
                 this.initializeViews();
             }
+        }
+
+        initializeServerRenderedViews() {
+            // Get connection value from URL parameters (for server-rendered results)
+            const urlParams = new URLSearchParams(window.location.search);
+            const connectionFromUrl = urlParams.get('a_connection') || urlParams.get('connection') || null;
+            
+            // Handle server-rendered results (from demo_panel.html partial)
+            // Find all result panels with data-connection attribute
+            const serverRenderedPanels = document.querySelectorAll('.demo-panel[data-connection], .result-panel[data-connection]');
+            
+            serverRenderedPanels.forEach(panel => {
+                // Prefer connection from URL, then from data attribute, then fallback
+                const connection = connectionFromUrl || panel.dataset.connection || 'medium';
+                const defaultView = this.getDefaultView(connection);
+                
+                // Find the view toggle buttons and sections for this panel
+                const panelId = panel.dataset.panelId || panel.id || panel.dataset.userIndex || 'default';
+                const viewToggle = panel.querySelector('.demo-view-toggle') || panel.querySelector('.view-toggle');
+                const viewSections = panel.querySelector('.demo-results[data-panel-id]') || panel.querySelector('.view-sections');
+                
+                if (viewToggle && viewSections) {
+                    // Set active button
+                    const buttons = viewToggle.querySelectorAll('.view-toggle-btn, .view-toggle__button');
+                    buttons.forEach(btn => {
+                        if (btn.dataset.view === defaultView) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    });
+                    
+                    // Set active section
+                    const sections = viewSections.querySelectorAll('.demo-view-section, .view-section');
+                    sections.forEach(section => {
+                        if (section.dataset.view === defaultView) {
+                            section.classList.add('active');
+                            section.classList.remove('hidden');
+                        } else {
+                            section.classList.remove('active');
+                            section.classList.add('hidden');
+                        }
+                    });
+                }
+            });
         }
 
         updateResultsLayout() {
@@ -976,24 +1546,27 @@
 
         /**
          * Get the default view based on connection strength
+         * @param {string} connectionStrength - Connection strength from form/search context ('weak', 'medium', 'strong')
          * @returns {string} View type: 'list', 'cards', or 'map'
          */
-        getDefaultView() {
-            const strength = this.state.connectionStrength;
+        getDefaultView(connectionStrength) {
+            // Use provided connection strength, or fallback to detected connection
+            const strength = connectionStrength || this.state.connectionStrength;
             
-            // Adaptive view selection:
-            // - weak connection: list view (lightweight, no maps)
-            // - medium connection: cards view (some graphics, mini maps optional)
+            // Adaptive view selection based on form/search connection value:
             // - strong connection: map view (full interactive map)
-            if (strength === 'weak') {
-                console.log('Default view: list (weak connection)');
-                return 'list';
+            // - medium connection: cards view (some graphics, mini maps optional)
+            // - weak connection: list view (lightweight, no maps)
+            if (strength === 'strong') {
+                console.log('Default view: map (strong connection)');
+                return 'map';
             } else if (strength === 'medium') {
                 console.log('Default view: cards (medium connection)');
                 return 'cards';
             } else {
-                console.log('Default view: map (strong connection)');
-                return 'map';
+                // Default to list for weak or unknown connection
+                console.log('Default view: list (weak connection)');
+                return 'list';
             }
         }
 

@@ -160,6 +160,42 @@
             outline-offset: 2px;
         }
 
+        .trail-explanation-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-full);
+            transition: all var(--transition-base);
+            flex-shrink: 0;
+        }
+
+        .trail-explanation-btn:hover {
+            color: var(--color-primary);
+            background-color: var(--color-bg-secondary);
+        }
+
+        .trail-explanation-btn:focus {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .trail-explanation-btn.loading {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .result-panel__description {
             display: none !important;
         }
@@ -256,9 +292,48 @@
             background-color: var(--color-bg-secondary);
         }
 
+        .context-modal__tabs {
+            display: flex;
+            border-bottom: 1px solid var(--color-border);
+            padding: 0 var(--space-xl);
+            gap: var(--space-md);
+        }
+
+        .context-modal__tab {
+            padding: var(--space-md) var(--space-lg);
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all var(--transition-base);
+            margin-bottom: -1px;
+        }
+
+        .context-modal__tab:hover {
+            color: var(--color-text);
+            background-color: var(--color-bg-secondary);
+        }
+
+        .context-modal__tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+            font-weight: var(--font-weight-semibold);
+        }
+
         .context-modal__body {
             padding: var(--space-xl);
             overflow-y: auto;
+        }
+
+        .context-modal__tab-content {
+            display: none;
+        }
+
+        .context-modal__tab-content.active {
+            display: block;
         }
 
         .context-modal__items {
@@ -877,6 +952,96 @@
             padding: var(--space-3xl);
             color: var(--color-text-muted);
         }
+
+        /* Explanation Modal Styles */
+        .explanation-modal {
+            z-index: calc(var(--z-modal) + 1);
+        }
+
+        .explanation-content {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+
+        .explanation-text {
+            font-size: var(--font-size-base);
+            line-height: 1.7;
+            color: var(--color-text);
+            margin: 0;
+            padding: var(--space-md);
+            background-color: var(--color-bg-secondary);
+            border-radius: var(--radius-lg);
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .explanation-details {
+            margin-top: var(--space-md);
+        }
+
+        .explanation-details__title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text);
+            margin: 0 0 var(--space-md) 0;
+        }
+
+        .explanation-details__list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .explanation-details__list li {
+            padding: var(--space-sm) var(--space-md);
+            background-color: var(--color-bg-secondary);
+            border-radius: var(--radius-md);
+            color: var(--color-text);
+            font-size: var(--font-size-sm);
+            position: relative;
+            padding-left: calc(var(--space-md) + 20px);
+        }
+
+        .explanation-details__list li::before {
+            content: "✓";
+            position: absolute;
+            left: var(--space-md);
+            color: var(--color-primary);
+            font-weight: var(--font-weight-bold);
+            font-size: var(--font-size-base);
+        }
+
+        @media (max-width: 768px) {
+            .explanation-text {
+                font-size: var(--font-size-sm);
+                padding: var(--space-sm);
+            }
+
+            .explanation-details__title {
+                font-size: var(--font-size-base);
+            }
+        }
+
+        /* Date formatter styling */
+        .date-formatter {
+            margin-left: 8px;
+            color: #667eea;
+            font-size: 0.9em;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        /* Make date inputs more visible with format hint */
+        input[type="date"] {
+            position: relative;
+        }
+
+        input[type="date"]::after {
+            content: attr(data-format-hint);
+        }
     </style>
 {% endblock %}
 {% block content %}
@@ -897,7 +1062,17 @@
                     <div class="user-scenario" data-user-index="a">
                         <div class="user-scenario__header">
                             <h3 class="user-scenario__title">User A</h3>
-                            <button type="button" class="btn btn-ghost btn-remove-user" data-user="a" aria-label="Remove user A" style="display: none;">×</button>
+                            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                                {% if selected_user_a %}
+                                <a href="{{ url_for('profile', user_id=selected_user_a.id) }}" 
+                                   class="btn btn-secondary" 
+                                   style="font-size: var(--font-size-sm); padding: var(--space-xs) var(--space-md);"
+                                   title="View Profile Dashboard">
+                                    👤 Profile
+                                </a>
+                                {% endif %}
+                                <button type="button" class="btn btn-ghost btn-remove-user" data-user="a" aria-label="Remove user A" style="display: none;">×</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">User Profile</label>
@@ -948,7 +1123,17 @@
                     <div class="user-scenario hidden" data-user-index="b" id="user-scenario-b">
                         <div class="user-scenario__header">
                             <h3 class="user-scenario__title">User B</h3>
-                            <button type="button" class="btn btn-ghost btn-remove-user" data-user="b" aria-label="Remove user B">×</button>
+                            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                                {% if selected_user_b %}
+                                <a href="{{ url_for('profile', user_id=selected_user_b.id) }}" 
+                                   class="btn btn-secondary" 
+                                   style="font-size: var(--font-size-sm); padding: var(--space-xs) var(--space-md);"
+                                   title="View Profile Dashboard">
+                                    👤 Profile
+                                </a>
+                                {% endif %}
+                                <button type="button" class="btn btn-ghost btn-remove-user" data-user="b" aria-label="Remove user B">×</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">User Profile</label>
