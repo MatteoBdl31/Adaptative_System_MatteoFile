@@ -72,85 +72,111 @@
             if (!container || !Array.isArray(window.recommendationMapData)) return;
             if (!window.recommendationMapData.length) return;
 
-            const map = this.mapManager.initMap('recommendations-map', {
-                zoom: 8,
-                center: [45.8, 6.5]
-            });
-            window.recommendationsMap = map;
-
-            const bounds = [];
-            window.recommendationMapData.forEach(trail => {
-                const lat = trail.latitude ?? trail.lat;
-                const lon = trail.longitude ?? trail.lon;
-                if (lat == null || lon == null) return;
-
-                let geometry = trail.coordinates;
-                if (typeof geometry === 'string') {
-                    try {
-                        geometry = JSON.parse(geometry);
-                    } catch {
-                        geometry = null;
-                    }
+            // Ensure any existing map is removed before initializing
+            if (window.recommendationsMap) {
+                try {
+                    window.recommendationsMap.remove();
+                } catch (e) {
+                    console.warn('Error removing existing map:', e);
                 }
+                window.recommendationsMap = null;
+            }
 
-                const iconColor = trail.view_type === 'recommended' ? '#5b8df9' : '#f59e0b';
-                const icon = L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div style="
-                        background-color: ${iconColor};
-                        width: 18px;
-                        height: 18px;
-                        border-radius: 50%;
-                        border: 2px solid #fff;
-                        box-shadow: 0 2px 6px rgba(0,0,0,.3);
-                    "></div>`,
-                    iconSize: [18, 18],
-                    iconAnchor: [9, 9]
+            // Small delay to ensure DOM is ready and container is visible
+            setTimeout(() => {
+                const map = this.mapManager.initMap('recommendations-map', {
+                    zoom: 8,
+                    center: [45.8, 6.5]
+                });
+                
+                if (!map) {
+                    console.error('Failed to initialize map');
+                    return;
+                }
+                
+                window.recommendationsMap = map;
+
+                const bounds = [];
+                window.recommendationMapData.forEach(trail => {
+                    const lat = trail.latitude ?? trail.lat;
+                    const lon = trail.longitude ?? trail.lon;
+                    if (lat == null || lon == null) return;
+
+                    let geometry = trail.coordinates;
+                    if (typeof geometry === 'string') {
+                        try {
+                            geometry = JSON.parse(geometry);
+                        } catch {
+                            geometry = null;
+                        }
+                    }
+
+                    const iconColor = trail.view_type === 'recommended' ? '#5b8df9' : '#f59e0b';
+                    const icon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="
+                            background-color: ${iconColor};
+                            width: 18px;
+                            height: 18px;
+                            border-radius: 50%;
+                            border: 2px solid #fff;
+                            box-shadow: 0 2px 6px rgba(0,0,0,.3);
+                        "></div>`,
+                        iconSize: [18, 18],
+                        iconAnchor: [9, 9]
+                    });
+
+                    const marker = L.marker([lat, lon], { icon }).addTo(map);
+                    const detailUrl = typeof window.recommendationDetailUrl === 'function' 
+                        ? window.recommendationDetailUrl(trail.trail_id) 
+                        : '#';
+                    
+                    // Build weather info for popup
+                    let weatherInfo = '';
+                    if (trail.forecast_weather) {
+                        let weatherIcon = '';
+                        if (trail.forecast_weather === 'sunny') weatherIcon = '☀️';
+                        else if (trail.forecast_weather === 'cloudy') weatherIcon = '☁️';
+                        else if (trail.forecast_weather === 'rainy') weatherIcon = '🌧️';
+                        else if (trail.forecast_weather === 'snowy') weatherIcon = '❄️';
+                        else if (trail.forecast_weather === 'storm_risk') weatherIcon = '⛈️';
+                        else weatherIcon = '🌤️';
+                        
+                        const weatherText = trail.forecast_weather.charAt(0).toUpperCase() + trail.forecast_weather.slice(1);
+                        weatherInfo = `<br/>${weatherIcon} ${weatherText}`;
+                    }
+                    
+                    marker.bindPopup(`
+                        <strong><a href="${detailUrl}">${trail.name}</a></strong><br/>
+                        ${trail.distance || '—'} km · ${trail.trail_type || ''}${weatherInfo}
+                    `);
+                    bounds.push([lat, lon]);
+
+                    if (geometry && geometry.coordinates && Array.isArray(geometry.coordinates)) {
+                        const latLngs = geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                        const polyline = L.polyline(latLngs, {
+                            color: iconColor,
+                            opacity: 0.8,
+                            weight: 3
+                        }).addTo(map);
+                        const polyBounds = polyline.getBounds();
+                        bounds.push(polyBounds.getSouthWest(), polyBounds.getNorthEast());
+                    }
                 });
 
-                const marker = L.marker([lat, lon], { icon }).addTo(map);
-                const detailUrl = typeof window.recommendationDetailUrl === 'function' 
-                    ? window.recommendationDetailUrl(trail.trail_id) 
-                    : '#';
-                
-                // Build weather info for popup
-                let weatherInfo = '';
-                if (trail.forecast_weather) {
-                    let weatherIcon = '';
-                    if (trail.forecast_weather === 'sunny') weatherIcon = '☀️';
-                    else if (trail.forecast_weather === 'cloudy') weatherIcon = '☁️';
-                    else if (trail.forecast_weather === 'rainy') weatherIcon = '🌧️';
-                    else if (trail.forecast_weather === 'snowy') weatherIcon = '❄️';
-                    else if (trail.forecast_weather === 'storm_risk') weatherIcon = '⛈️';
-                    else weatherIcon = '🌤️';
-                    
-                    const weatherText = trail.forecast_weather.charAt(0).toUpperCase() + trail.forecast_weather.slice(1);
-                    weatherInfo = `<br/>${weatherIcon} ${weatherText}`;
+                if (bounds.length) {
+                    map.fitBounds(bounds, { padding: [18, 18] });
+                } else {
+                    map.setView([45.8, 6.5], 8);
                 }
                 
-                marker.bindPopup(`
-                    <strong><a href="${detailUrl}">${trail.name}</a></strong><br/>
-                    ${trail.distance || '—'} km · ${trail.trail_type || ''}${weatherInfo}
-                `);
-                bounds.push([lat, lon]);
-
-                if (geometry && geometry.coordinates && Array.isArray(geometry.coordinates)) {
-                    const latLngs = geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                    const polyline = L.polyline(latLngs, {
-                        color: iconColor,
-                        opacity: 0.8,
-                        weight: 3
-                    }).addTo(map);
-                    const polyBounds = polyline.getBounds();
-                    bounds.push(polyBounds.getSouthWest(), polyBounds.getNorthEast());
-                }
-            });
-
-            if (bounds.length) {
-                map.fitBounds(bounds, { padding: [18, 18] });
-            } else {
-                map.setView([45.8, 6.5], 8);
-            }
+                // Invalidate size after a short delay to ensure proper rendering
+                setTimeout(() => {
+                    if (map) {
+                        map.invalidateSize();
+                    }
+                }, 100);
+            }, 100);
         }
     }
 })();

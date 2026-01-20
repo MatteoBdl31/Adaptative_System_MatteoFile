@@ -114,23 +114,90 @@ class DurationCriterion(Criterion):
         # Calculate max allowed duration with smart buffer
         if time_available < 1440:  # Less than 1 day
             max_allowed = time_available  # No buffer for single day
+            # For short durations (< 4 hours), be more flexible with targets
+            if time_available < 240:  # Less than 4 hours
+                # More lenient targets for short hikes
+                target_min = time_available * 0.5
+                target_max = time_available * 1.0
+            else:
+                # Target duration: 70-90% of available time for longer single day hikes
+                target_min = time_available * 0.7
+                target_max = time_available * 0.9
         else:  # Multi-day
-            days = (time_available // 1440) + 1
-            max_allowed = days * 1440
+            # Calculate actual number of days (can be fractional, e.g., 2.5 days)
+            selected_days = time_available / 1440
+            # Allow buffer: trails can be up to 1 day longer than selected (for rest time)
+            max_allowed = (selected_days + 1) * 1440
+            # Target duration: trails around the selected duration
+            # For 2 days, target trails from 1.5 to 2.5 days (allows some flexibility)
+            target_min = (selected_days - 0.5) * 1440
+            target_max = (selected_days + 0.5) * 1440
+            # Ensure target_min is at least 0.75 days (1080 min) for multi-day trips
+            if target_min < 1080:
+                target_min = 1080
         
-        if trail_duration <= max_allowed:
-            # Bonus for trails that use time efficiently (not too short)
-            efficiency = min(1.0, trail_duration / max_allowed * 1.2)
-            return CriterionResult(
-                matches=True,
-                score=efficiency,
-                message=f"Fits time window ({trail_duration} min ≤ {max_allowed} min)"
-            )
-        else:
+        # Check if trail exceeds maximum
+        if trail_duration > max_allowed:
             return CriterionResult(
                 matches=False,
                 score=0.0,
                 message=f"Too long ({trail_duration} min > {max_allowed} min)"
+            )
+        
+        # Check if trail is too long for beginner/low fitness users regardless of available time
+        experience = (user.get("experience") or "").lower()
+        fitness = (user.get("fitness_level") or "").lower()
+        if (experience == "beginner" or fitness == "low") and trail_duration > 360:  # 6 hours
+            # Beginners shouldn't do trails longer than 6 hours even if they have time
+            return CriterionResult(
+                matches=False,
+                score=0.0,
+                message=f"Too long for beginner ({trail_duration} min > 360 min / 6 hours recommended max)"
+            )
+        
+        # Penalize trails that are too short (less than 30% of available time)
+        min_threshold = time_available * 0.3
+        if trail_duration < min_threshold:
+            # Still matches but with low score
+            ratio = trail_duration / min_threshold
+            return CriterionResult(
+                matches=True,
+                score=0.2 * ratio,  # Very low score for too-short trails
+                message=f"Too short ({trail_duration} min < {min_threshold:.0f} min threshold)"
+            )
+        
+        # Calculate score based on how close to target duration
+        if target_min <= trail_duration <= target_max:
+            # Perfect match - within target range
+            return CriterionResult(
+                matches=True,
+                score=1.0,
+                message=f"Duration matches perfectly ({trail_duration} min within target range)"
+            )
+        elif trail_duration < target_min:
+            # Below target but above minimum threshold
+            # Score increases as we approach target_min
+            ratio = trail_duration / target_min
+            score = 0.5 + (ratio * 0.4)  # Score between 0.5-0.9
+            return CriterionResult(
+                matches=True,
+                score=score,
+                message=f"Duration acceptable but shorter than ideal ({trail_duration} min < {target_min:.0f} min target)"
+            )
+        else:  # trail_duration > target_max but <= max_allowed
+            # Above target but within max
+            # Score decreases as we move away from target_max
+            excess = trail_duration - target_max
+            max_excess = max_allowed - target_max
+            if max_excess > 0:
+                ratio = 1.0 - (excess / max_excess)
+                score = 0.7 + (ratio * 0.3)  # Score between 0.7-1.0
+            else:
+                score = 0.7
+            return CriterionResult(
+                matches=True,
+                score=score,
+                message=f"Duration acceptable but longer than ideal ({trail_duration} min > {target_max:.0f} min target)"
             )
     
     def get_name(self) -> str:
@@ -142,6 +209,9 @@ class DistanceCriterion(Criterion):
     
     def evaluate(self, trail: Dict, user: Dict, context: Dict) -> CriterionResult:
         trail_distance = trail.get("distance")
+        trail_duration = trail.get("duration", 0)
+        time_available = context.get("time_available", 0)
+        
         if not trail_distance:
             return CriterionResult(
                 matches=True,
@@ -149,30 +219,98 @@ class DistanceCriterion(Criterion):
                 message="Distance data unavailable"
             )
         
-        # Use performance data if available
-        avg_completion_time = user.get("performance", {}).get("avg_completion_time", 0)
+        # For multi-day hikes, relax distance restrictions significantly
+        # Multi-day trails are naturally longer and distance limits don't apply the same way
+        is_multi_day_trail = trail_duration >= 1440  # 1 day or more
+        is_multi_day_trip = time_available >= 1440
+        
+        if is_multi_day_trail or is_multi_day_trip:
+            # For multi-day hikes, distance is less important - focus on duration instead
+            # Still check if it's reasonable, but be much more lenient
+            experience = (user.get("experience") or "").lower()
+            fitness = (user.get("fitness_level") or "").lower()
+            
+            if experience == "beginner" or fitness == "low":
+                # Even for beginners, multi-day trails can be longer since they're spread over days
+                max_distance = 50.0  # Much more lenient for multi-day
+            elif experience == "intermediate" or fitness == "medium":
+                max_distance = 100.0  # Very lenient for multi-day
+            else:  # advanced/expert or high fitness
+                max_distance = 200.0  # No practical limit for advanced multi-day hikers
+            
+            if trail_distance <= max_distance:
+                return CriterionResult(
+                    matches=True,
+                    score=1.0,
+                    message=f"Distance appropriate for multi-day hike ({trail_distance:.1f} km)"
+                )
+            else:
+                # Still allow but with lower score
+                return CriterionResult(
+                    matches=True,
+                    score=0.7,
+                    message=f"Long distance for multi-day hike ({trail_distance:.1f} km), but acceptable"
+                )
+        
+        # For single-day hikes, use original strict distance limits
+        experience = (user.get("experience") or "").lower()
+        fitness = (user.get("fitness_level") or "").lower()
         persistence = user.get("performance", {}).get("persistence_score", 0.5)
         
-        # Estimate appropriate distance based on user profile
-        if persistence < 0.4:
-            max_distance = 8.0
-        elif persistence < 0.7:
-            max_distance = 15.0
-        else:
-            max_distance = 25.0
-        
-        if trail_distance <= max_distance:
-            return CriterionResult(
-                matches=True,
-                score=1.0,
-                message=f"Distance appropriate ({trail_distance:.1f} km ≤ {max_distance} km)"
-            )
-        else:
-            return CriterionResult(
-                matches=False,
-                score=0.0,
-                message=f"Too long ({trail_distance:.1f} km > {max_distance} km)"
-            )
+        # Determine max distance based on experience and fitness FIRST (most important)
+        # Then adjust based on persistence
+        if experience == "beginner" or fitness == "low":
+            # Beginners should not do long trails regardless of persistence
+            max_distance = 10.0  # Strict limit for beginners
+            if trail_distance <= max_distance:
+                return CriterionResult(
+                    matches=True,
+                    score=1.0,
+                    message=f"Distance appropriate for beginner ({trail_distance:.1f} km ≤ {max_distance} km)"
+                )
+            else:
+                # Penalize heavily - this is too long for a beginner
+                return CriterionResult(
+                    matches=False,
+                    score=0.0,
+                    message=f"Too long for beginner ({trail_distance:.1f} km > {max_distance} km recommended max)"
+                )
+        elif experience == "intermediate" or fitness == "medium":
+            # Intermediate hikers can handle moderate distances
+            max_distance = 20.0
+            if trail_distance <= max_distance:
+                return CriterionResult(
+                    matches=True,
+                    score=1.0,
+                    message=f"Distance appropriate ({trail_distance:.1f} km ≤ {max_distance} km)"
+                )
+            else:
+                return CriterionResult(
+                    matches=False,
+                    score=0.0,
+                    message=f"Too long ({trail_distance:.1f} km > {max_distance} km)"
+                )
+        else:  # advanced/expert or high fitness
+            # Advanced hikers can handle longer distances, but still consider persistence
+            if persistence < 0.4:
+                max_distance = 20.0
+            elif persistence < 0.7:
+                max_distance = 30.0
+            else:
+                max_distance = 40.0
+            
+            if trail_distance <= max_distance:
+                return CriterionResult(
+                    matches=True,
+                    score=1.0,
+                    message=f"Distance appropriate ({trail_distance:.1f} km ≤ {max_distance} km)"
+                )
+            else:
+                return CriterionResult(
+                    matches=False,
+                    score=0.0,
+                    message=f"Too long ({trail_distance:.1f} km > {max_distance} km)"
+                )
     
     def get_name(self) -> str:
         return "distance"
@@ -408,6 +546,6 @@ def get_default_criteria() -> List[Criterion]:
         SafetyCriterion(weight=2.5),  # Critical
         SeasonCriterion(weight=1.5),
         LandscapeCriterion(weight=1.0),
-        WeatherCriterion(weight=1.5),
+        WeatherCriterion(weight=2.0),  # Increased weight to ensure weather is properly considered
     ]
 

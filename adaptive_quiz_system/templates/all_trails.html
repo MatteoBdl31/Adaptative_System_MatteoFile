@@ -125,7 +125,7 @@
                             <span>⏱️ {{ trail.duration|format_duration }}</span>
                             <span>⛰️ {{ trail.elevation_gain }}m ↑</span>
                             {% if trail.forecast_weather %}
-                                <span class="badge" title="Weather forecast for {{ hike_start_date }}">
+                                <span class="badge" title="Weather forecast for {{ hike_start_date|format_date }}">
                                     {% if trail.forecast_weather == 'sunny' %}☀️
                                     {% elif trail.forecast_weather == 'cloudy' %}☁️
                                     {% elif trail.forecast_weather == 'rainy' %}🌧️
@@ -193,7 +193,7 @@
                             <span>⏱️ {{ trail.duration|format_duration }}</span>
                             <span>⛰️ {{ trail.elevation_gain }}m ↑</span>
                             {% if trail.forecast_weather %}
-                                <span class="badge" title="Weather forecast for {{ hike_start_date }}">
+                                <span class="badge" title="Weather forecast for {{ hike_start_date|format_date }}">
                                     {% if trail.forecast_weather == 'sunny' %}☀️
                                     {% elif trail.forecast_weather == 'cloudy' %}☁️
                                     {% elif trail.forecast_weather == 'rainy' %}🌧️

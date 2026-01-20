@@ -6,6 +6,9 @@ Converts rules and context into database filters.
 
 from typing import Dict, List, Optional, Tuple
 from backend.db import get_rules
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FilterBuilder:
@@ -14,9 +17,14 @@ class FilterBuilder:
     def __init__(self):
         self.rules = get_rules()
     
-    def build_filters(self, user: Dict, context: Dict) -> Tuple[Dict, List[Dict]]:
+    def build_filters(self, user: Dict, context: Dict, debugger=None) -> Tuple[Dict, List[Dict]]:
         """
         Build filters from rules and context.
+        
+        Args:
+            user: User profile dictionary
+            context: Context dictionary
+            debugger: Optional RecommendationDebugger instance for logging
         
         Returns:
             (filters_dict, active_rules_list)
@@ -28,17 +36,33 @@ class FilterBuilder:
         }
         active_rules = []
         
-        # Evaluate rules
-        for rule in self.rules:
-            if self._evaluate_condition(rule["condition"], user, context):
-                self._apply_adaptation(filters, rule["adaptation"])
-                active_rules.append(rule)
-        
-        # Apply time-based filters if not set by rules
-        self._apply_time_filters(filters, context)
-        
-        # Apply safety filters
-        self._apply_safety_filters(filters, user, context)
+        try:
+            logger.debug(f"Building filters for user {user.get('id')}, context: {context.get('time_available')} min")
+            
+            # Evaluate rules
+            for rule in self.rules:
+                try:
+                    if self._evaluate_condition(rule["condition"], user, context):
+                        self._apply_adaptation(filters, rule["adaptation"])
+                        active_rules.append(rule)
+                        logger.debug(f"Rule activated: {rule.get('description', rule.get('condition'))}")
+                except Exception as e:
+                    logger.warning(f"Error evaluating rule {rule.get('id', 'unknown')}: {e}")
+                    if debugger:
+                        debugger.add_warning(f"Rule evaluation failed: {rule.get('description', 'unknown')}")
+            
+            # Apply time-based filters if not set by rules
+            self._apply_time_filters(filters, context)
+            
+            # Apply safety filters
+            self._apply_safety_filters(filters, user, context)
+            
+            logger.debug(f"Final filters: {filters}, Active rules: {len(active_rules)}")
+            
+        except Exception as e:
+            logger.error(f"Error building filters: {e}")
+            if debugger:
+                debugger.add_error("Filter building failed", e)
         
         return filters, active_rules
     
@@ -195,15 +219,23 @@ class FilterBuilder:
         if not time_available:
             return
         
-        # If user has multi-day availability but rule set short duration, override
-        if time_available >= 1440 and filters.get("max_duration") and filters["max_duration"] < 1440:
-            days = (time_available // 1440) + 1
-            filters["max_duration"] = days * 1440
-            # Remove restrictive distance filters for multi-day trips
-            if filters.get("max_distance") and filters["max_distance"] < 15:
+        # Handle multi-day trips: remove distance restrictions and set appropriate duration filters
+        is_multi_day_trip = time_available >= 1440
+        if is_multi_day_trip:
+            # Remove distance restrictions for multi-day trips
+            # Multi-day trails are naturally longer and distance limits don't apply the same way
+            if filters.get("max_distance"):
                 filters.pop("max_distance", None)
             if filters.get("prefer_short"):
                 filters.pop("prefer_short", None)
+            
+            # Override max_duration if rule set it too low, or set it if not present
+            if filters.get("max_duration") and filters["max_duration"] < 1440:
+                days = (time_available // 1440) + 1
+                filters["max_duration"] = days * 1440
+            elif "max_duration" not in filters:
+                days = (time_available // 1440) + 1
+                filters["max_duration"] = days * 1440
         elif "max_duration" not in filters:
             # Calculate max_duration from time_available
             if time_available < 1440:  # Less than 1 day
@@ -219,6 +251,17 @@ class FilterBuilder:
                 filters.pop("min_distance", None)
             if filters.get("min_difficulty"):
                 filters.pop("min_difficulty", None)
+        
+        # Set min_duration filter for multi-day trips to ensure appropriate trail lengths
+        if "min_duration" not in filters and is_multi_day_trip:
+            days = time_available // 1440
+            # Require trails that match the selected duration (not just 1-day hikes)
+            min_duration_map = {
+                1: 1080,   # 0.75 days (18 hours) minimum
+                2: 2160,   # 1.5 days minimum
+                3: 2880,   # 2 days minimum
+            }
+            filters["min_duration"] = min_duration_map.get(days, 3600)  # 2.5 days for 4+ days
     
     def _apply_safety_filters(self, filters: Dict, user: Dict, context: Dict):
         """Apply safety-related filters."""

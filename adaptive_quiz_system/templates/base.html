@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +20,7 @@
             <nav class="app-header__nav" role="navigation" aria-label="Main navigation">
                 <a href="{{ url_for('demo') }}" class="app-header__nav-link">Demo</a>
                 <a href="{{ url_for('all_trails') }}" class="app-header__nav-link">All Trails</a>
+                <a href="{{ url_for('profile', user_id=101) }}" class="app-header__nav-link" id="header-profile-link">Profile</a>
             </nav>
         </div>
     </header>

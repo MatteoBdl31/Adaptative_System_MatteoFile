@@ -104,6 +104,25 @@ class MapManager {
             return null;
         }
 
+        // Remove existing map if it exists
+        if (this.maps.has(containerId)) {
+            this.removeMap(containerId);
+        }
+
+        // Get container element and check if it has a Leaflet instance
+        const container = typeof containerId === 'string' 
+            ? document.getElementById(containerId) 
+            : containerId;
+        
+        if (container) {
+            // If container has a Leaflet map instance attached, clean it up
+            if (container._leaflet_id) {
+                // Clear container content and remove Leaflet ID to allow fresh initialization
+                container.innerHTML = '';
+                delete container._leaflet_id;
+            }
+        }
+
         const defaultOptions = {
             zoom: 8,
             center: [45.8, 6.5],
@@ -231,7 +250,15 @@ class MapManager {
                 <div class="trail-popup">
                     <div class="trail-popup__header">
                         <h3 class="trail-popup__title">${name || 'Unknown'}</h3>
-                        <span class="trail-popup__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                        <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                            <span class="trail-popup__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                            <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail_id || ''}" data-user-id="${options.userId || ''}" style="width: 18px; height: 18px; padding: 0;">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                    <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     ${description ? `<p class="trail-popup__description">${description}</p>` : ''}
                     <div class="trail-popup__stats">
@@ -258,6 +285,15 @@ class MapManager {
                         </div>
                         ` : ''}
                     </div>
+                    <div class="trail-popup-explanation" id="trail-popup-explanation-${trail_id || ''}" style="display: none; margin-top: var(--space-sm); padding: var(--space-sm); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                        <div class="trail-popup-explanation-loading" style="text-align: center; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                            <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
+                        </div>
+                        <div class="trail-popup-explanation-loaded" style="display: none;">
+                            <p class="trail-popup-explanation-text" style="font-size: var(--font-size-sm); margin-bottom: var(--space-xs);"></p>
+                            <ul class="trail-popup-explanation-factors" style="list-style: none; padding: 0; margin: 0; font-size: var(--font-size-xs);"></ul>
+                        </div>
+                    </div>
                     ${elevationProfileSVG ? `<div class="trail-popup__elevation">${elevationProfileSVG}</div>` : ''}
                 </div>
             `;
@@ -280,6 +316,87 @@ class MapManager {
                         storedData.coordinates,
                         storedData.distance
                     );
+                }
+                
+                // Setup Why? button click handler for popup
+                const whyBtn = document.querySelector(`.trail-popup-wrapper .trail-explanation-btn[data-trail-id="${trail_id}"]`);
+                if (whyBtn) {
+                    whyBtn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const trailId = whyBtn.dataset.trailId;
+                        const userId = whyBtn.dataset.userId || 'a';
+                        const explanationDiv = document.getElementById(`trail-popup-explanation-${trailId}`);
+                        
+                        if (!explanationDiv) return;
+                        
+                        const loadingDiv = explanationDiv.querySelector('.trail-popup-explanation-loading');
+                        const loadedDiv = explanationDiv.querySelector('.trail-popup-explanation-loaded');
+                        const textEl = loadedDiv?.querySelector('.trail-popup-explanation-text');
+                        const factorsEl = loadedDiv?.querySelector('.trail-popup-explanation-factors');
+                        
+                        // Toggle visibility
+                        if (explanationDiv.style.display === 'none') {
+                            explanationDiv.style.display = 'block';
+                            
+                            // Check if already loaded
+                            if (loadedDiv && loadedDiv.style.display !== 'none' && textEl?.textContent) {
+                                return;
+                            }
+                            
+                            // Show loading
+                            if (loadingDiv) loadingDiv.style.display = 'block';
+                            if (loadedDiv) loadedDiv.style.display = 'none';
+                            whyBtn.classList.add('loading');
+                            
+                            try {
+                                // Build context from URL params
+                                const params = new URLSearchParams(window.location.search);
+                                const context = {};
+                                const contextKeys = ['time_available_days', 'time_available_hours', 'device', 'weather', 
+                                                   'connection', 'season', 'hike_start_date', 'hike_end_date'];
+                                contextKeys.forEach(key => {
+                                    const value = params.get(`a_${key}`) || params.get(key);
+                                    if (value) context[key] = value;
+                                });
+                                
+                                // Get user_id from URL params or form
+                                const form = document.getElementById('demo-form');
+                                const userSelect = form?.querySelector(`#user-select-${userId}`);
+                                const user_id = userSelect?.value || params.get(`user_id_${userId}`) || params.get('user_id_a') || '';
+                                if (user_id) {
+                                    context[`user_id_${userId}`] = user_id;
+                                }
+                                
+                                const queryString = new URLSearchParams(context).toString();
+                                const response = await fetch(`/api/explanations/trail/${userId}/${trailId}?${queryString}`);
+                                const data = await response.json();
+                                
+                                if (data.explanation_text) {
+                                    if (textEl) textEl.textContent = data.explanation_text;
+                                    if (factorsEl && data.key_factors) {
+                                        factorsEl.innerHTML = '';
+                                        data.key_factors.forEach(factor => {
+                                            const li = document.createElement('li');
+                                            li.textContent = '• ' + factor;
+                                            li.style.padding = '2px 0';
+                                            factorsEl.appendChild(li);
+                                        });
+                                    }
+                                    
+                                    if (loadingDiv) loadingDiv.style.display = 'none';
+                                    if (loadedDiv) loadedDiv.style.display = 'block';
+                                }
+                            } catch (error) {
+                                console.error('Error fetching trail explanation:', error);
+                                if (loadingDiv) loadingDiv.textContent = 'Unable to load explanation.';
+                            } finally {
+                                whyBtn.classList.remove('loading');
+                            }
+                        } else {
+                            explanationDiv.style.display = 'none';
+                        }
+                    });
                 }
             });
             

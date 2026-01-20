@@ -27,6 +27,18 @@
         if (!container || !Array.isArray(window.recommendationMapData)) return;
         if (!window.recommendationMapData.length) return;
 
+        // Check if map already exists and remove it
+        if (window.recommendationsMap) {
+            try {
+                window.recommendationsMap.remove();
+            } catch (e) {
+                // Ignore errors
+            }
+        }
+        if (container._leaflet_id) {
+            container.innerHTML = '';
+            delete container._leaflet_id;
+        }
         const map = L.map(container);
         window.recommendationsMap = map;
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

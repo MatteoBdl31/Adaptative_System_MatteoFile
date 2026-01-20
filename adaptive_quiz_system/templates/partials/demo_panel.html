@@ -2,7 +2,7 @@
     <div class="panel-header">
         <div class="result-panel__title-wrapper">
             <h2 class="result-panel__title">{{ result.scenario.title }}</h2>
-            <button type="button" class="context-info-btn" aria-label="Show context information" data-user-idx>
+            <button type="button" class="context-info-btn" aria-label="Show context information and recommendations" data-user-idx>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
                     <path d="M8 11V8M8 5H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -12,37 +12,67 @@
         <span class="badge">{{ result.active_rules|length }} rules</span>
     </div>
 
-    <!-- Context Info Modal -->
+    <!-- Context Info Modal with Tabs -->
     <div class="context-modal" id="context-modal-idx" role="dialog" aria-labelledby="context-modal-title-idx" aria-hidden="true">
         <div class="context-modal__backdrop"></div>
         <div class="context-modal__content">
             <div class="context-modal__header">
-                <h3 class="context-modal__title" id="context-modal-title-idx">Search Context</h3>
+                <h3 class="context-modal__title" id="context-modal-title-idx">Information</h3>
                 <button type="button" class="context-modal__close" aria-label="Close modal">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </button>
             </div>
+            <div class="context-modal__tabs">
+                <button type="button" class="context-modal__tab active" data-tab="context">Search Context</button>
+                <button type="button" class="context-modal__tab" data-tab="explanation">Why Recommended</button>
+            </div>
             <div class="context-modal__body">
-                <div class="context-modal__items">
-                    {% for key, value in result.context.items() %}
-                        {% if key not in ['hike_date', 'hike_start_date', 'hike_end_date'] %}
-                            {% if key == 'time_available' %}
-                                {% set days = (value // (24 * 60)) %}
-                                {% set hours = ((value % (24 * 60)) // 60) %}
-                                <div class="context-modal__item">
-                                    <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
-                                    <span class="context-modal__value">{% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% endif %}{% if days > 0 and hours > 0 %} {% endif %}{% if hours > 0 %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}{% if days == 0 and hours == 0 %}0 hours{% endif %}</span>
-                                </div>
-                            {% else %}
-                                <div class="context-modal__item">
-                                    <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
-                                    <span class="context-modal__value">{{ value }}</span>
-                                </div>
+                <!-- Context Tab -->
+                <div class="context-modal__tab-content active" data-content="context">
+                    <div class="context-modal__items">
+                        {% for key, value in result.context.items() %}
+                            {% if key not in ['hike_date', 'hike_start_date', 'hike_end_date'] %}
+                                {% if key == 'time_available' %}
+                                    {% set days = (value // (24 * 60)) %}
+                                    {% set hours = ((value % (24 * 60)) // 60) %}
+                                    <div class="context-modal__item">
+                                        <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
+                                        <span class="context-modal__value">{% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% endif %}{% if days > 0 and hours > 0 %} {% endif %}{% if hours > 0 %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}{% if days == 0 and hours == 0 %}0 hours{% endif %}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="context-modal__item">
+                                        <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
+                                        <span class="context-modal__value">{{ value }}</span>
+                                    </div>
+                                {% endif %}
                             {% endif %}
-                        {% endif %}
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <!-- Explanation Tab -->
+                <div class="context-modal__tab-content" data-content="explanation">
+                    <div class="explanation-content" id="explanation-content-idx">
+                        <div class="explanation-loading" id="explanation-loading-idx">
+                            <p style="text-align: center; color: var(--color-text-secondary); padding: var(--space-xl);">
+                                <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span>
+                                <br>Generating explanation...
+                            </p>
+                        </div>
+                        <div class="explanation-loaded" id="explanation-loaded-idx" style="display: none;">
+                            <p class="explanation-text" id="explanation-text-idx"></p>
+                            <div class="explanation-details">
+                                <h4 class="explanation-details__title">Key Matching Factors:</h4>
+                                <ul class="explanation-details__list" id="explanation-factors-idx"></ul>
+                            </div>
+                        </div>
+                        <div class="explanation-error" id="explanation-error-idx" style="display: none;">
+                            <p style="text-align: center; color: var(--color-text-secondary); padding: var(--space-xl);">
+                                Unable to generate explanation. Please try again later.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -86,15 +116,32 @@
                     <div class="trail-card modern recommended">
                         <div class="card-heading">
                             <strong>{{ trail.name }}</strong>
-                            <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
-                                {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
-                            </span>
+                            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                                <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+                                    {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
+                                </span>
+                                <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="{{ trail.trail_id }}" data-user-idx>
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="trail-stats">
                             <span>{{ trail.distance or '—' }} km</span>
                             <span>{{ trail.duration|format_duration }}</span>
                             <span>{{ trail.elevation_gain or '—' }} m</span>
                             {% if trail.forecast_weather %}<span>{% if trail.forecast_weather == 'sunny' %}☀️{% elif trail.forecast_weather == 'cloudy' %}☁️{% elif trail.forecast_weather == 'rainy' %}🌧️{% elif trail.forecast_weather == 'snowy' %}❄️{% elif trail.forecast_weather == 'storm_risk' %}⛈️{% else %}🌤️{% endif %} {{ trail.forecast_weather|title }}</span>{% endif %}
+                        </div>
+                        <div class="trail-explanation-content" id="trail-explanation-{{ trail.trail_id }}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                            <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
+                                <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
+                            </div>
+                            <div class="trail-explanation-loaded" style="display: none;">
+                                <p class="trail-explanation-text" style="margin-bottom: var(--space-sm);"></p>
+                                <ul class="trail-explanation-factors" style="list-style: none; padding: 0; margin: 0;"></ul>
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
@@ -115,13 +162,30 @@
                     <div class="trail-card modern suggested">
                         <div class="card-heading">
                             <strong>{{ trail.name }}</strong>
-                            <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}%</span>
+                            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                                <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}%</span>
+                                <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="{{ trail.trail_id }}" data-user-idx>
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="trail-stats">
                             <span>{{ trail.distance or '—' }} km</span>
                             <span>{{ trail.duration|format_duration }}</span>
                             <span>{{ trail.elevation_gain or '—' }} m</span>
                             {% if trail.forecast_weather %}<span>{% if trail.forecast_weather == 'sunny' %}☀️{% elif trail.forecast_weather == 'cloudy' %}☁️{% elif trail.forecast_weather == 'rainy' %}🌧️{% elif trail.forecast_weather == 'snowy' %}❄️{% elif trail.forecast_weather == 'storm_risk' %}⛈️{% else %}🌤️{% endif %} {{ trail.forecast_weather|title }}</span>{% endif %}
+                        </div>
+                        <div class="trail-explanation-content" id="trail-explanation-{{ trail.trail_id }}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                            <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
+                                <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
+                            </div>
+                            <div class="trail-explanation-loaded" style="display: none;">
+                                <p class="trail-explanation-text" style="margin-bottom: var(--space-sm);"></p>
+                                <ul class="trail-explanation-factors" style="list-style: none; padding: 0; margin: 0;"></ul>
+                            </div>
                         </div>
                         {% if trail.unmatched_criteria %}
                         <div class="unmatched-criteria">
@@ -166,11 +230,28 @@
                             <div>
                                 <div class="card-heading">
                                     <h3>{{ trail.name }}</h3>
-                                    <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
-                                        {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
-                                    </span>
+                                    <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                                        <span class="pill difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
+                                            {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
+                                        </span>
+                                        <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="{{ trail.trail_id }}" data-user-idx>
+                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                                <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                                 <p class="trail-description">{{ trail.description or 'No description available' }}</p>
+                            </div>
+                            <div class="trail-explanation-content" id="trail-explanation-{{ trail.trail_id }}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                                <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
+                                    <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
+                                </div>
+                                <div class="trail-explanation-loaded" style="display: none;">
+                                    <p class="trail-explanation-text" style="margin-bottom: var(--space-sm);"></p>
+                                    <ul class="trail-explanation-factors" style="list-style: none; padding: 0; margin: 0;"></ul>
+                                </div>
                             </div>
                             <div class="trail-stats">
                                 <span>📏 {{ trail.distance or '—' }} km</span>
@@ -215,7 +296,24 @@
                         <div class="demo-trail-card-content">
                             <div class="card-heading">
                                 <h3>{{ trail.name }}</h3>
-                                <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}% match</span>
+                                <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                                    <span class="relevance-badge">{{ "%.0f"|format(trail.relevance_percentage|default(0.0)) }}% match</span>
+                                    <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="{{ trail.trail_id }}" data-user-idx>
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                            <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="trail-explanation-content" id="trail-explanation-{{ trail.trail_id }}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+                                <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
+                                    <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
+                                </div>
+                                <div class="trail-explanation-loaded" style="display: none;">
+                                    <p class="trail-explanation-text" style="margin-bottom: var(--space-sm);"></p>
+                                    <ul class="trail-explanation-factors" style="list-style: none; padding: 0; margin: 0;"></ul>
+                                </div>
                             </div>
                             <div class="trail-stats">
                                 <span>📏 {{ trail.distance or '—' }} km</span>

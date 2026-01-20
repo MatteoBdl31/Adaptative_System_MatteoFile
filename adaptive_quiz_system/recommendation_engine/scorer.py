@@ -6,6 +6,9 @@ Calculates relevance scores based on multiple criteria.
 
 from typing import Dict, List
 from .criteria import Criterion, CriterionResult, get_default_criteria
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TrailScorer:
@@ -72,11 +75,34 @@ class TrailScorer:
     
     def score_trails(self, trails: List[Dict], user: Dict, context: Dict) -> List[Dict]:
         """Score multiple trails."""
+        logger.debug(f"Scoring {len(trails)} trails with {len(self.criteria)} criteria")
         scored_trails = []
+        errors = 0
+        
         for trail in trails:
-            score_data = self.score_trail(trail, user, context)
-            trail_copy = trail.copy()
-            trail_copy.update(score_data)
-            scored_trails.append(trail_copy)
+            try:
+                score_data = self.score_trail(trail, user, context)
+                trail_copy = trail.copy()
+                trail_copy.update(score_data)
+                scored_trails.append(trail_copy)
+            except Exception as e:
+                errors += 1
+                logger.warning(f"Error scoring trail {trail.get('trail_id', 'unknown')}: {e}")
+                # Add default scores for failed trails
+                trail_copy = trail.copy()
+                trail_copy.update({
+                    "score": 0.5,
+                    "relevance_percentage": 50.0,
+                    "matched_criteria": [],
+                    "unmatched_criteria": [],
+                    "criterion_results": [],
+                    "total_weight": 0.0
+                })
+                scored_trails.append(trail_copy)
+        
+        if errors > 0:
+            logger.warning(f"Scoring completed with {errors} errors out of {len(trails)} trails")
+        
+        logger.debug(f"Scoring completed: {len(scored_trails)} trails scored")
         return scored_trails
 
