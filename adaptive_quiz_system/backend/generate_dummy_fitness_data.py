@@ -151,9 +151,11 @@ def generate_time_series_data(
         progress = i / num_points  # 0 to 1
         
         # Heart rate: starts lower, peaks in middle, decreases slightly at end
+        # Add small random variations (±2-5 bpm) around predicted average
         hr_progression = progress * (1.2 - progress * 0.4)  # Peak around 60% progress
         current_hr = int(avg_hr * (0.7 + hr_progression * 0.6))
         current_hr = min(max_hr, max(avg_hr - 20, current_hr))
+        # Add small random variations (±2-5 bpm) for realistic patterns
         current_hr += random.randint(-5, 5)
         current_hr = max(60, min(200, current_hr))
         
@@ -173,10 +175,16 @@ def generate_time_series_data(
         # Cadence: steps per minute (typically 100-140 for hiking)
         cadence = random.randint(100, 140)
         
-        # GPS coordinates (simplified - would be actual trail coordinates in real data)
-        # Using approximate values based on progress
-        latitude = 45.5 + (progress * 0.1) + random.uniform(-0.01, 0.01)
-        longitude = 6.2 + (progress * 0.1) + random.uniform(-0.01, 0.01)
+        # GPS coordinates: interpolate along trail coordinates
+        # Add small GPS accuracy variations (±5-15 meters typical GPS accuracy)
+        # Convert meters to degrees: ~111,000 meters per degree latitude
+        # So ±5-15 meters = ±0.000045 to ±0.000135 degrees
+        gps_accuracy_meters = random.uniform(5, 15)  # Typical GPS accuracy
+        gps_variation_degrees = gps_accuracy_meters / 111000.0
+        
+        # Using approximate values based on progress (would use actual trail coordinates in real data)
+        latitude = 45.5 + (progress * 0.1) + random.uniform(-gps_variation_degrees, gps_variation_degrees)
+        longitude = 6.2 + (progress * 0.1) + random.uniform(-gps_variation_degrees, gps_variation_degrees)
         
         data_points.append({
             "completed_trail_id": completed_trail_id,
@@ -270,7 +278,17 @@ def generate_fitness_data_for_user(user_id, fitness_level="Medium", user_profile
         predicted_avg_hr = predicted_hr.get("avg", base_hr)
         predicted_max_hr = predicted_hr.get("max", int(predicted_avg_hr * 1.2))
         predicted_speed = predicted.get("predicted_speed", (distance / duration_minutes) * 60)
+        predicted_max_speed = predicted_speed * 1.3 if predicted_speed else None
         predicted_calories = predicted.get("predicted_calories", 300)
+        
+        # Get predicted profile category (current user profile)
+        predicted_profile_category = user_profile.get("detected_profile")
+        if not predicted_profile_category:
+            # Try to get from user_profiles table
+            from backend.db import get_user_profile
+            profile = get_user_profile(user_id)
+            if profile:
+                predicted_profile_category = profile.get("primary_profile")
         
         # Generate ACTUAL metrics with realistic variations from predicted
         # Duration: actual can be ±10-20% different from predicted
@@ -278,26 +296,26 @@ def generate_fitness_data_for_user(user_id, fitness_level="Medium", user_profile
         actual_duration_final = int(predicted_duration * duration_variation)
         actual_duration_final = max(int(predicted_duration * 0.8), min(int(predicted_duration * 1.2), actual_duration_final))
         
-        # Heart rate: actual can be ±5-10% different (due to conditions, fitness on the day)
-        hr_variation = random.uniform(0.92, 1.08)  # ±8% variation
+        # Heart rate: actual can be ±3-10% different (due to conditions, fitness on the day)
+        hr_variation = random.uniform(0.90, 1.10)  # ±10% variation (light variation)
         avg_hr = int(predicted_avg_hr * hr_variation)
         avg_hr = max(60, min(180, avg_hr))
         max_hr = int(predicted_max_hr * hr_variation)
         max_hr = min(200, max(avg_hr + 10, max_hr))
         
-        # Speed: actual can be ±10-15% different (terrain, weather, pace)
-        speed_variation = random.uniform(0.88, 1.12)  # ±12% variation
+        # Speed: actual can be ±5-12% different (terrain, weather, pace)
+        speed_variation = random.uniform(0.88, 1.12)  # ±12% variation (light variation)
         avg_speed = round(predicted_speed * speed_variation, 2)
         avg_speed = max(2.0, min(8.0, avg_speed))
         max_speed = round(avg_speed * (1.3 + random.uniform(0, 0.2)), 2)
         max_speed = min(10.0, max_speed)
         
-        # Calories: actual can be ±10-20% different (metabolism, effort level)
-        calories_variation = random.uniform(0.85, 1.15)  # ±15% variation
+        # Calories: actual can be ±5-15% different (metabolism, effort level)
+        calories_variation = random.uniform(0.85, 1.15)  # ±15% variation (light variation)
         total_calories = int(predicted_calories * calories_variation)
         total_calories = max(100, total_calories)
         
-        # Update completed_trail record with aggregated metrics
+        # Update completed_trail record with aggregated metrics AND predicted metrics
         # Also update actual_duration if it differs significantly from predicted
         cur.execute("""
             UPDATE completed_trails
@@ -306,9 +324,19 @@ def generate_fitness_data_for_user(user_id, fitness_level="Medium", user_profile
                 max_heart_rate = ?,
                 avg_speed = ?,
                 max_speed = ?,
-                total_calories = ?
+                total_calories = ?,
+                predicted_duration = ?,
+                predicted_avg_heart_rate = ?,
+                predicted_max_heart_rate = ?,
+                predicted_avg_speed = ?,
+                predicted_max_speed = ?,
+                predicted_calories = ?,
+                predicted_profile_category = ?
             WHERE id = ?
-        """, (actual_duration_final, avg_hr, max_hr, avg_speed, max_speed, total_calories, completed_trail_id))
+        """, (actual_duration_final, avg_hr, max_hr, avg_speed, max_speed, total_calories,
+              predicted_duration, predicted_avg_hr, predicted_max_hr,
+              predicted_speed, predicted_max_speed, predicted_calories,
+              predicted_profile_category, completed_trail_id))
         
         # Log the variation for debugging
         duration_diff = actual_duration_final - predicted_duration
@@ -317,11 +345,13 @@ def generate_fitness_data_for_user(user_id, fitness_level="Medium", user_profile
         speed_diff_pct = ((avg_speed - predicted_speed) / predicted_speed * 100) if predicted_speed > 0 else 0
         
         print(f"    Trail {trail_id}:")
-        print(f"      Duration: {predicted_duration}min → {actual_duration_final}min ({duration_diff_pct:+.1f}%)")
-        print(f"      HR: {predicted_avg_hr}bpm → {avg_hr}bpm ({hr_diff_pct:+.1f}%)")
-        print(f"      Speed: {predicted_speed}km/h → {avg_speed}km/h ({speed_diff_pct:+.1f}%)")
+        print(f"      Duration: {predicted_duration}min -> {actual_duration_final}min ({duration_diff_pct:+.1f}%)")
+        print(f"      HR: {predicted_avg_hr}bpm -> {avg_hr}bpm ({hr_diff_pct:+.1f}%)")
+        print(f"      Speed: {predicted_speed}km/h -> {avg_speed}km/h ({speed_diff_pct:+.1f}%)")
         
         # Generate time-series data using ACTUAL duration and metrics
+        # Heart rate time-series with realistic patterns: start lower, peak in middle, slight decrease at end
+        # Add small random variations (±2-5 bpm) around predicted average
         time_series_data = generate_time_series_data(
             completed_trail_id,
             actual_duration_final,  # Use actual duration, not predicted
@@ -355,11 +385,11 @@ def generate_fitness_data_for_user(user_id, fitness_level="Medium", user_profile
                 point["cadence"]
             ))
         
-        print(f"    ✓ Generated {len(time_series_data)} time-series data points")
+        print(f"    [OK] Generated {len(time_series_data)} time-series data points")
     
     conn.commit()
     conn.close()
-    print(f"✓ Completed generating fitness data for user {user_id}")
+    print(f"[OK] Completed generating fitness data for user {user_id}")
 
 
 def generate_fitness_data_for_all_users():
@@ -391,8 +421,160 @@ def generate_fitness_data_for_all_users():
     
     print("=" * 60)
     print("Fitness data generation complete!")
-    print("\nNote: Actual metrics may differ from predicted values by 5-20%")
+    print("\nNote: Actual metrics may differ from predicted values by 5-15%")
     print("This simulates real-world variations in performance.")
+
+
+def generate_dummy_data_for_existing_completions():
+    """
+    Generate dummy performance data for existing completed trails that don't have time-series data.
+    This function finds completed trails without time-series data and generates predicted metrics,
+    actual metrics with variations, and time-series data.
+    """
+    from backend.db import get_user, get_user_profile
+    from backend.trail_analytics import TrailAnalytics
+    
+    conn = sqlite3.connect(USERS_DB)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    
+    # Find completed trails without time-series data
+    cur.execute("""
+        SELECT DISTINCT ct.id, ct.user_id, ct.trail_id, ct.actual_duration, ct.completion_date
+        FROM completed_trails ct
+        LEFT JOIN trail_performance_data tpd ON ct.id = tpd.completed_trail_id
+        WHERE tpd.id IS NULL
+        ORDER BY ct.user_id, ct.completion_date DESC
+    """)
+    
+    trails_without_data = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    
+    if not trails_without_data:
+        print("No completed trails found without time-series data.")
+        return
+    
+    print(f"Found {len(trails_without_data)} completed trails without time-series data.")
+    print("Generating dummy performance data...")
+    print("=" * 60)
+    
+    analytics = TrailAnalytics()
+    current_user_id = None
+    
+    for trail_info in trails_without_data:
+        user_id = trail_info["user_id"]
+        trail_id = trail_info["trail_id"]
+        completed_trail_id = trail_info["id"]
+        
+        # Get user profile if we haven't already
+        if user_id != current_user_id:
+            user = get_user(user_id)
+            if not user:
+                continue
+            current_user_id = user_id
+        
+        # Get trail details
+        trail = get_trail(trail_id)
+        if not trail:
+            continue
+        
+        # Get predicted metrics using current user profile
+        predicted = analytics.predict_metrics(trail, user)
+        predicted_duration = predicted.get("predicted_duration", trail_info.get("actual_duration", 120))
+        predicted_hr = predicted.get("predicted_heart_rate", {})
+        predicted_avg_hr = predicted_hr.get("avg", 140)
+        predicted_max_hr = predicted_hr.get("max", int(predicted_avg_hr * 1.2))
+        predicted_speed = predicted.get("predicted_speed", 4.0)
+        predicted_max_speed = predicted_speed * 1.3
+        predicted_calories = predicted.get("predicted_calories", 300)
+        
+        # Get predicted profile category
+        profile = get_user_profile(user_id)
+        predicted_profile_category = profile.get("primary_profile") if profile else None
+        
+        # Generate actual metrics with light variations (±5-15% from predicted)
+        duration_variation = random.uniform(0.85, 1.15)
+        actual_duration = int(predicted_duration * duration_variation)
+        
+        hr_variation = random.uniform(0.90, 1.10)
+        avg_hr = int(predicted_avg_hr * hr_variation)
+        avg_hr = max(60, min(180, avg_hr))
+        max_hr = int(predicted_max_hr * hr_variation)
+        max_hr = min(200, max(avg_hr + 10, max_hr))
+        
+        speed_variation = random.uniform(0.88, 1.12)
+        avg_speed = round(predicted_speed * speed_variation, 2)
+        avg_speed = max(2.0, min(8.0, avg_speed))
+        max_speed = round(avg_speed * 1.3, 2)
+        
+        calories_variation = random.uniform(0.85, 1.15)
+        total_calories = int(predicted_calories * calories_variation)
+        total_calories = max(100, total_calories)
+        
+        # Update completed_trail with predicted and actual metrics
+        conn = sqlite3.connect(USERS_DB)
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE completed_trails
+            SET actual_duration = COALESCE(actual_duration, ?),
+                avg_heart_rate = ?,
+                max_heart_rate = ?,
+                avg_speed = ?,
+                max_speed = ?,
+                total_calories = ?,
+                predicted_duration = ?,
+                predicted_avg_heart_rate = ?,
+                predicted_max_heart_rate = ?,
+                predicted_avg_speed = ?,
+                predicted_max_speed = ?,
+                predicted_calories = ?,
+                predicted_profile_category = ?
+            WHERE id = ?
+        """, (actual_duration, avg_hr, max_hr, avg_speed, max_speed, total_calories,
+              predicted_duration, predicted_avg_hr, predicted_max_hr,
+              predicted_speed, predicted_max_speed, predicted_calories,
+              predicted_profile_category, completed_trail_id))
+        
+        # Generate time-series data
+        elevation_gain = trail.get("elevation_gain", 300)
+        time_series_data = generate_time_series_data(
+            completed_trail_id,
+            actual_duration,
+            avg_hr,
+            max_hr,
+            avg_speed,
+            max_speed,
+            elevation_gain,
+            total_calories
+        )
+        
+        # Insert time-series data
+        for point in time_series_data:
+            cur.execute("""
+                INSERT INTO trail_performance_data
+                (completed_trail_id, timestamp, heart_rate, speed, elevation,
+                 latitude, longitude, calories, cadence)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                point["completed_trail_id"],
+                point["timestamp"],
+                point["heart_rate"],
+                point["speed"],
+                point["elevation"],
+                point["latitude"],
+                point["longitude"],
+                point["calories"],
+                point["cadence"]
+            ))
+        
+        conn.commit()
+        conn.close()
+        
+        print(f"  [OK] Generated data for trail {trail_id} (user {user_id})")
+    
+    print("=" * 60)
+    print("Dummy data generation for existing completions complete!")
 
 
 if __name__ == "__main__":

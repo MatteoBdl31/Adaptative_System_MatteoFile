@@ -14,83 +14,7 @@ const TrailListManager = (function() {
     let currentSort = 'date-desc';
     let searchQuery = '';
     
-    // Profile-to-default-tab mapping
-    function getProfileDefaultTab(userProfile) {
-        const profileTabMap = {
-            'elevation_lover': 'elevation',
-            'explorer': 'map',
-            'photographer': 'gallery',
-            'performance_athlete': 'performance',
-            'contemplative': 'overview',
-            'casual': 'overview',
-            'family': 'overview'
-        };
-        return profileTabMap[userProfile] || 'overview';
-    }
-    
-    // Profile-to-tab-priority mapping (order tabs based on profile)
-    function getTabOrderForProfile(userProfile) {
-        const tabOrders = {
-            'elevation_lover': ['overview', 'elevation', 'performance', 'weather', 'map', 'gallery', 'recommendations'],
-            'explorer': ['overview', 'map', 'weather', 'performance', 'elevation', 'gallery', 'recommendations'],
-            'photographer': ['overview', 'gallery', 'map', 'weather', 'recommendations', 'elevation', 'performance'],
-            'performance_athlete': ['overview', 'performance', 'elevation', 'weather', 'map', 'gallery', 'recommendations'],
-            'contemplative': ['overview', 'gallery', 'weather', 'recommendations', 'map', 'elevation', 'performance'],
-            'casual': ['overview', 'weather', 'recommendations', 'map', 'gallery', 'elevation', 'performance'],
-            'family': ['overview', 'weather', 'recommendations', 'map', 'gallery', 'elevation', 'performance']
-        };
-        return tabOrders[userProfile] || ['overview', 'performance', 'weather', 'recommendations', 'elevation', 'map', 'gallery'];
-    }
-    
-    // Reorder tabs based on profile
-    function reorderTabsForProfile(userProfile) {
-        const tabsContainer = document.getElementById('trail-detail-tabs');
-        if (!tabsContainer) return;
-        
-        const tabOrder = getTabOrderForProfile(userProfile);
-        const defaultTab = getProfileDefaultTab(userProfile);
-        
-        // Get all tabs
-        const tabs = Array.from(tabsContainer.querySelectorAll('.detail-tab'));
-        const tabMap = {};
-        tabs.forEach(tab => {
-            const tabId = tab.getAttribute('data-tab');
-            tabMap[tabId] = tab;
-        });
-        
-        // Clear container
-        tabsContainer.innerHTML = '';
-        
-        // Reorder tabs based on profile priority
-        tabOrder.forEach(tabId => {
-            if (tabMap[tabId]) {
-                tabsContainer.appendChild(tabMap[tabId]);
-                // Set active tab based on profile default
-                if (tabId === defaultTab) {
-                    tabMap[tabId].classList.add('active');
-                } else {
-                    tabMap[tabId].classList.remove('active');
-                }
-            }
-        });
-        
-        // Update tab content visibility
-        document.querySelectorAll('.detail-tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        const defaultContent = document.getElementById(`${defaultTab}-tab`);
-        if (defaultContent) {
-            defaultContent.classList.add('active');
-        }
-        
-        // Hide tabs that don't have data (will be shown when data loads)
-        ['elevation', 'map', 'gallery'].forEach(tabId => {
-            const tab = tabMap[tabId];
-            if (tab) {
-                tab.style.display = 'none'; // Will be shown when data is available
-            }
-        });
-    }
+    // Tab-related functions removed - no longer using tabs
     
     function init(userId, userProfile) {
         currentUserId = userId;
@@ -356,8 +280,12 @@ const TrailListManager = (function() {
         const performanceIndicators = status === 'completed' 
             ? createPerformanceIndicators(trail) 
             : '';
-        const ratingStars = status === 'completed' && trail.rating 
+        // Display rating for completed trails - ensure it's a valid number
+        const ratingStars = status === 'completed' && (trail.rating !== null && trail.rating !== undefined)
             ? createRatingStars(trail.rating) 
+            : '';
+        const statisticsBadge = status === 'saved' && (trail.start_count > 0 || trail.completion_count > 0)
+            ? createStatisticsBadge(trail.start_count || 0, trail.completion_count || 0)
             : '';
         
         const cardClass = `trail-card trail-card-${viewMode} trail-card-${status}`;
@@ -376,6 +304,7 @@ const TrailListManager = (function() {
                                 <span>⏱️ ${formatDuration(trail.estimated_duration || trail.actual_duration)}</span>
                             </div>
                             ${dateBadge}
+                            ${statisticsBadge}
                             ${ratingStars}
                             ${performanceIndicators}
                         </div>
@@ -383,6 +312,7 @@ const TrailListManager = (function() {
                             ${progressRing}
                             <div class="trail-actions">
                                 <button class="btn-view-details" data-trail-id="${trail.trail_id}">View</button>
+                                ${status === 'saved' ? '<button class="btn-start-trail" data-trail-id="' + trail.trail_id + '">Start Trail</button>' : ''}
                                 ${status === 'saved' ? '<button class="btn-unsave" data-trail-id="' + trail.trail_id + '">Remove</button>' : ''}
                                 ${status === 'started' ? '<button class="btn-complete-trail" data-trail-id="' + trail.trail_id + '">Complete</button>' : ''}
                             </div>
@@ -415,11 +345,13 @@ const TrailListManager = (function() {
                         <span>⏱️ ${formatDuration(trail.estimated_duration || trail.actual_duration)}</span>
                     </div>
                     ${progressRing}
+                    ${statisticsBadge}
                     ${ratingStars}
                     ${performanceIndicators}
                     ${dateBadge}
                     <div class="trail-actions">
                         <button class="btn-view-details" data-trail-id="${trail.trail_id}">View Details</button>
+                        ${status === 'saved' ? '<button class="btn-start-trail" data-trail-id="' + trail.trail_id + '">Start Trail</button>' : ''}
                         ${status === 'started' ? '<button class="btn-complete-trail" data-trail-id="' + trail.trail_id + '">Complete Trail</button>' : ''}
                     </div>
                 </div>
@@ -489,7 +421,7 @@ const TrailListManager = (function() {
     }
     
     function createPerformanceIndicators(trail) {
-        if (!trail.avg_heart_rate && !trail.avg_speed && !trail.total_calories) return '';
+        if (!trail.avg_heart_rate && !trail.avg_speed && !trail.total_calories && !trail.difficulty_rating) return '';
         
         let html = '<div class="performance-indicators">';
         if (trail.avg_heart_rate) {
@@ -501,14 +433,23 @@ const TrailListManager = (function() {
         if (trail.total_calories) {
             html += `<span class="perf-indicator" title="Calories Burned">🔥 ${trail.total_calories} kcal</span>`;
         }
+        if (trail.difficulty_rating !== null && trail.difficulty_rating !== undefined) {
+            html += `<span class="perf-indicator" title="Difficulty Rating">📊 ${trail.difficulty_rating}/10</span>`;
+        }
         html += '</div>';
         return html;
     }
     
     function createRatingStars(rating) {
-        if (!rating) return '';
-        const fullStars = Math.floor(rating);
-        const hasHalfStar = rating % 1 >= 0.5;
+        if (!rating && rating !== 0) return '';
+        // Ensure rating is a number
+        const numRating = typeof rating === 'string' ? parseFloat(rating) : Number(rating);
+        if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+            console.warn('Invalid rating value:', rating);
+            return '';
+        }
+        const fullStars = Math.floor(numRating);
+        const hasHalfStar = numRating % 1 >= 0.5;
         let html = '<div class="rating-stars">';
         for (let i = 0; i < 5; i++) {
             if (i < fullStars) {
@@ -519,7 +460,20 @@ const TrailListManager = (function() {
                 html += '<span class="star star-empty">☆</span>';
             }
         }
-        html += ` <span class="rating-value">${rating.toFixed(1)}</span></div>`;
+        html += ` <span class="rating-value">${numRating.toFixed(1)}</span></div>`;
+        return html;
+    }
+    
+    function createStatisticsBadge(startCount, completionCount) {
+        if (startCount === 0 && completionCount === 0) return '';
+        let html = '<div class="trail-statistics-badge">';
+        if (startCount > 0) {
+            html += `<span class="stat-item" title="Times Started">▶️ ${startCount}</span>`;
+        }
+        if (completionCount > 0) {
+            html += `<span class="stat-item" title="Times Completed">✅ ${completionCount}</span>`;
+        }
+        html += '</div>';
         return html;
     }
     
@@ -575,7 +529,8 @@ const TrailListManager = (function() {
         container.querySelectorAll('.btn-view-details').forEach(btn => {
             btn.addEventListener('click', function() {
                 const trailId = this.getAttribute('data-trail-id');
-                showTrailDetails(trailId);
+                // Navigate to trail detail page
+                window.location.href = `/profile/${currentUserId}/trail/${trailId}`;
             });
         });
         
@@ -606,6 +561,15 @@ const TrailListManager = (function() {
             });
         });
         
+        // Start trail buttons
+        container.querySelectorAll('.btn-start-trail').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const trailId = this.getAttribute('data-trail-id');
+                startTrail(trailId);
+            });
+        });
+        
         // Complete trail buttons (both regular and quick action)
         const completeButtons = container.querySelectorAll('.btn-complete-trail, .btn-complete-quick');
         
@@ -633,8 +597,258 @@ const TrailListManager = (function() {
                     return;
                 }
                 
-                // Call completeTrail function
-                completeTrail(trailId);
+                // Show completion form
+                showCompletionForm(trailId);
+            });
+        });
+    }
+    
+    function startTrail(trailId) {
+        if (!currentUserId) {
+            alert('Error: User not logged in');
+            return;
+        }
+        
+        fetch(`/api/profile/${currentUserId}/trails/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ trail_id: trailId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadTrails();
+            } else {
+                alert('Failed to start trail');
+            }
+        })
+        .catch(error => {
+            console.error('Error starting trail:', error);
+            alert('Error starting trail');
+        });
+    }
+    
+    function showCompletionForm(trailId) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'completion-form-modal';
+        modal.innerHTML = `
+            <div class="completion-form-content">
+                <div class="completion-form-header">
+                    <h2>Complete Trail</h2>
+                    <button class="completion-form-close">&times;</button>
+                </div>
+                <form id="completion-form" class="completion-form">
+                    <div class="form-group">
+                        <label>Trail Rating (1-5 stars)</label>
+                        <div class="rating-input-interactive">
+                            <input type="radio" name="rating" value="5" id="rating-5" checked>
+                            <label for="rating-5" data-rating="5" title="5 stars - Excellent">⭐</label>
+                            <input type="radio" name="rating" value="4" id="rating-4">
+                            <label for="rating-4" data-rating="4" title="4 stars - Very Good">⭐</label>
+                            <input type="radio" name="rating" value="3" id="rating-3">
+                            <label for="rating-3" data-rating="3" title="3 stars - Good">⭐</label>
+                            <input type="radio" name="rating" value="2" id="rating-2">
+                            <label for="rating-2" data-rating="2" title="2 stars - Fair">⭐</label>
+                            <input type="radio" name="rating" value="1" id="rating-1">
+                            <label for="rating-1" data-rating="1" title="1 star - Poor">⭐</label>
+                        </div>
+                        <div class="rating-display" id="rating-display">Selected: 5 stars</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="difficulty-rating">Difficulty Rating (1-10)</label>
+                        <div class="difficulty-input">
+                            <input type="range" id="difficulty-rating" name="difficulty_rating" min="1" max="10" value="5">
+                            <span id="difficulty-value">5</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="photos">Photos (optional)</label>
+                        <input type="file" id="photos" name="photos" multiple accept="image/*">
+                        <div id="photo-preview" class="photo-preview"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="has-file" name="has_file">
+                            Upload smartwatch data file (optional)
+                        </label>
+                        <input type="file" id="trail-file" name="trail_file" accept=".json,.gpx,.fit" style="display: none;">
+                        <div id="file-info" class="file-info" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="form-group" id="duration-group">
+                        <label for="actual-duration">Duration (minutes)</label>
+                        <input type="number" id="actual-duration" name="actual_duration" min="1" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">Cancel</button>
+                        <button type="submit" class="btn-submit">Complete Trail</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Make rating stars interactive
+        const ratingInputs = modal.querySelectorAll('.rating-input-interactive input[type="radio"]');
+        const ratingDisplay = modal.querySelector('#rating-display');
+        ratingInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const value = parseInt(this.value);
+                ratingDisplay.textContent = `Selected: ${value} ${value === 1 ? 'star' : 'stars'}`;
+                // Update visual feedback
+                ratingInputs.forEach(inp => {
+                    const label = modal.querySelector(`label[for="${inp.id}"]`);
+                    if (label) {
+                        if (parseInt(inp.value) <= value) {
+                            label.classList.add('star-selected');
+                        } else {
+                            label.classList.remove('star-selected');
+                        }
+                    }
+                });
+            });
+        });
+        // Initialize display
+        ratingDisplay.textContent = 'Selected: 5 stars';
+        ratingInputs.forEach(inp => {
+            if (inp.checked) {
+                const value = parseInt(inp.value);
+                ratingInputs.forEach(inp2 => {
+                    const label = modal.querySelector(`label[for="${inp2.id}"]`);
+                    if (label && parseInt(inp2.value) <= value) {
+                        label.classList.add('star-selected');
+                    }
+                });
+            }
+        });
+        
+        // Update difficulty value display
+        const difficultySlider = modal.querySelector('#difficulty-rating');
+        const difficultyValue = modal.querySelector('#difficulty-value');
+        difficultySlider.addEventListener('input', function() {
+            difficultyValue.textContent = this.value;
+        });
+        
+        // Handle file checkbox
+        const hasFileCheckbox = modal.querySelector('#has-file');
+        const fileInput = modal.querySelector('#trail-file');
+        const durationGroup = modal.querySelector('#duration-group');
+        const fileInfo = modal.querySelector('#file-info');
+        
+        hasFileCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                fileInput.style.display = 'block';
+                durationGroup.style.display = 'none';
+                durationGroup.querySelector('input').removeAttribute('required');
+            } else {
+                fileInput.style.display = 'none';
+                durationGroup.style.display = 'block';
+                durationGroup.querySelector('input').setAttribute('required', 'required');
+                fileInfo.style.display = 'none';
+            }
+        });
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileInfo.textContent = `Selected: ${this.files[0].name}`;
+                fileInfo.style.display = 'block';
+            }
+        });
+        
+        // Handle photo preview
+        const photoInput = modal.querySelector('#photos');
+        const photoPreview = modal.querySelector('#photo-preview');
+        photoInput.addEventListener('change', function() {
+            photoPreview.innerHTML = '';
+            Array.from(this.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'photo-preview-item';
+                    photoPreview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+        
+        // Close handlers
+        modal.querySelector('.completion-form-close').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        modal.querySelector('.btn-cancel').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+        
+        // Form submission
+        modal.querySelector('#completion-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const ratingInput = this.querySelector('input[name="rating"]:checked');
+            if (!ratingInput) {
+                alert('Please select a rating');
+                return;
+            }
+            
+            const formData = new FormData();
+            // Convert rating to number to ensure proper storage
+            const ratingValue = parseInt(ratingInput.value, 10);
+            formData.append('rating', ratingValue);
+            formData.append('difficulty_rating', parseInt(difficultySlider.value, 10));
+            
+            // Add photos
+            const photos = photoInput.files;
+            for (let i = 0; i < photos.length; i++) {
+                formData.append('photos', photos[i]);
+            }
+            
+            // Add file if provided
+            if (hasFileCheckbox.checked && fileInput.files.length > 0) {
+                formData.append('trail_file', fileInput.files[0]);
+                // Note: For now, we'll need to upload the file separately and get the upload_id
+                // This is a simplified version - in production, you'd handle file upload first
+            }
+            
+            // Add duration if no file
+            if (!hasFileCheckbox.checked || fileInput.files.length === 0) {
+                const duration = durationGroup.querySelector('input').value;
+                if (!duration) {
+                    alert('Please enter duration or upload a file');
+                    return;
+                }
+                formData.append('actual_duration', duration);
+            }
+            
+            // Submit
+            fetch(`/api/profile/${currentUserId}/trails/${trailId}/complete`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.body.removeChild(modal);
+                    loadTrails();
+                } else {
+                    alert('Failed to complete trail: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error completing trail:', error);
+                alert('Error completing trail');
             });
         });
     }
@@ -663,33 +877,34 @@ const TrailListManager = (function() {
     
     // Cache for DOM elements to avoid repeated queries
     let cachedElements = null;
-    let tabsInitialized = false;
-    
     function ensureModalStructure() {
         const content = document.getElementById('trail-detail-content');
         if (!content) {
+            console.error('trail-detail-content element not found');
             return false;
         }
         
         // Check if template is already inserted
-        const modalContentWrapper = content.querySelector('.trail-detail-modal-content');
+        let modalContentWrapper = content.querySelector('.trail-detail-modal-content');
         if (!modalContentWrapper) {
             const template = document.getElementById('trail-detail-modal-template');
             if (template) {
+                console.log('Inserting template into modal content');
                 content.innerHTML = template.innerHTML;
                 // Clear cache since DOM structure changed
                 cachedElements = null;
-                tabsInitialized = false;
-                // Initialize tabs immediately after template insertion
-                setupDetailTabs();
+                // Verify template was inserted
+                modalContentWrapper = content.querySelector('.trail-detail-modal-content');
+                if (!modalContentWrapper) {
+                    console.error('Template inserted but .trail-detail-modal-content not found');
+                    return false;
+                }
+                console.log('Template successfully inserted');
                 return true;
             } else {
                 console.error('trail-detail-modal-template not found');
                 return false;
             }
-        } else if (!tabsInitialized) {
-            // Template exists but tabs not initialized yet
-            setupDetailTabs();
         }
         return true;
     }
@@ -701,12 +916,26 @@ const TrailListManager = (function() {
         
         const content = document.getElementById('trail-detail-content');
         if (!content) {
+            console.error('trail-detail-content not found');
             return null;
         }
         
-        const modalContentWrapper = content.querySelector('.trail-detail-modal-content') || content;
+        // Try to find the wrapper - it might be the content itself or a child
+        let modalContentWrapper = content.querySelector('.trail-detail-modal-content');
+        if (!modalContentWrapper) {
+            // If no wrapper found, check if content itself has the structure
+            if (content.querySelector('#trail-detail-name')) {
+                modalContentWrapper = content;
+            } else {
+                console.warn('trail-detail-modal-content wrapper not found, using content as fallback');
+                modalContentWrapper = content;
+            }
+        }
         
-        const overviewTab = modalContentWrapper.querySelector('#overview-tab');
+        // Find overview tab - it's inside .trail-detail-content div
+        const detailContentDiv = modalContentWrapper.querySelector('.trail-detail-content');
+        const overviewTab = detailContentDiv ? detailContentDiv.querySelector('#overview-tab') : modalContentWrapper.querySelector('#overview-tab');
+        
         const descSummary = overviewTab ? overviewTab.querySelector('#trail-description-summary') : null;
         const keyStatsGrid = overviewTab ? overviewTab.querySelector('#trail-key-stats-grid') : null;
         
@@ -718,44 +947,56 @@ const TrailListManager = (function() {
             difficulty: modalContentWrapper.querySelector('#trail-detail-difficulty'),
             elevation: modalContentWrapper.querySelector('#trail-detail-elevation'),
             overviewTab: overviewTab,
-            performanceTab: modalContentWrapper.querySelector('#performance-tab'),
-            weatherTab: modalContentWrapper.querySelector('#weather-tab'),
-            recommendationsTab: modalContentWrapper.querySelector('#recommendations-tab'),
-            elevationTab: modalContentWrapper.querySelector('#elevation-tab'),
-            mapTab: modalContentWrapper.querySelector('#map-tab'),
-            galleryTab: modalContentWrapper.querySelector('#gallery-tab'),
+            performanceTab: (detailContentDiv || modalContentWrapper).querySelector('#performance-tab'),
+            weatherTab: (detailContentDiv || modalContentWrapper).querySelector('#weather-tab'),
+            recommendationsTab: (detailContentDiv || modalContentWrapper).querySelector('#recommendations-tab'),
+            elevationTab: (detailContentDiv || modalContentWrapper).querySelector('#elevation-tab'),
+            mapTab: (detailContentDiv || modalContentWrapper).querySelector('#map-tab'),
+            galleryTab: (detailContentDiv || modalContentWrapper).querySelector('#gallery-tab'),
             description: modalContentWrapper.querySelector('#trail-description'),
             landscapes: modalContentWrapper.querySelector('#trail-landscapes'),
             performanceMetrics: modalContentWrapper.querySelector('#performance-metrics'),
             weatherForecast: modalContentWrapper.querySelector('#weather-forecast'),
             aiRecommendations: modalContentWrapper.querySelector('#ai-recommendations')
         };
+        
+        // Debug logging
+        if (!cachedElements.name) {
+            console.warn('Could not find trail name element. Available elements:', {
+                wrapper: modalContentWrapper,
+                content: content,
+                hasHeader: !!cachedElements.header
+            });
+        }
+        
         return cachedElements;
     }
     
-    function showLoadingState(tabId, message = 'Loading...') {
-        const elements = getCachedElements();
-        if (!elements) return;
-        
-        // Map tab IDs to element keys
-        const tabMap = {
-            'performance': 'performanceTab',
-            'weather': 'weatherTab',
-            'recommendations': 'recommendationsTab',
-            'overview': 'overviewTab'
+    function showLoadingState(sectionId, message = 'Loading...') {
+        // Map section IDs to element IDs
+        const sectionMap = {
+            'performance': 'trail-performance-section',
+            'weather': 'trail-weather-section',
+            'recommendations': 'trail-recommendations-section',
+            'overview': 'trail-overview-section'
         };
         
-        const elementKey = tabMap[tabId];
-        if (elementKey && elements[elementKey]) {
-            // Preserve tab structure, only update content area
-            if (tabId === 'performance' && elements.performanceMetrics) {
-                elements.performanceMetrics.innerHTML = `<div class="loading">${message}</div>`;
-            } else if (tabId === 'weather' && elements.weatherForecast) {
-                elements.weatherForecast.innerHTML = `<div class="loading">${message}</div>`;
-            } else if (tabId === 'recommendations' && elements.aiRecommendations) {
-                elements.aiRecommendations.innerHTML = `<div class="loading">${message}</div>`;
-            } else if (elements[elementKey]) {
-                elements[elementKey].innerHTML = `<div class="loading">${message}</div>`;
+        const sectionElementId = sectionMap[sectionId] || `trail-${sectionId}-section`;
+        const sectionElement = document.getElementById(sectionElementId);
+        
+        if (sectionElement) {
+            // Find the summary cards or main content area
+            const summaryCards = sectionElement.querySelector(`#${sectionId}-summary-cards`) || 
+                                sectionElement.querySelector(`#${sectionId}-summary`) ||
+                                sectionElement.querySelector('.summary-cards');
+            if (summaryCards) {
+                summaryCards.innerHTML = `<div class="loading">${message}</div>`;
+            } else {
+                // Fallback: show in section itself
+                const firstChild = sectionElement.querySelector('h3')?.nextElementSibling || sectionElement;
+                if (firstChild && !firstChild.querySelector('.loading')) {
+                    firstChild.innerHTML = `<div class="loading">${message}</div>`;
+                }
             }
         }
     }
@@ -769,9 +1010,8 @@ const TrailListManager = (function() {
             return;
         }
         
-        // Clear cache and reset tab initialization
+        // Clear cache
         cachedElements = null;
-        tabsInitialized = false;
         
         // Ensure template structure exists
         if (!ensureModalStructure()) {
@@ -789,70 +1029,62 @@ const TrailListManager = (function() {
         
         // Note: reorderTabsForProfile will be called AFTER template is restored in renderHeaderAndOverview
         
-        // Show loading states for tabs that will load later
-        showLoadingState('performance', 'Loading performance data...');
-        showLoadingState('weather', 'Loading weather forecast...');
-        showLoadingState('recommendations', 'Loading recommendations...');
-        
         modal.style.display = 'block';
         
         // Progressive loading: Load trail first (fast), then other data
         fetch(`/api/trail/${trailId}`)
             .then(r => {
-                if (!r.ok) throw new Error(`Trail API returned ${r.status}`);
+                if (!r.ok) {
+                    console.error(`Trail API returned ${r.status} for trail ${trailId}`);
+                    throw new Error(`Trail API returned ${r.status}`);
+                }
                 return r.json();
             })
             .then(trail => {
+                if (!trail || !trail.trail_id) {
+                    console.error('Invalid trail data received:', trail);
+                    const content = document.getElementById('trail-detail-content');
+                    if (content) {
+                        content.innerHTML = `<div class="error">Invalid trail data received. Trail ID: ${trailId}</div>`;
+                    }
+                    return;
+                }
+                
+                console.log('Trail data loaded successfully:', trail.trail_id, trail.name);
+                
                 // Store trail data for lazy loading
                 if (typeof window._setCurrentTrailData === 'function') {
                     window._setCurrentTrailData(trail);
                 }
                 
-                // Render header and overview immediately
-                renderHeaderAndOverview(trail, userProfile);
-                
-                // Check if profile-specific tab has data, otherwise fall back to overview
-                let profileTabHasData = false;
-                if (userProfile === 'elevation_lover' && trail.elevation_profile && trail.elevation_profile.length > 0) {
-                    profileTabHasData = true;
-                    renderElevationTab(trail);
-                    document.querySelector('.detail-tab[data-tab="elevation"]')?.style.setProperty('display', '');
-                } else if (userProfile === 'explorer' && trail.coordinates) {
-                    profileTabHasData = true;
-                    document.querySelector('.detail-tab[data-tab="map"]')?.style.setProperty('display', '');
-                } else if (userProfile === 'photographer' && (trail.landscapes || trail.elevation_profile)) {
-                    profileTabHasData = true;
-                    renderGalleryTab(trail);
-                    document.querySelector('.detail-tab[data-tab="gallery"]')?.style.setProperty('display', '');
+                // Ensure modal structure exists
+                if (!ensureModalStructure()) {
+                    console.error('Failed to ensure modal structure before rendering');
+                    return;
                 }
                 
-                // If profile-specific tab has no data, switch to overview
-                if (!profileTabHasData && userProfile) {
-                    // Remove active from all tab contents
-                    document.querySelectorAll('.detail-tab-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-                    const overviewTab = document.getElementById('overview-tab');
-                    if (overviewTab) {
-                        overviewTab.classList.add('active');
-                    }
-                    // Also ensure the tab button is active
-                    document.querySelectorAll('.detail-tab').forEach(tab => {
-                        tab.classList.remove('active');
-                    });
-                    const overviewTabButton = document.querySelector('.detail-tab[data-tab="overview"]');
-                    if (overviewTabButton) {
-                        overviewTabButton.classList.add('active');
-                    }
-                }
+                // Render all sections immediately
+                setTimeout(() => {
+                    // 1. Enhanced header
+                    renderEnhancedHeader(trail);
+                    
+                    // 2. Image gallery (initial render, will be updated if performance photos available)
+                    renderImageGallery(trail, trail.photos || []);
+                    
+                    // 3. Map and elevation (render immediately)
+                    renderMapAndElevation(trail);
+                    
+                    // 4. Overview section
+                    renderOverviewSection(trail);
+                }, 200);
                 
-                // Render other profile-specific tabs if data is available (but don't switch to them)
-                if (trail.coordinates && userProfile !== 'explorer') {
-                    document.querySelector('.detail-tab[data-tab="map"]')?.style.setProperty('display', '');
-                }
-                if ((trail.landscapes || trail.elevation_profile) && userProfile !== 'photographer') {
-                    renderGalleryTab(trail);
-                    document.querySelector('.detail-tab[data-tab="gallery"]')?.style.setProperty('display', '');
+                // Check if this trail is completed - if so, get completion data
+                let completedTrailData = null;
+                const completedTrails = trails.completed || [];
+                const matchingCompleted = completedTrails.filter(ct => ct.trail_id === trailId);
+                if (matchingCompleted.length > 0) {
+                    // Use the most recent completion
+                    completedTrailData = matchingCompleted[matchingCompleted.length - 1];
                 }
                 
                 // Load weather and performance in parallel (fast)
@@ -869,7 +1101,25 @@ const TrailListManager = (function() {
                             console.warn('Error loading weather:', e);
                             return { forecast: [] };
                         }),
-                    fetch(`/api/profile/${currentUserId}/trail/${trailId}/performance`)
+                    // If we have completed trail data, use it; otherwise fetch from API
+                    completedTrailData ? Promise.resolve({
+                        completed: true,
+                        performance: {
+                            actual_duration: completedTrailData.actual_duration,
+                            rating: completedTrailData.rating,
+                            difficulty_rating: completedTrailData.difficulty_rating,
+                            avg_heart_rate: completedTrailData.avg_heart_rate,
+                            max_heart_rate: completedTrailData.max_heart_rate,
+                            avg_speed: completedTrailData.avg_speed,
+                            max_speed: completedTrailData.max_speed,
+                            total_calories: completedTrailData.total_calories,
+                            completion_date: completedTrailData.completion_date,
+                            photos: completedTrailData.photos || []
+                        }
+                    }).then(data => {
+                        console.log('Using completed trail data for performance:', data);
+                        return data;
+                    }) : fetch(`/api/profile/${currentUserId}/trail/${trailId}/performance`)
                         .then(r => {
                             if (!r.ok) {
                                 console.warn('Performance API returned', r.status);
@@ -882,9 +1132,19 @@ const TrailListManager = (function() {
                             return { completed: false };
                         })
                 ]).then(([weather, performance]) => {
-                    // Render Performance and Weather tabs as soon as data arrives
-                    renderPerformanceTab(performance);
-                    renderWeatherTab(weather);
+                    console.log('Performance and weather data loaded:', { performance, weather });
+                    // Render Performance and Weather sections as soon as data arrives
+                    setTimeout(() => {
+                        renderPerformanceSection(performance);
+                        renderWeatherSection(weather);
+                        
+                        // Render image gallery with photos from performance data
+                        if (performance && performance.completed && performance.performance && performance.performance.photos) {
+                            renderImageGallery(trail, performance.performance.photos);
+                        } else {
+                            renderImageGallery(trail, []);
+                        }
+                    }, 150);
                     
                     // Load recommendations with weather data (can be slow - AI service)
                     // Pass weather forecast to avoid redundant API call
@@ -912,153 +1172,396 @@ const TrailListManager = (function() {
                             return null;
                         })
                         .then(recommendations => {
-                            // Render Recommendations tab when ready
-                            renderRecommendationsTab(recommendations);
+                            // Render Recommendations section when ready
+                            renderRecommendationsSection(recommendations);
                         });
                 });
             })
             .catch(error => {
                 console.error('Error loading trail details:', error);
-                const elements = getCachedElements();
-                if (elements && elements.overviewTab) {
-                    elements.overviewTab.innerHTML = `<div class="error">Error loading trail details: ${error.message}. Please try again.</div>`;
+                const overviewSection = document.getElementById('trail-overview-section');
+                if (overviewSection) {
+                    overviewSection.innerHTML = `<div class="error">Error loading trail details: ${error.message}. Please try again.</div>`;
                 } else if (content) {
                     content.innerHTML = `<div class="error">Error loading trail details: ${error.message}. Please try again.</div>`;
                 }
             });
+        
+        // Setup modal close handler
+        const closeBtn = modal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            };
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
     }
     
-    function renderHeaderAndOverview(trail, userProfile) {
-        const ensureResult = ensureModalStructure();
-        if (!ensureResult) return;
+    // New render functions for single-page layout
+    
+    function renderEnhancedHeader(trail) {
+        const nameEl = document.getElementById('trail-detail-name');
+        const statsBadgesEl = document.getElementById('trail-detail-stats-badges');
+        const actionButtonsEl = document.getElementById('trail-detail-action-buttons');
         
-        // Reorder tabs and set active tab AFTER template is restored
-        if (userProfile) {
-            reorderTabsForProfile(userProfile);
-        } else {
-            // Default to overview if no profile
-            // Remove active from all tab contents
-            document.querySelectorAll('.detail-tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            const overviewTab = document.getElementById('overview-tab');
-            if (overviewTab) {
-                overviewTab.classList.add('active');
-            }
-            // Also ensure the tab button is active
-            document.querySelectorAll('.detail-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            const overviewTabButton = document.querySelector('.detail-tab[data-tab="overview"]');
-            if (overviewTabButton) {
-                overviewTabButton.classList.add('active');
-            }
-        }
-        // Clear cache to force fresh lookup after setting active class
-        cachedElements = null;
-        
-        const elements = getCachedElements();
-        if (!elements) return;
-        
-        // Render header
-        if (elements.name) {
-            elements.name.textContent = trail.name || trail.trail_id || 'Unknown Trail';
-        }
-        if (elements.distance) {
-            elements.distance.textContent = trail.distance !== undefined && trail.distance !== null ? trail.distance : 'N/A';
-        }
-        if (elements.difficulty) {
-            elements.difficulty.textContent = trail.difficulty !== undefined && trail.difficulty !== null ? trail.difficulty : 'N/A';
-        }
-        if (elements.elevation) {
-            elements.elevation.textContent = trail.elevation_gain !== undefined && trail.elevation_gain !== null ? trail.elevation_gain : 'N/A';
+        if (nameEl) {
+            nameEl.innerHTML = `${escapeHtml(trail.name || trail.trail_id || 'Unknown Trail')} <span class="edit-icon">✏️</span>`;
         }
         
-        // Render quick stats
-        const quickStatsContainer = document.getElementById('trail-detail-quick-stats');
-        if (quickStatsContainer) {
-            let quickStatsHTML = '<div class="quick-stats-grid">';
+        if (statsBadgesEl) {
+            let badgesHTML = '';
             
-            if (trail.region) {
-                quickStatsHTML += `<div class="quick-stat-card"><span class="stat-label">Region</span><span class="stat-value">${escapeHtml(trail.region)}</span></div>`;
+            // Difficulty badge (color-coded)
+            if (trail.difficulty !== undefined && trail.difficulty !== null) {
+                const diff = parseFloat(trail.difficulty);
+                let diffClass = 'difficulty-medium';
+                let diffText = 'Medium';
+                if (diff >= 7) {
+                    diffClass = 'difficulty-hard';
+                    diffText = 'Hard';
+                } else if (diff <= 4) {
+                    diffClass = 'difficulty-easy';
+                    diffText = 'Easy';
+                }
+                badgesHTML += `<span class="trail-stat-badge ${diffClass}">${diffText}</span>`;
             }
-            if (trail.trail_type) {
-                const typeIcon = trail.trail_type.toLowerCase().includes('loop') ? '🔁' : '➡️';
-                quickStatsHTML += `<div class="quick-stat-card"><span class="stat-label">Type</span><span class="stat-value">${typeIcon} ${escapeHtml(trail.trail_type)}</span></div>`;
-            }
-            if (trail.popularity !== undefined && trail.popularity !== null) {
-                const popularityStars = '⭐'.repeat(Math.min(5, Math.floor(trail.popularity / 20)));
-                quickStatsHTML += `<div class="quick-stat-card"><span class="stat-label">Popularity</span><span class="stat-value">${popularityStars}</span></div>`;
-            }
+            
+            // Duration
             if (trail.duration) {
                 const hours = Math.floor(trail.duration / 60);
                 const mins = trail.duration % 60;
-                quickStatsHTML += `<div class="quick-stat-card"><span class="stat-label">Duration</span><span class="stat-value">${hours}h ${mins}m</span></div>`;
+                badgesHTML += `<span class="trail-stat-badge">${hours}:${mins.toString().padStart(2, '0')}</span>`;
             }
             
-            quickStatsHTML += '</div>';
-            quickStatsContainer.innerHTML = quickStatsHTML;
+            // Distance
+            if (trail.distance !== undefined && trail.distance !== null) {
+                badgesHTML += `<span class="trail-stat-badge">${trail.distance} km</span>`;
+            }
+            
+            // Speed (if available from performance data)
+            // Will be added when performance data loads
+            
+            // Elevation gain
+            if (trail.elevation_gain !== undefined && trail.elevation_gain !== null) {
+                badgesHTML += `<span class="trail-stat-badge">${trail.elevation_gain} m</span>`;
+            }
+            
+            // Max elevation
+            if (trail.elevation_profile && trail.elevation_profile.length > 0) {
+                const maxElevation = Math.max(...trail.elevation_profile.map(p => p.elevation || 0));
+                badgesHTML += `<span class="trail-stat-badge">${maxElevation} m</span>`;
+            }
+            
+            statsBadgesEl.innerHTML = badgesHTML;
         }
         
-        // Render status badges and safety info
-        const statusActionsContainer = document.getElementById('trail-detail-status-actions');
-        if (statusActionsContainer) {
-            let statusHTML = '<div class="trail-status-badges">';
-            
-            // Safety badge
-            if (trail.safety_risks) {
-                const riskLevel = trail.safety_risks.toLowerCase();
-                const riskColor = riskLevel.includes('high') ? '#ef4444' : riskLevel.includes('medium') ? '#f59e0b' : '#10b981';
-                statusHTML += `<span class="safety-badge" style="background-color: ${riskColor}20; color: ${riskColor}; border-color: ${riskColor}">⚠️ ${escapeHtml(trail.safety_risks)}</span>`;
-            }
-            
-            // Accessibility badge
-            if (trail.accessibility) {
-                statusHTML += `<span class="accessibility-badge">♿ ${escapeHtml(trail.accessibility)}</span>`;
-            }
-            
-            // Closed seasons warning
-            if (trail.closed_seasons) {
-                const currentMonth = new Date().getMonth() + 1;
-                const closedSeasons = trail.closed_seasons.split(',').map(s => s.trim().toLowerCase());
-                const isClosed = closedSeasons.some(season => {
-                    if (season.includes('winter')) return currentMonth >= 12 || currentMonth <= 2;
-                    if (season.includes('spring')) return currentMonth >= 3 && currentMonth <= 5;
-                    if (season.includes('summer')) return currentMonth >= 6 && currentMonth <= 8;
-                    if (season.includes('fall') || season.includes('autumn')) return currentMonth >= 9 && currentMonth <= 11;
-                    return false;
-                });
-                if (isClosed) {
-                    statusHTML += `<span class="closed-season-badge">🚫 Closed in ${escapeHtml(trail.closed_seasons)}</span>`;
-                }
-            }
-            
-            statusHTML += '</div>';
-            
-            // Add action buttons
-            statusHTML += '<div class="trail-actions-header">';
-            statusHTML += `<button class="btn-save-trail" data-trail-id="${trail.trail_id}">🔖 Save Trail</button>`;
-            statusHTML += `<button class="btn-start-trail" data-trail-id="${trail.trail_id}">▶️ Start Trail</button>`;
-            statusHTML += '</div>';
-            
-            statusActionsContainer.innerHTML = statusHTML;
-            
-            // Attach event listeners
-            statusActionsContainer.querySelector('.btn-save-trail')?.addEventListener('click', () => saveTrail(trail.trail_id));
-            statusActionsContainer.querySelector('.btn-start-trail')?.addEventListener('click', () => startTrail(trail.trail_id));
+        if (actionButtonsEl) {
+            let buttonsHTML = '';
+            buttonsHTML += `<button class="trail-action-btn">👍 Like</button>`;
+            buttonsHTML += `<button class="trail-action-btn">🔗 Share</button>`;
+            buttonsHTML += `<button class="trail-action-btn">💬 Comments</button>`;
+            buttonsHTML += `<button class="trail-action-btn primary">🧭 Navigate</button>`;
+            buttonsHTML += `<button class="trail-action-btn">✏️ Edit</button>`;
+            buttonsHTML += `<button class="trail-action-btn">⋯</button>`;
+            actionButtonsEl.innerHTML = buttonsHTML;
+        }
+    }
+    
+    function renderImageGallery(trail, photos) {
+        const galleryEl = document.getElementById('trail-detail-image-gallery');
+        if (!galleryEl) return;
+        
+        const mainImageEl = document.getElementById('trail-gallery-main-image');
+        const thumbnailsEl = document.getElementById('trail-gallery-thumbnails');
+        
+        if (!mainImageEl || !thumbnailsEl) return;
+        
+        // Get photos from performance data or use placeholder
+        let photoList = [];
+        if (photos && photos.length > 0) {
+            photoList = photos.map(p => p.path || p);
+        } else if (trail.photos && trail.photos.length > 0) {
+            photoList = trail.photos.map(p => p.path || p);
         }
         
-        // Render overview tab with hybrid information density
-        const overviewTab = document.getElementById('overview-tab');
-        if (!overviewTab) {
-            console.warn('Overview tab not found');
+        // If no photos, hide gallery
+        if (photoList.length === 0) {
+            galleryEl.style.display = 'none';
             return;
         }
         
-        // Template should have the structure, just populate it
-        const descSummary = overviewTab.querySelector('#trail-description-summary');
-        const keyStatsGrid = overviewTab.querySelector('#trail-key-stats-grid');
-        const landscapesSummary = overviewTab.querySelector('#trail-landscapes-summary');
+        galleryEl.style.display = 'grid';
+        let currentIndex = 0;
+        
+        // Set main image
+        function updateMainImage(index) {
+            if (photoList[index]) {
+                mainImageEl.src = `/static/${photoList[index]}`;
+                mainImageEl.alt = `Trail photo ${index + 1}`;
+            }
+        }
+        
+        // Render thumbnails (2x2 grid, max 4 visible)
+        let thumbnailsHTML = '';
+        const visibleThumbnails = Math.min(4, photoList.length);
+        for (let i = 0; i < visibleThumbnails; i++) {
+            const isLast = i === visibleThumbnails - 1 && photoList.length > 4;
+            thumbnailsHTML += `
+                <div class="trail-gallery-thumbnail ${i === 0 ? 'active' : ''}" data-index="${i}">
+                    <img src="/static/${photoList[i]}" alt="Thumbnail ${i + 1}" />
+                    ${isLast ? `<div class="image-count-overlay">+${photoList.length - 4} images</div>` : ''}
+                </div>
+            `;
+        }
+        thumbnailsEl.innerHTML = thumbnailsHTML;
+        
+        // Set initial main image
+        updateMainImage(0);
+        
+        // Thumbnail click handlers
+        thumbnailsEl.querySelectorAll('.trail-gallery-thumbnail').forEach((thumb, idx) => {
+            thumb.addEventListener('click', () => {
+                currentIndex = idx;
+                updateMainImage(idx);
+                thumbnailsEl.querySelectorAll('.trail-gallery-thumbnail').forEach(t => t.classList.remove('active'));
+                thumb.classList.add('active');
+            });
+        });
+        
+        // Set initial active thumbnail
+        const firstThumb = thumbnailsEl.querySelector('.trail-gallery-thumbnail');
+        if (firstThumb) {
+            firstThumb.classList.add('active');
+        }
+        
+        // Navigation buttons
+        const prevBtn = document.getElementById('gallery-prev');
+        const nextBtn = document.getElementById('gallery-next');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                currentIndex = (currentIndex - 1 + photoList.length) % photoList.length;
+                updateMainImage(currentIndex);
+                thumbnailsEl.querySelectorAll('.trail-gallery-thumbnail').forEach(t => t.classList.remove('active'));
+                const thumbIndex = Math.min(currentIndex, 3);
+                thumbnailsEl.querySelectorAll('.trail-gallery-thumbnail')[thumbIndex]?.classList.add('active');
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                currentIndex = (currentIndex + 1) % photoList.length;
+                updateMainImage(currentIndex);
+                thumbnailsEl.querySelectorAll('.trail-gallery-thumbnail').forEach(t => t.classList.remove('active'));
+                const thumbIndex = Math.min(currentIndex, 3);
+                thumbnailsEl.querySelectorAll('.trail-gallery-thumbnail')[thumbIndex]?.classList.add('active');
+            });
+        }
+    }
+    
+    function renderMapAndElevation(trail) {
+        // Render map
+        const mapContainer = document.getElementById('trail-map-container');
+        if (mapContainer && trail.coordinates) {
+            // Clear existing map
+            mapContainer.innerHTML = '';
+            mapContainer._mapInitialized = false;
+            
+            const mapId = 'trail-detail-map';
+            mapContainer.id = mapId;
+            
+            if (typeof MapManager !== 'undefined') {
+                const mapManager = new MapManager();
+                setTimeout(() => {
+                    try {
+                        let coordinates = [];
+                        if (typeof trail.coordinates === 'string') {
+                            try {
+                                const geoJson = JSON.parse(trail.coordinates);
+                                if (geoJson.type === 'LineString' && geoJson.coordinates) {
+                                    coordinates = geoJson.coordinates.map(coord => [coord[1], coord[0]]);
+                                }
+                            } catch (e) {
+                                console.warn('Could not parse coordinates as GeoJSON:', e);
+                            }
+                        } else if (Array.isArray(trail.coordinates)) {
+                            coordinates = trail.coordinates;
+                        }
+                        if (coordinates.length === 0) {
+                            mapContainer.innerHTML = '<p>No route data available</p>';
+                            return;
+                        }
+                        const map = mapManager.initMap(mapId, {
+                            zoom: 10,
+                            center: coordinates[Math.floor(coordinates.length / 2)]
+                        });
+                        if (typeof L !== 'undefined' && map) {
+                            const polyline = L.polyline(coordinates, {
+                                color: '#6366f1',
+                                weight: 4,
+                                opacity: 0.8
+                            }).addTo(map);
+                            
+                            L.marker(coordinates[0], {
+                                icon: L.divIcon({
+                                    className: 'trail-start-marker',
+                                    html: '<div style="background: #10b981; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;">S</div>',
+                                    iconSize: [24, 24]
+                                })
+                            }).addTo(map).bindPopup('Start');
+                            
+                            L.marker(coordinates[coordinates.length - 1], {
+                                icon: L.divIcon({
+                                    className: 'trail-end-marker',
+                                    html: '<div style="background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;">E</div>',
+                                    iconSize: [24, 24]
+                                })
+                            }).addTo(map).bindPopup('End');
+                            
+                            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+                            mapContainer._mapInitialized = true;
+                        }
+                    } catch (e) {
+                        console.error('Error rendering map:', e);
+                        mapContainer.innerHTML = '<p>Error loading map. Please ensure Leaflet.js is loaded.</p>';
+                    }
+                }, 200);
+            } else {
+                mapContainer.innerHTML = '<p>Map functionality requires MapManager. Please ensure app.js is loaded.</p>';
+            }
+        }
+        
+        // Render elevation chart
+        const elevationSection = document.querySelector('.trail-elevation-section');
+        if (elevationSection && trail.elevation_profile && trail.elevation_profile.length > 0) {
+            const elevationSummary = elevationSection.querySelector('#elevation-summary');
+            if (elevationSummary) {
+                const maxElevation = Math.max(...trail.elevation_profile.map(p => p.elevation || 0));
+                const minElevation = Math.min(...trail.elevation_profile.map(p => p.elevation || 0));
+                const elevationGain = maxElevation - minElevation;
+                elevationSummary.innerHTML = `
+                    <div class="elevation-summary-cards">
+                        <div class="elevation-card">
+                            <span class="elevation-label">Max Elevation</span>
+                            <span class="elevation-value">${maxElevation}m</span>
+                        </div>
+                        <div class="elevation-card">
+                            <span class="elevation-label">Elevation Gain</span>
+                            <span class="elevation-value">${elevationGain}m</span>
+                        </div>
+                        <div class="elevation-card">
+                            <span class="elevation-label">Min Elevation</span>
+                            <span class="elevation-value">${minElevation}m</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            const chartContainer = elevationSection.querySelector('.chart-container');
+            if (chartContainer) {
+                let canvas = chartContainer.querySelector('#elevation-chart');
+                if (!canvas) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'elevation-chart';
+                    chartContainer.appendChild(canvas);
+                }
+                
+                setTimeout(() => {
+                    if (!canvas || typeof Chart === 'undefined') {
+                        console.warn('Chart.js not available or canvas not found for elevation chart');
+                        return;
+                    }
+                    
+                    if (canvas.chart) {
+                        canvas.chart.destroy();
+                    }
+                    
+                    const ctx = canvas.getContext('2d');
+                    const elevationData = trail.elevation_profile.map(p => p.elevation || 0);
+                    const distanceData = trail.elevation_profile.map((p, i) => {
+                        if (i === 0) return 0;
+                        return i * (trail.distance / trail.elevation_profile.length);
+                    });
+                    
+                    canvas.chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: distanceData.map((d, i) => i === 0 || i === distanceData.length - 1 || i % Math.floor(distanceData.length / 5) === 0 ? d.toFixed(1) + ' km' : ''),
+                            datasets: [{
+                                label: 'Elevation (m)',
+                                data: elevationData,
+                                borderColor: 'rgb(99, 102, 241)',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2.5,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Elevation Profile'
+                                },
+                                legend: {
+                                    display: true
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Distance (km)'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Elevation (m)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }, 100);
+            }
+        }
+    }
+    
+    function renderHeaderAndOverview(trail, userProfile) {
+        // Ensure modal structure is ready
+        if (!ensureModalStructure()) {
+            console.error('Failed to ensure modal structure in renderHeaderAndOverview');
+            return;
+        }
+        
+        // Wait a bit more for DOM to be fully ready
+        setTimeout(() => {
+            renderHeaderAndOverviewContent(trail, userProfile);
+        }, 50);
+    }
+    
+    function renderOverviewSection(trail) {
+        const overviewSection = document.getElementById('trail-overview-section');
+        if (!overviewSection) {
+            console.warn('Overview section not found');
+            return;
+        }
+        
+        const descSummary = overviewSection.querySelector('#trail-description-summary');
+        const keyStatsGrid = overviewSection.querySelector('#trail-key-stats-grid');
+        const landscapesSummary = overviewSection.querySelector('#trail-landscapes-summary');
+        const fullDescContent = overviewSection.querySelector('#trail-description-full');
+        const detailsExpanded = overviewSection.querySelector('#trail-details-expanded');
+        
         if (descSummary) {
             const firstParagraph = trail.description ? trail.description.split('\n')[0] : 'No description available';
             descSummary.innerHTML = `<p class="trail-description-summary">${escapeHtml(firstParagraph)}</p>`;
@@ -1072,8 +1575,8 @@ const TrailListManager = (function() {
                     <div class="key-stat"><span class="key-stat-label">Difficulty</span><span class="key-stat-value">${trail.difficulty || 'N/A'}/10</span></div>
                     <div class="key-stat"><span class="key-stat-label">Type</span><span class="key-stat-value">${trail.trail_type || 'N/A'}</span></div>
                     ${trail.duration ? `<div class="key-stat"><span class="key-stat-label">Duration</span><span class="key-stat-value">${Math.floor(trail.duration / 60)}h ${trail.duration % 60}m</span></div>` : ''}
-                    </div>
-                `;
+                </div>
+            `;
         }
         
         if (landscapesSummary) {
@@ -1083,19 +1586,16 @@ const TrailListManager = (function() {
                     <div class="landscape-tags">
                         ${landscapeTags.map(tag => `<span class="landscape-tag">${escapeHtml(tag)}</span>`).join('')}
                     </div>
-                    `;
-                } else {
-                    landscapesSummary.innerHTML = '';
-                }
+                `;
+            } else {
+                landscapesSummary.innerHTML = '';
             }
+        }
         
-        // Populate expandable sections (template should have them)
-        const fullDescContent = overviewTab.querySelector('#trail-description-full');
         if (fullDescContent && trail.description) {
             fullDescContent.innerHTML = `<p>${escapeHtml(trail.description).replace(/\n/g, '</p><p>')}</p>`;
         }
         
-        const detailsExpanded = overviewTab.querySelector('#trail-details-expanded');
         if (detailsExpanded) {
             let detailsHTML = '<div class="trail-details-expanded-grid">';
             if (trail.region) detailsHTML += `<div><strong>Region:</strong> ${escapeHtml(trail.region)}</div>`;
@@ -1106,6 +1606,14 @@ const TrailListManager = (function() {
             detailsHTML += '</div>';
             detailsExpanded.innerHTML = detailsHTML;
         }
+    }
+    
+    function renderHeaderAndOverviewContent(trail, userProfile) {
+        // Render enhanced header
+        renderEnhancedHeader(trail);
+        
+        // Render overview section
+        renderOverviewSection(trail);
     }
     
     // Profile-specific visualization functions
@@ -1395,18 +1903,46 @@ const TrailListManager = (function() {
         galleryContent.innerHTML = galleryHTML;
     }
     
-    function renderPerformanceTab(performance) {
-        const performanceTab = document.getElementById('performance-tab');
-        if (!performanceTab) {
-            showLoadingState('performance', 'No performance data available');
+    function renderPerformanceSection(performance) {
+        console.log('renderPerformanceSection called with:', performance);
+        const performanceSection = document.getElementById('trail-performance-section');
+        if (!performanceSection) {
+            console.error('Performance section element not found');
             return;
         }
         
+        // Handle both data structures: {completed: true, performance: {...}} or direct performance object
+        let perf = null;
         if (performance && performance.completed && performance.performance) {
-            const perf = performance.performance;
+            // Standard structure: {completed: true, performance: {...}}
+            perf = performance.performance;
+            console.log('Using performance.performance data:', perf);
+        } else if (performance && performance.completed) {
+            // If performance itself is the data (shouldn't happen but handle it)
+            perf = performance;
+            console.log('Using performance as data directly:', perf);
+        } else if (performance && !performance.completed) {
+            // Not completed, show message
+            console.log('Trail not completed, showing empty state');
+            const summaryCards = performanceSection.querySelector('#performance-summary-cards');
+            if (summaryCards) {
+                summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
+            }
+            return;
+        } else {
+            console.log('No performance data provided:', performance);
+            const summaryCards = performanceSection.querySelector('#performance-summary-cards');
+            if (summaryCards) {
+                summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
+            }
+            return;
+        }
+        
+        if (perf) {
+            console.log('Rendering performance data:', perf);
             
-            // Summary cards (always visible) - template should have this
-            const summaryCards = performanceTab.querySelector('#performance-summary-cards');
+            // Summary cards (always visible)
+            const summaryCards = performanceSection.querySelector('#performance-summary-cards');
             if (summaryCards) {
                 let summaryHTML = '<div class="performance-summary-grid">';
                 
@@ -1428,12 +1964,16 @@ const TrailListManager = (function() {
                     summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Calories</span><span class="summary-value">${perf.total_calories} kcal</span></div>`;
                 }
                 
+                if (perf.difficulty_rating !== undefined && perf.difficulty_rating !== null) {
+                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Difficulty</span><span class="summary-value">${perf.difficulty_rating}/10</span></div>`;
+                }
+                
                 summaryHTML += '</div>';
                 summaryCards.innerHTML = summaryHTML;
             }
             
-            // Detailed metrics (expandable) - template should have this
-            const detailedMetrics = performanceTab.querySelector('#performance-metrics-detailed');
+            // Detailed metrics (always visible)
+            const detailedMetrics = performanceSection.querySelector('#performance-metrics-detailed');
             if (detailedMetrics) {
                 let html = '<div class="performance-metrics-grid">';
                 
@@ -1449,48 +1989,47 @@ const TrailListManager = (function() {
                     html += `<div class="metric-item"><strong>Max Speed:</strong> ${perf.max_speed.toFixed(2)} km/h</div>`;
                 }
                 
+                if (perf.difficulty_rating !== undefined && perf.difficulty_rating !== null) {
+                    html += `<div class="metric-item"><strong>Difficulty Rating:</strong> ${perf.difficulty_rating}/10</div>`;
+                }
+                
                 if (perf.completion_date) {
                     html += `<div class="metric-item"><strong>Completed:</strong> ${new Date(perf.completion_date).toLocaleDateString()}</div>`;
+                }
+                
+                // Show photos if available
+                if (perf.photos && perf.photos.length > 0) {
+                    html += `<div class="metric-item"><strong>Photos:</strong> ${perf.photos.length} photo(s)</div>`;
                 }
                 
                 html += '</div>';
                 detailedMetrics.innerHTML = html;
             }
             
-            // Performance chart (expandable) - render when expanded
+            // Performance chart (always visible)
             if (perf.time_series && perf.time_series.length > 0) {
-                const chartToggle = performanceTab.querySelector('.expand-toggle[data-section="performance-chart"]');
-                if (chartToggle) {
-                    chartToggle._timeSeriesData = perf.time_series;
-                    // Render chart when section is expanded
-                    chartToggle.addEventListener('click', function() {
-                        setTimeout(() => {
-                            const content = chartToggle.nextElementSibling;
-                            if (content && content.classList.contains('expandable-content') && content.style.display !== 'none') {
-                                renderPerformanceChart(perf.time_series);
-                            }
-                        }, 100);
-                    }, { once: true });
+                const chartContainer = performanceSection.querySelector('.chart-container');
+                const canvas = performanceSection.querySelector('#performance-chart');
+                if (canvas && chartContainer) {
+                    setTimeout(() => {
+                        renderPerformanceChart(perf.time_series);
+                    }, 100);
                 }
-            }
-        } else {
-            const summaryCards = performanceTab.querySelector('#performance-summary-cards');
-            if (summaryCards) {
-                summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
             }
         }
     }
     
-    function renderWeatherTab(weather) {
-        const weatherTab = document.getElementById('weather-tab');
-        if (!weatherTab) {
-            showLoadingState('weather', 'No weather data available');
+    function renderWeatherSection(weather) {
+        console.log('renderWeatherSection called with:', weather);
+        const weatherSection = document.getElementById('trail-weather-section');
+        if (!weatherSection) {
+            console.error('Weather section element not found');
             return;
         }
         
         if (weather && weather.forecast && weather.forecast.length > 0) {
-            // Summary cards (today + next 3 days) - template should have this
-            const summaryCards = weatherTab.querySelector('#weather-summary-cards');
+            // Summary cards (today + next 3 days)
+            const summaryCards = weatherSection.querySelector('#weather-summary-cards');
             if (summaryCards) {
                 const todayPlus3 = weather.forecast.slice(0, 4);
                 let summaryHTML = '<div class="weather-summary-grid">';
@@ -1511,8 +2050,8 @@ const TrailListManager = (function() {
                 summaryCards.innerHTML = summaryHTML;
             }
             
-            // Full forecast (expandable) - template should have this
-            const fullForecast = weatherTab.querySelector('#weather-forecast-full');
+            // Full forecast (always visible)
+            const fullForecast = weatherSection.querySelector('#weather-forecast-full');
             if (fullForecast) {
                 fullForecast.innerHTML = weather.forecast.map(day => {
                     const date = new Date(day.date);
@@ -1532,7 +2071,7 @@ const TrailListManager = (function() {
                 }).join('');
             }
         } else {
-            const summaryCards = weatherTab.querySelector('#weather-summary-cards');
+            const summaryCards = weatherSection.querySelector('#weather-summary-cards');
             if (summaryCards) {
                 summaryCards.innerHTML = '<p>No weather forecast available</p>';
             }
@@ -1550,16 +2089,17 @@ const TrailListManager = (function() {
         return '🌤️';
     }
     
-    function renderRecommendationsTab(recommendations) {
-        const recommendationsTab = document.getElementById('recommendations-tab');
-        if (!recommendationsTab) {
-            showLoadingState('recommendations', 'No recommendations available');
+    function renderRecommendationsSection(recommendations) {
+        console.log('renderRecommendationsSection called with:', recommendations);
+        const recommendationsSection = document.getElementById('trail-recommendations-section');
+        if (!recommendationsSection) {
+            console.error('Recommendations section element not found');
             return;
         }
         
         if (recommendations) {
-            // Key tips (always visible - top 3-5) - template should have this
-            const keyTips = recommendationsTab.querySelector('#recommendations-key-tips');
+            // Key tips (always visible - top 3-5)
+            const keyTips = recommendationsSection.querySelector('#recommendations-key-tips');
             if (keyTips) {
                 let tipsHTML = '<div class="key-tips-section"><h4>Key Tips</h4><ul class="key-tips-list">';
                 
@@ -1580,8 +2120,8 @@ const TrailListManager = (function() {
                 keyTips.innerHTML = tipsHTML;
             }
             
-            // Full recommendations (expandable) - template should have this
-            const fullRecommendations = recommendationsTab.querySelector('#ai-recommendations-full');
+            // Full recommendations (always visible)
+            const fullRecommendations = recommendationsSection.querySelector('#ai-recommendations-full');
             if (fullRecommendations) {
                 let html = '';
                 
@@ -1612,7 +2152,7 @@ const TrailListManager = (function() {
                 fullRecommendations.innerHTML = html;
             }
         } else {
-            const keyTips = recommendationsTab.querySelector('#recommendations-key-tips');
+            const keyTips = recommendationsSection.querySelector('#recommendations-key-tips');
             if (keyTips) {
                 keyTips.innerHTML = '<p>No recommendations available</p>';
             }
@@ -1621,11 +2161,20 @@ const TrailListManager = (function() {
     
     // Legacy function - kept for compatibility but refactored internally
     function renderTrailDetails(trail, recommendations, weather, performance) {
-        // Legacy compatibility - delegate to new functions
-        renderHeaderAndOverview(trail);
-        renderPerformanceTab(performance);
-        renderWeatherTab(weather);
-        renderRecommendationsTab(recommendations);
+        // Legacy compatibility - delegate to new section functions
+        renderEnhancedHeader(trail);
+        renderOverviewSection(trail);
+        renderMapAndElevation(trail);
+        renderPerformanceSection(performance);
+        renderWeatherSection(weather);
+        renderRecommendationsSection(recommendations);
+        
+        // Render image gallery if photos available
+        if (performance && performance.completed && performance.performance && performance.performance.photos) {
+            renderImageGallery(trail, performance.performance.photos);
+        } else {
+            renderImageGallery(trail, []);
+        }
     }
     
     function renderPerformanceChart(timeSeries) {
@@ -1873,66 +2422,7 @@ const TrailListManager = (function() {
         });
     }
     
-    function setupDetailTabs() {
-        if (tabsInitialized) return; // Already initialized
-        
-        const content = document.getElementById('trail-detail-content');
-        if (!content) return;
-        
-        const modalContentWrapper = content.querySelector('.trail-detail-modal-content');
-        if (!modalContentWrapper) return;
-        
-        // Store current trail data for lazy loading
-        let currentTrailData = null;
-        
-        // Use event delegation on the modal content wrapper
-        // This handles tabs even if they're dynamically created
-        modalContentWrapper.addEventListener('click', function(e) {
-            const tab = e.target.closest('.detail-tab');
-            if (!tab) return;
-            
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const targetTab = tab.getAttribute('data-tab');
-            if (!targetTab) return;
-            
-            // Update tab buttons
-            modalContentWrapper.querySelectorAll('.detail-tab').forEach(t => {
-                t.classList.remove('active');
-            });
-            tab.classList.add('active');
-            
-            // Update tab content
-            modalContentWrapper.querySelectorAll('.detail-tab-content').forEach(tabContent => {
-                tabContent.classList.remove('active');
-            });
-            
-            const targetContent = modalContentWrapper.querySelector(`#${targetTab}-tab`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                
-                // Lazy load map when map tab is activated
-                if (targetTab === 'map') {
-                    if (currentTrailData && currentTrailData.coordinates) {
-                        const mapContainer = targetContent.querySelector('#trail-map-container');
-                        if (mapContainer && !mapContainer._mapInitialized) {
-                            renderMapTab(currentTrailData);
-                            mapContainer._mapInitialized = true;
-                        }
-                    } else {
-                    }
-                }
-            }
-        });
-        
-        // Store trail data setter
-        window._setCurrentTrailData = function(trail) {
-            currentTrailData = trail;
-        };
-        
-        tabsInitialized = true;
-    }
+    // setupDetailTabs function removed - no longer using tabs
     
     // Close modal
     const modal = document.getElementById('trail-detail-modal');

@@ -1,128 +1,75 @@
 <div class="trail-detail-modal-content">
+    <!-- Enhanced Header Section -->
     <div class="trail-detail-header">
         <div class="trail-detail-header-main">
-            <h2 id="trail-detail-name">Trail Name</h2>
-            <div class="trail-detail-basic-info">
-                <span id="trail-detail-distance">-</span> km | 
-                <span id="trail-detail-difficulty">-</span>/10 | 
-                <span id="trail-detail-elevation">-</span>m
+            <h2 id="trail-detail-name">Trail Name <span class="edit-icon">✏️</span></h2>
+            <div class="trail-detail-stats-badges" id="trail-detail-stats-badges">
+                <!-- Stats badges will be rendered here -->
             </div>
         </div>
-        <!-- Enhanced Header: Quick Stats -->
-        <div class="trail-detail-quick-stats" id="trail-detail-quick-stats"></div>
-        <!-- Status and Actions -->
-        <div class="trail-detail-status-actions" id="trail-detail-status-actions"></div>
-    </div>
-    
-    <div class="trail-detail-tabs" id="trail-detail-tabs">
-        <button class="detail-tab active" data-tab="overview">Overview</button>
-        <button class="detail-tab" data-tab="elevation">Elevation</button>
-        <button class="detail-tab" data-tab="map">Map</button>
-        <button class="detail-tab" data-tab="gallery">Gallery</button>
-        <button class="detail-tab" data-tab="performance">Performance</button>
-        <button class="detail-tab" data-tab="weather">Weather</button>
-        <button class="detail-tab" data-tab="recommendations">Recommendations</button>
-    </div>
-    
-    <div class="trail-detail-content">
-        <div id="overview-tab" class="detail-tab-content active">
-            <div class="tab-summary-section">
-                <div id="trail-description-summary"></div>
-                <div id="trail-key-stats-grid"></div>
-                <div id="trail-landscapes-summary"></div>
-            </div>
-            <div class="tab-expandable-sections">
-                <div class="expandable-section">
-                    <button class="expand-toggle" data-section="full-description">
-                        <span>Show Full Description</span>
-                        <span class="expand-icon">▼</span>
-                    </button>
-                    <div class="expandable-content" id="trail-description-full" style="display: none;"></div>
-                </div>
-                <div class="expandable-section">
-                    <button class="expand-toggle" data-section="trail-details">
-                        <span>Trail Details</span>
-                        <span class="expand-icon">▼</span>
-                    </button>
-                    <div class="expandable-content" id="trail-details-expanded" style="display: none;"></div>
-                </div>
-            </div>
+        <div class="trail-detail-action-buttons" id="trail-detail-action-buttons">
+            <!-- Action buttons will be rendered here -->
         </div>
-        
-        <div id="elevation-tab" class="detail-tab-content">
-            <div class="tab-summary-section">
-                <div id="elevation-summary"></div>
-            </div>
+    </div>
+    
+    <!-- Image Gallery Section -->
+    <div class="trail-detail-image-gallery" id="trail-detail-image-gallery">
+        <div class="trail-gallery-main">
+            <img id="trail-gallery-main-image" src="" alt="Trail photo" />
+            <button class="gallery-nav-btn gallery-prev" id="gallery-prev">‹</button>
+            <button class="gallery-nav-btn gallery-next" id="gallery-next">›</button>
+        </div>
+        <div class="trail-gallery-thumbnails" id="trail-gallery-thumbnails">
+            <!-- Thumbnails will be rendered here -->
+        </div>
+    </div>
+    
+    <!-- Map & Elevation Section -->
+    <div class="trail-detail-map-elevation">
+        <div class="trail-map-section">
+            <h3>Trail Map</h3>
+            <div id="trail-map-container" class="trail-map-container"></div>
+        </div>
+        <div class="trail-elevation-section">
+            <h3>Elevation Profile</h3>
+            <div class="elevation-summary" id="elevation-summary"></div>
             <div class="chart-container">
                 <canvas id="elevation-chart"></canvas>
             </div>
         </div>
-        
-        <div id="map-tab" class="detail-tab-content">
-            <div id="trail-map-container" class="trail-map-container"></div>
+    </div>
+    
+    <!-- Overview Section -->
+    <div class="trail-detail-section trail-overview-section" id="trail-overview-section">
+        <h3>Overview</h3>
+        <div id="trail-description-summary"></div>
+        <div id="trail-key-stats-grid"></div>
+        <div id="trail-landscapes-summary"></div>
+        <div class="trail-details-expanded" id="trail-details-expanded"></div>
+        <div class="trail-description-full" id="trail-description-full"></div>
+    </div>
+    
+    <!-- Weather Section -->
+    <div class="trail-detail-section trail-weather-section" id="trail-weather-section">
+        <h3>Weather Forecast</h3>
+        <div id="weather-summary-cards" class="weather-summary-cards"></div>
+        <div id="weather-forecast-full"></div>
+    </div>
+    
+    <!-- Performance Section -->
+    <div class="trail-detail-section trail-performance-section" id="trail-performance-section">
+        <h3>Performance</h3>
+        <div id="performance-summary-cards" class="performance-summary-cards"></div>
+        <div id="performance-metrics-detailed"></div>
+        <div class="chart-container">
+            <canvas id="performance-chart"></canvas>
         </div>
-        
-        <div id="gallery-tab" class="detail-tab-content">
-            <div class="tab-summary-section">
-                <div id="gallery-summary"></div>
-            </div>
-            <div id="trail-gallery-content" class="trail-gallery-grid"></div>
-        </div>
-        
-        <div id="performance-tab" class="detail-tab-content">
-            <div class="tab-summary-section">
-                <div id="performance-summary-cards" class="performance-summary-cards"></div>
-            </div>
-            <div class="tab-expandable-sections">
-                <div class="expandable-section">
-                    <button class="expand-toggle" data-section="detailed-metrics">
-                        <span>Detailed Metrics</span>
-                        <span class="expand-icon">▼</span>
-                    </button>
-                    <div class="expandable-content" id="performance-metrics-detailed" style="display: none;"></div>
-                </div>
-                <div class="expandable-section">
-                    <button class="expand-toggle" data-section="performance-chart">
-                        <span>Performance Chart</span>
-                        <span class="expand-icon">▼</span>
-                    </button>
-                    <div class="expandable-content" id="performance-chart-content" style="display: none;">
-                        <div class="chart-container">
-                            <canvas id="performance-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="weather-tab" class="detail-tab-content">
-            <div class="tab-summary-section">
-                <div id="weather-summary-cards" class="weather-summary-cards"></div>
-            </div>
-            <div class="tab-expandable-sections">
-                <div class="expandable-section">
-                    <button class="expand-toggle" data-section="full-forecast">
-                        <span>Full 7-Day Forecast</span>
-                        <span class="expand-icon">▼</span>
-                    </button>
-                    <div class="expandable-content" id="weather-forecast-full" style="display: none;"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="recommendations-tab" class="detail-tab-content">
-            <div class="tab-summary-section">
-                <div id="recommendations-key-tips"></div>
-            </div>
-            <div class="tab-expandable-sections">
-                <div class="expandable-section">
-                    <button class="expand-toggle" data-section="full-recommendations">
-                        <span>Full Recommendations</span>
-                        <span class="expand-icon">▼</span>
-                    </button>
-                    <div class="expandable-content" id="ai-recommendations-full" style="display: none;"></div>
-                </div>
-            </div>
-        </div>
+    </div>
+    
+    <!-- Recommendations Section -->
+    <div class="trail-detail-section trail-recommendations-section" id="trail-recommendations-section">
+        <h3>Recommendations</h3>
+        <div id="recommendations-key-tips"></div>
+        <div id="ai-recommendations-full"></div>
     </div>
 </div>

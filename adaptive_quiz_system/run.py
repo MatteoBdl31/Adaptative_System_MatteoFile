@@ -11,7 +11,11 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 VENV_DIR = PROJECT_ROOT / ".venv"
-VENV_PYTHON = VENV_DIR / "bin" / "python"
+# Windows uses Scripts/python.exe, Unix uses bin/python
+if os.name == 'nt':  # Windows
+    VENV_PYTHON = VENV_DIR / "Scripts" / "python.exe"
+else:  # Unix/Linux/Mac
+    VENV_PYTHON = VENV_DIR / "bin" / "python"
 
 # Si l'environnement virtuel existe et qu'on n'utilise pas déjà son Python, se réexécuter avec
 if VENV_PYTHON.exists() and sys.executable != str(VENV_PYTHON):

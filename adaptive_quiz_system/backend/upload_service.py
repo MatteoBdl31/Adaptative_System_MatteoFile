@@ -180,7 +180,14 @@ class UploadService:
         user_id: int,
         trail_id: str,
         normalized_data: Dict,
-        uploaded_data_id: Optional[int] = None
+        uploaded_data_id: Optional[int] = None,
+        predicted_duration: Optional[int] = None,
+        predicted_avg_heart_rate: Optional[int] = None,
+        predicted_max_heart_rate: Optional[int] = None,
+        predicted_avg_speed: Optional[float] = None,
+        predicted_max_speed: Optional[float] = None,
+        predicted_calories: Optional[int] = None,
+        predicted_profile_category: Optional[str] = None
     ) -> Tuple[bool, Optional[int]]:
         """
         Store normalized performance data in database.
@@ -190,6 +197,13 @@ class UploadService:
             trail_id: Trail ID
             normalized_data: Normalized performance data
             uploaded_data_id: Optional uploaded_data record ID
+            predicted_duration: Optional predicted duration in minutes
+            predicted_avg_heart_rate: Optional predicted average heart rate
+            predicted_max_heart_rate: Optional predicted max heart rate
+            predicted_avg_speed: Optional predicted average speed
+            predicted_max_speed: Optional predicted max speed
+            predicted_calories: Optional predicted calories
+            predicted_profile_category: Optional predicted profile category
         
         Returns:
             (success, completed_trail_id)
@@ -238,21 +252,37 @@ class UploadService:
                         avg_speed = ?,
                         max_speed = ?,
                         total_calories = ?,
-                        uploaded_data_id = ?
+                        uploaded_data_id = ?,
+                        predicted_duration = COALESCE(?, predicted_duration),
+                        predicted_avg_heart_rate = COALESCE(?, predicted_avg_heart_rate),
+                        predicted_max_heart_rate = COALESCE(?, predicted_max_heart_rate),
+                        predicted_avg_speed = COALESCE(?, predicted_avg_speed),
+                        predicted_max_speed = COALESCE(?, predicted_max_speed),
+                        predicted_calories = COALESCE(?, predicted_calories),
+                        predicted_profile_category = COALESCE(?, predicted_profile_category)
                     WHERE id = ?
                 """, (duration_minutes, avg_heart_rate, max_heart_rate, avg_speed, max_speed,
-                      total_calories, uploaded_data_id, completed_trail_id))
+                      total_calories, uploaded_data_id,
+                      predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+                      predicted_avg_speed, predicted_max_speed, predicted_calories,
+                      predicted_profile_category, completed_trail_id))
             else:
                 # Create new completed_trail record
                 cur.execute("""
                     INSERT INTO completed_trails
                     (user_id, trail_id, completion_date, actual_duration, rating,
                      avg_heart_rate, max_heart_rate, avg_speed, max_speed,
-                     total_calories, uploaded_data_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     total_calories, uploaded_data_id,
+                     predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+                     predicted_avg_speed, predicted_max_speed, predicted_calories,
+                     predicted_profile_category)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (user_id, trail_id, datetime.now().isoformat(), duration_minutes, 5,
                       avg_heart_rate, max_heart_rate, avg_speed, max_speed,
-                      total_calories, uploaded_data_id))
+                      total_calories, uploaded_data_id,
+                      predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+                      predicted_avg_speed, predicted_max_speed, predicted_calories,
+                      predicted_profile_category))
                 completed_trail_id = cur.lastrowid
             
             # Store time-series data
@@ -390,6 +420,37 @@ class UploadService:
         conn.close()
         
         return uploads
+    
+    def load_from_file(self, filepath: str) -> Dict:
+        """
+        Load and parse smartwatch data from a JSON file.
+        
+        Args:
+            filepath: Path to JSON file
+        
+        Returns:
+            {
+                "success": bool,
+                "data": Dict,
+                "errors": List[str]
+            }
+        """
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                file_content = f.read()
+            return self.parse_uploaded_data(file_content, "json")
+        except FileNotFoundError:
+            return {
+                "success": False,
+                "data": None,
+                "errors": [f"File not found: {filepath}"]
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "data": None,
+                "errors": [f"Error reading file: {str(e)}"]
+            }
     
     def _parse_timestamp(self, timestamp) -> Optional[int]:
         """Parse timestamp to seconds since start."""

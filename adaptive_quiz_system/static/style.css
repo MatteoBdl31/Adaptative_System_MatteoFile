@@ -1812,6 +1812,14 @@ select:focus-visible {
     position: relative;
 }
 
+/* Large modal for trail details */
+#trail-detail-modal .modal-content {
+    width: 95%;
+    max-width: 1400px;
+    max-height: 95vh;
+    margin: 2.5% auto;
+}
+
 .modal-close {
     position: absolute;
     right: var(--space-lg);
@@ -1874,40 +1882,289 @@ select:focus-visible {
     background: #d97706;
 }
 
-.trail-detail-tabs {
-    display: flex;
-    gap: var(--space-sm);
+/* Trail Detail Page Container */
+.trail-detail-page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-xl);
+}
+
+.trail-detail-back {
     margin-bottom: var(--space-lg);
+}
+
+.trail-detail-back .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+/* Single-page trail detail sections */
+.trail-detail-section {
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.trail-detail-section:last-child {
+    border-bottom: none;
+}
+
+.trail-detail-section h3 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-lg);
+    color: var(--color-text);
+}
+
+/* Enhanced Header Styles */
+.trail-detail-header {
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-lg);
     border-bottom: 2px solid var(--color-border);
 }
 
-.detail-tab {
-    padding: var(--space-md) var(--space-lg);
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
+.trail-detail-header-main {
+    margin-bottom: var(--space-md);
+}
+
+.trail-detail-header-main h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.edit-icon {
+    font-size: var(--font-size-sm);
+    opacity: 0.6;
     cursor: pointer;
-    font-size: var(--font-size-base);
-    color: var(--color-text-secondary);
+}
+
+.edit-icon:hover {
+    opacity: 1;
+}
+
+.trail-detail-stats-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.trail-stat-badge {
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.trail-stat-badge.difficulty-hard {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #ef4444;
+}
+
+.trail-stat-badge.difficulty-medium {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #f59e0b;
+}
+
+.trail-stat-badge.difficulty-easy {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #10b981;
+}
+
+.trail-detail-action-buttons {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.trail-action-btn {
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
     transition: var(--transition-base);
 }
 
-.detail-tab:hover {
-    color: var(--color-primary);
+.trail-action-btn:hover {
+    background: var(--color-bg-secondary);
 }
 
-.detail-tab.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
+.trail-action-btn.primary {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
 }
 
-.detail-tab-content {
-    display: none;
-    padding: var(--space-lg) 0;
+.trail-action-btn.primary:hover {
+    background: var(--color-primary-dark);
 }
 
-.detail-tab-content.active {
+/* Image Gallery Styles */
+.trail-detail-image-gallery {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+    min-height: 400px;
+}
+
+.trail-gallery-main {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--color-bg-secondary);
+    aspect-ratio: 16/9;
+}
+
+.trail-gallery-main img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: var(--font-size-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+    z-index: 10;
+}
+
+.gallery-nav-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.gallery-prev {
+    left: var(--space-md);
+}
+
+.gallery-next {
+    right: var(--space-md);
+}
+
+.trail-gallery-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+}
+
+.trail-gallery-thumbnail {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: var(--transition-base);
+}
+
+.trail-gallery-thumbnail:hover {
+    border-color: var(--color-primary);
+    transform: scale(1.05);
+}
+
+.trail-gallery-thumbnail.active {
+    border-color: var(--color-primary);
+}
+
+.trail-gallery-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.trail-gallery-thumbnail .image-count-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: var(--space-xs);
+    text-align: center;
+    font-size: var(--font-size-xs);
+}
+
+/* Map & Elevation Section */
+.trail-detail-map-elevation {
+    margin-bottom: var(--space-2xl);
+}
+
+.trail-map-section {
+    margin-bottom: var(--space-xl);
+}
+
+.trail-map-section h3,
+.trail-elevation-section h3 {
+    margin-bottom: var(--space-md);
+}
+
+.trail-map-container {
+    width: 100%;
+    height: 500px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.trail-elevation-section {
+    margin-top: var(--space-xl);
+}
+
+.elevation-summary {
+    margin-bottom: var(--space-md);
+}
+
+.elevation-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.elevation-card {
+    padding: var(--space-md);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.elevation-label {
     display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.elevation-value {
+    display: block;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
 }
 
 .performance-metrics-grid {
@@ -3045,6 +3302,12 @@ select:focus-visible {
         padding: var(--space-lg);
     }
     
+    #trail-detail-modal .modal-content {
+        width: 98%;
+        margin: 1% auto;
+        max-height: 98vh;
+    }
+    
     .trail-section-header {
         flex-direction: column;
         align-items: flex-start;
@@ -3064,4 +3327,241 @@ select:focus-visible {
         width: 100%;
         justify-content: space-between;
     }
+}
+
+/* Trail Statistics Badge */
+.trail-statistics-badge {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: var(--space-xs);
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+/* Completion Form Modal */
+.completion-form-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.completion-form-content {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-2xl);
+    position: relative;
+}
+
+.completion-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-lg);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.completion-form-header h2 {
+    margin: 0;
+}
+
+.completion-form-close {
+    background: none;
+    border: none;
+    font-size: var(--font-size-2xl);
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    line-height: 1;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.completion-form-close:hover {
+    color: var(--color-text);
+}
+
+.completion-form {
+    padding: var(--space-lg);
+}
+
+.completion-form .form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.completion-form label {
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+}
+
+.rating-input-interactive {
+    display: flex;
+    gap: var(--space-sm);
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.rating-input-interactive input[type="radio"] {
+    display: none;
+}
+
+.rating-input-interactive label {
+    font-size: var(--font-size-2xl);
+    cursor: pointer;
+    color: #d1d5db;
+    transition: var(--transition-base);
+    margin: 0;
+    padding: var(--space-xs);
+    border-radius: var(--radius-sm);
+    user-select: none;
+}
+
+.rating-input-interactive label:hover {
+    background-color: var(--color-bg-secondary);
+    transform: scale(1.2);
+}
+
+.rating-input-interactive label.star-selected {
+    color: #fbbf24;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
+}
+
+.rating-input-interactive input[type="radio"]:checked + label {
+    color: #fbbf24;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
+}
+
+.rating-display {
+    margin-top: var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+}
+
+.rating-input {
+    display: flex;
+    gap: var(--space-xs);
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.rating-input label {
+    font-size: var(--font-size-2xl);
+    cursor: pointer;
+    color: #d1d5db;
+    transition: var(--transition-base);
+    margin: 0;
+}
+
+.rating-input input[type="radio"]:checked ~ label,
+.rating-input label:hover,
+.rating-input label:hover ~ label {
+    color: #fbbf24;
+}
+
+.difficulty-input {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.difficulty-input input[type="range"] {
+    flex: 1;
+}
+
+.difficulty-input span {
+    font-weight: var(--font-weight-semibold);
+    min-width: 30px;
+    text-align: center;
+}
+
+.photo-preview {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    margin-top: var(--space-sm);
+}
+
+.photo-preview-item {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-border);
+}
+
+.file-info {
+    margin-top: var(--space-sm);
+    padding: var(--space-sm);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: flex-end;
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 2px solid var(--color-border);
+}
+
+.btn-cancel,
+.btn-submit {
+    padding: var(--space-sm) var(--space-lg);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: var(--font-weight-medium);
+    transition: var(--transition-base);
+}
+
+.btn-cancel {
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
+}
+
+.btn-cancel:hover {
+    background: var(--color-bg-tertiary);
+}
+
+.btn-submit {
+    background: var(--color-primary);
+    color: white;
+}
+
+.btn-submit:hover {
+    background: var(--color-primary-dark);
 }

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}{{ trail.name }} - Trail Details{% endblock %}
+{% block page_class %}trail-detail-page{% endblock %}
+{% block extra_head %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="container trail-detail-page-container">
+    <!-- Back Button -->
+    <div class="trail-detail-back">
+        <a href="{{ url_for('profile', user_id=user.id) }}" class="btn btn-ghost">← Back to Profile</a>
+    </div>
+    
+    <!-- Enhanced Header Section -->
+    <div class="trail-detail-header">
+        <div class="trail-detail-header-main">
+            <h1 id="trail-detail-name">{{ trail.name or trail.trail_id }} <span class="edit-icon">✏️</span></h1>
+            <div class="trail-detail-stats-badges" id="trail-detail-stats-badges">
+                <!-- Stats badges will be rendered here -->
+                <noscript>
+                    <span class="trail-stat-badge">{{ trail.difficulty or 'N/A' }}/10</span>
+                    {% if trail.duration %}
+                    <span class="trail-stat-badge">{{ (trail.duration // 60) }}h {{ trail.duration % 60 }}m</span>
+                    {% endif %}
+                    {% if trail.distance %}
+                    <span class="trail-stat-badge">{{ trail.distance }} km</span>
+                    {% endif %}
+                    {% if trail.elevation_gain %}
+                    <span class="trail-stat-badge">{{ trail.elevation_gain }} m</span>
+                    {% endif %}
+                </noscript>
+            </div>
+        </div>
+        <div class="trail-detail-action-buttons" id="trail-detail-action-buttons">
+            <!-- Action buttons will be rendered here -->
+        </div>
+    </div>
+    
+    <!-- Loading indicator -->
+    <div id="trail-detail-loading" style="text-align: center; padding: 2rem;">
+        <p>Loading trail details...</p>
+    </div>
+    
+    <!-- Image Gallery Section -->
+    <div class="trail-detail-image-gallery" id="trail-detail-image-gallery" style="display: none;">
+        <div class="trail-gallery-main">
+            <img id="trail-gallery-main-image" src="" alt="Trail photo" />
+            <button class="gallery-nav-btn gallery-prev" id="gallery-prev">‹</button>
+            <button class="gallery-nav-btn gallery-next" id="gallery-next">›</button>
+        </div>
+        <div class="trail-gallery-thumbnails" id="trail-gallery-thumbnails">
+            <!-- Thumbnails will be rendered here -->
+        </div>
+    </div>
+    
+    <!-- Map & Elevation Section -->
+    <div class="trail-detail-map-elevation">
+        <div class="trail-map-section">
+            <h3>Trail Map</h3>
+            <div id="trail-map-container" class="trail-map-container"></div>
+        </div>
+        <div class="trail-elevation-section">
+            <h3>Elevation Profile</h3>
+            <div class="elevation-summary" id="elevation-summary"></div>
+            <div class="chart-container">
+                <canvas id="elevation-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overview Section -->
+    <div class="trail-detail-section trail-overview-section" id="trail-overview-section">
+        <h3>Overview</h3>
+        <div id="trail-description-summary"></div>
+        <div id="trail-key-stats-grid"></div>
+        <div id="trail-landscapes-summary"></div>
+        <div class="trail-details-expanded" id="trail-details-expanded"></div>
+        <div class="trail-description-full" id="trail-description-full"></div>
+    </div>
+    
+    <!-- Weather Section -->
+    <div class="trail-detail-section trail-weather-section" id="trail-weather-section">
+        <h3>Weather Forecast</h3>
+        <div id="weather-summary-cards" class="weather-summary-cards"></div>
+        <!-- Full forecast list removed - keeping only the 4 card layout -->
+    </div>
+    
+    <!-- Performance Section -->
+    <div class="trail-detail-section trail-performance-section" id="trail-performance-section">
+        <h3>Performance</h3>
+        <div class="completion-selector" id="completion-selector-container" style="display: none; margin-bottom: 1.5rem;">
+            <label for="completion-selector" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">View Performance:</label>
+            <select id="completion-selector" style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; min-width: 250px;">
+                <option value="">Select completion...</option>
+            </select>
+        </div>
+        <div id="performance-summary-cards" class="performance-summary-cards"></div>
+        <div id="performance-metrics-detailed"></div>
+        <div class="performance-chart-controls" style="margin: 1.5rem 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div>
+                <label for="metric-selector" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Metric:</label>
+                <select id="metric-selector" style="padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                    <option value="heart_rate">Heart Rate (bpm)</option>
+                    <option value="speed">Speed (km/h)</option>
+                    <option value="cadence">Cadence (steps/min)</option>
+                </select>
+            </div>
+            <div style="flex: 1;"></div>
+            <div id="loaded-completions-legend" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <!-- Comparison legend items will be added here -->
+            </div>
+        </div>
+        <div class="chart-container" style="position: relative; height: 400px;">
+            <canvas id="performance-chart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Recommendations Section -->
+    <div class="trail-detail-section trail-recommendations-section" id="trail-recommendations-section">
+        <h3>Recommendations</h3>
+        <div id="recommendations-key-tips"></div>
+        <div id="ai-recommendations-full"></div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+<script src="{{ url_for('static', filename='trail_detail_page.js') }}"></script>
+<script>
+    // Pass trail data to JavaScript
+    const trailData = {{ trail|tojson }};
+    const userId = {{ user.id }};
+    const userProfile = {{ (user_profile or '')|tojson }};
+    const completedTrailData = {{ (completed_trail_data or {})|tojson }};
+    
+    console.log('Page loaded with trail data:', trailData);
+    console.log('User ID:', userId);
+    console.log('User profile:', userProfile);
+    console.log('Completed trail data:', completedTrailData);
+    
+    // Initialize page when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOMContentLoaded fired');
+        console.log('TrailDetailPage available:', typeof TrailDetailPage !== 'undefined');
+        
+        // Hide loading indicator
+        const loadingEl = document.getElementById('trail-detail-loading');
+        if (loadingEl) {
+            loadingEl.style.display = 'none';
+        }
+        
+        // Import trail detail rendering functions
+        if (typeof TrailDetailPage !== 'undefined') {
+            try {
+                TrailDetailPage.init(trailData, userId, userProfile, completedTrailData);
+            } catch (e) {
+                console.error('Error initializing TrailDetailPage:', e);
+                alert('Error loading trail details. Please check the console for details.');
+            }
+        } else {
+            console.error('TrailDetailPage not loaded. Check if trail_detail_page.js is loaded.');
+            if (loadingEl) {
+                loadingEl.innerHTML = '<p style="color: red;">Error: TrailDetailPage JavaScript not loaded. Please refresh the page.</p>';
+            }
+        }
+    });
+</script>
+{% endblock %}
