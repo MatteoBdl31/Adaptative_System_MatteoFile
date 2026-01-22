@@ -147,6 +147,7 @@ class MapManager {
         const { 
             exactColor = '#5b8df9', 
             suggestionColor = '#f59e0b',
+            collaborativeColor = '#f71e50',
             onMarkerClick = null 
         } = options;
 
@@ -154,28 +155,106 @@ class MapManager {
         const trailDataMap = new Map();
 
         trails.forEach(trail => {
-            const { latitude, longitude, name, distance, duration, elevation_gain, difficulty, description, view_type, trail_id, elevation_profile, forecast_weather } = trail;
+            const { latitude, longitude, name, distance, duration, elevation_gain, difficulty, description, view_type, trail_id, elevation_profile, forecast_weather, is_collaborative } = trail;
             
-            if (!latitude || !longitude) return;
+            if (!latitude || !longitude) {
+                // #region agent log
+                if (is_collaborative || (view_type && view_type.includes('collaborative'))) {
+                    console.warn('Collaborative trail missing coordinates:', { trail_id, name, latitude, longitude });
+                }
+                // #endregion
+                return;
+            }
 
-            const isExact = view_type === 'recommended' || view_type === 'exact';
-            const color = isExact ? exactColor : suggestionColor;
+            // Check if trail is collaborative (either explicitly marked or in view_type)
+            const isCollaborative = is_collaborative || (view_type && view_type.includes('collaborative'));
+            
+            // Check if trail is ONLY collaborative (not also recommended or suggested)
+            const isOnlyCollaborative = isCollaborative && 
+                view_type === 'collaborative' && 
+                !view_type.includes('recommended') && 
+                !view_type.includes('suggested');
+            
+            // Determine color: prioritize recommended > suggested > collaborative
+            let color = suggestionColor;
+            if (view_type === 'recommended' || view_type === 'exact' || (view_type && view_type.includes('recommended'))) {
+                color = exactColor;
+            } else if (view_type === 'suggested' || (view_type && view_type.includes('suggested'))) {
+                color = suggestionColor;
+            } else if (isOnlyCollaborative) {
+                // If trail is ONLY collaborative (not also recommended/suggested), use collaborative color
+                color = collaborativeColor;
+            }
 
+            // Option A: DOM/CSS dans divIcon - Le point et le cercle font partie du même élément DOM
+            // Cela garantit un alignement parfait et une taille constante relative au marqueur
             const icon = L.divIcon({
-                className: 'custom-marker',
-                html: `<div style="
-                    background-color: ${color};
-                    width: 18px;
-                    height: 18px;
-                    border-radius: 50%;
-                    border: 2px solid #fff;
-                    box-shadow: 0 2px 6px rgba(0,0,0,.3);
-                "></div>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9]
+                className: `custom-marker ${isCollaborative ? 'has-collaborative-ring' : ''}`,
+                html: `
+                    <div class="marker-wrapper" style="position: relative; width: 70px; height: 70px;">
+                        ${isCollaborative ? `
+                            <div class="collaborative-ring" style="
+                                position: absolute;
+                                left: 50%;
+                                top: 50%;
+                                transform: translate(-50%, -50%);
+                                width: 35px;
+                                height: 35px;
+                                border: 3px dashed ${collaborativeColor};
+                                border-radius: 50%;
+                                background-color: transparent;
+                                pointer-events: none;
+                            "></div>
+                        ` : ''}
+                        <div class="marker-dot" style="
+                            position: absolute;
+                            left: 50%;
+                            top: 50%;
+                            transform: translate(-50%, -50%);
+                            background-color: ${color};
+                            width: 18px;
+                            height: 18px;
+                            border-radius: 50%;
+                            border: 2px solid #fff;
+                            box-shadow: 0 2px 6px rgba(0,0,0,.3);
+                            z-index: 10;
+                        "></div>
+                    </div>
+                `,
+                iconSize: [50, 50],  // Assez grand pour contenir le ring (35px) + marge
+                iconAnchor: [25, 25]  // Centre du wrapper (50/2 = 25)
             });
 
             const marker = L.marker([latitude, longitude], { icon }).addTo(map);
+            
+            // Toggle de visibilité du cercle collaboratif basé sur le zoom
+            // Utilise le DOM directement pour un contrôle précis
+            if (isCollaborative) {
+                // #region agent log
+                console.log('Adding collaborative circle for trail:', { trail_id, name, latitude, longitude, view_type, is_collaborative, color: collaborativeColor });
+                // #endregion
+                
+                const updateCircleVisibility = () => {
+                    const currentZoom = map.getZoom();
+                    const iconElement = marker._icon;
+                    if (iconElement) {
+                        const ring = iconElement.querySelector('.collaborative-ring');
+                        if (ring) {
+                            if (currentZoom < 7) {
+                                // Hide circle at very low zoom to avoid taking too much space
+                                ring.style.display = 'none';
+                            } else {
+                                // Show circle at normal zoom levels
+                                ring.style.display = 'block';
+                            }
+                        }
+                    }
+                };
+                
+                // Update visibility on zoom changes
+                map.on('zoomend', updateCircleVisibility);
+                updateCircleVisibility(); // Set initial visibility
+            }
             
             // Format difficulty
             const difficultyValue = difficulty || 0;
