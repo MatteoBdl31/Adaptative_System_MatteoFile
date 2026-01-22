@@ -139,6 +139,21 @@ def format_duration(minutes):
 # Register the filter for use in templates
 app.jinja_env.filters['format_duration'] = format_duration
 
+def format_safety_risks(safety_risks):
+    """Format safety risks for display - converts 'low'/'none' to user-friendly text."""
+    if not safety_risks:
+        return 'No information'
+    risks = safety_risks.lower().strip()
+    if risks == 'low' or risks == 'none' or risks == '':
+        return 'Low risk - Generally safe'
+    # Format other risks (e.g., "slippery,exposed" -> "Slippery, Exposed")
+    return ', '.join([
+        ' '.join(word.capitalize() for word in r.strip().split(' '))
+        for r in risks.split(',')
+    ])
+
+app.jinja_env.filters['format_safety_risks'] = format_safety_risks
+
 @app.template_filter('profile_name_en')
 def profile_name_en_filter(profile_key):
     """Convert profile key to English display name."""
@@ -374,138 +389,11 @@ def index():
         if hike_end_date:
             params["hike_end_date"] = hike_end_date
         
-        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
-        return redirect(url_for("recommendations", user_id=user_id) + "?" + query_string)
+        # Redirect to demo with context parameters
+        query_string = "&".join([f"a_{k}={v}" for k, v in params.items()])
+        return redirect(url_for("demo") + "?user_id_a=" + str(user_id) + "&" + query_string)
     
     return redirect(url_for("demo"))
-
-
-@app.route("/recommendations/<int:user_id>")
-def recommendations(user_id):
-    """Adaptive trail recommendations page"""
-    user = get_user(user_id)
-    if not user:
-        return "User not found", 404
-
-    # Get hike date range
-    hike_start_date = request.args.get("hike_start_date")
-    hike_end_date = request.args.get("hike_end_date")
-    if not hike_start_date:
-        from datetime import date
-        hike_start_date = date.today().isoformat()
-    if not hike_end_date:
-        hike_end_date = hike_start_date
-    
-    # Calculate time_available from date range or use provided days/hours
-    days = int(request.args.get("time_available_days", 0))
-    hours = int(request.args.get("time_available_hours", 0))
-    
-    # If days/hours are 0 or not provided, calculate from date range
-    if days == 0 and hours == 0 and hike_start_date and hike_end_date:
-        from datetime import datetime, date
-        try:
-            # Try parsing as ISO format first (YYYY-MM-DD)
-            try:
-                start = datetime.fromisoformat(hike_start_date).date()
-                end = datetime.fromisoformat(hike_end_date).date()
-            except (ValueError, AttributeError):
-                # If that fails, try parsing as date only
-                start = date.fromisoformat(hike_start_date)
-                end = date.fromisoformat(hike_end_date)
-            
-            time_delta = end - start
-            days = time_delta.days
-            # If same day, default to 8 hours (full day hike)
-            if days == 0:
-                hours = 8
-            elif days < 0:
-                # If end date is before start date, swap them
-                days = abs(days)
-                hours = 0
-            else:
-                hours = 0  # Multi-day, hours don't matter
-        except (ValueError, TypeError, AttributeError) as e:
-            # If date parsing fails, try to infer from string comparison
-            if hike_start_date == hike_end_date:
-                hours = 8
-            else:
-                # Try to calculate days from date strings
-                try:
-                    # Assume YYYY-MM-DD format
-                    start_parts = hike_start_date.split('-')
-                    end_parts = hike_end_date.split('-')
-                    if len(start_parts) == 3 and len(end_parts) == 3:
-                        from datetime import date
-                        start = date(int(start_parts[0]), int(start_parts[1]), int(start_parts[2]))
-                        end = date(int(end_parts[0]), int(end_parts[1]), int(end_parts[2]))
-                        time_delta = end - start
-                        days = time_delta.days
-                        hours = 0 if days > 0 else 8
-                    else:
-                        days = 1
-                        hours = 0
-                except (ValueError, IndexError):
-                    # Last resort: default to 1 day if dates are different
-                    days = 1 if hike_start_date != hike_end_date else 0
-                    hours = 8 if days == 0 else 0
-    
-    # Ensure minimum time_available (at least 1 hour for single day)
-    if days == 0 and hours == 0:
-        hours = 8  # Default to 8 hours for single day hike
-    
-    time_available = days * 24 * 60 + hours * 60  # Convert to minutes
-    
-    device = request.args.get("device", "laptop")
-    weather = request.args.get("weather", "sunny")
-    connection = request.args.get("connection", "strong")
-    # Get season from request, or determine from hike date, or use current season
-    season = request.args.get("season")
-    if not season:
-        season = get_season_from_date(hike_start_date)
-
-    context = {
-        "hike_start_date": hike_start_date,
-        "hike_end_date": hike_end_date,
-        "hike_date": hike_start_date,  # For backward compatibility
-        "time_available": time_available,
-        "device": device,
-        "weather": weather,
-        "connection": connection,
-        "season": season,
-    }
-
-    exact_matches, suggestions, display_settings, active_rules, metadata = adapt_trails(user, context)
-
-    for trail in exact_matches:
-        trail["view_type"] = "recommended"
-    for trail in suggestions:
-        trail["view_type"] = "suggested"
-
-    combined_trails = exact_matches + suggestions
-    
-    # Get weather forecast summary for context display
-    # Use the first trail's forecast as representative, or get a general forecast
-    from backend.weather_service import get_weather_forecast
-    context["forecast_weather"] = None
-    if hike_start_date:
-        # Try to get a representative forecast (using approximate French Alps center)
-        # This gives a general idea of weather in the region
-        try:
-            representative_forecast = get_weather_forecast(45.5, 6.2, hike_start_date)
-            context["forecast_weather"] = representative_forecast
-        except:
-            pass
-
-    return render_template(
-        "recommendations.html",
-        user=user,
-        context=context,
-        exact_matches=exact_matches,
-        suggestions=suggestions,
-        display_settings=display_settings,
-        active_rules=active_rules,
-        combined_trails=combined_trails,
-    )
 
 
 @app.route("/trail/<int:user_id>/<trail_id>")

@@ -21,20 +21,35 @@ const TrailDetailPage = (function() {
         return div.innerHTML;
     }
     
+    function formatSafetyRisks(safetyRisks) {
+        if (!safetyRisks) return 'No information';
+        const risks = safetyRisks.toLowerCase().trim();
+        if (risks === 'low' || risks === 'none' || risks === '') {
+            return 'Low risk - Generally safe';
+        }
+        // Format other risks (e.g., "slippery,exposed" -> "Slippery, Exposed")
+        return risks.split(',').map(r => {
+            return r.trim().split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }).join(', ');
+    }
+    
     function renderEnhancedHeader(trail) {
         const nameEl = document.getElementById('trail-detail-name');
         const statsBadgesEl = document.getElementById('trail-detail-stats-badges');
         const actionButtonsEl = document.getElementById('trail-detail-action-buttons');
         
-        if (nameEl) {
-            nameEl.innerHTML = `${escapeHtml(trail.name || trail.trail_id || 'Unknown Trail')} <span class="edit-icon">✏️</span>`;
+            if (nameEl) {
+            nameEl.textContent = trail.name || trail.trail_id || 'Unknown Trail';
         }
         
         if (statsBadgesEl) {
-            let badgesHTML = '';
-            
-            // Difficulty badge (color-coded)
-            if (trail.difficulty !== undefined && trail.difficulty !== null) {
+            // Update the difficulty badge in the stats bar
+            // The stats bar already shows distance, duration, elevation, and difficulty in the template
+            // We just need to update the difficulty badge if it exists
+            const difficultyValue = statsBadgesEl.querySelector('.trail-stat-badge.difficulty-easy, .trail-stat-badge.difficulty-medium, .trail-stat-badge.difficulty-hard');
+            if (difficultyValue && trail.difficulty !== undefined && trail.difficulty !== null) {
                 const diff = parseFloat(trail.difficulty);
                 let diffClass = 'difficulty-medium';
                 let diffText = 'Medium';
@@ -45,43 +60,44 @@ const TrailDetailPage = (function() {
                     diffClass = 'difficulty-easy';
                     diffText = 'Easy';
                 }
-                badgesHTML += `<span class="trail-stat-badge ${diffClass}">${diffText}</span>`;
+                difficultyValue.className = `trail-stat-badge ${diffClass}`;
+                difficultyValue.textContent = diffText;
+            } else if (trail.difficulty !== undefined && trail.difficulty !== null) {
+                // If badge doesn't exist, create it
+                const diff = parseFloat(trail.difficulty);
+                let diffClass = 'difficulty-medium';
+                let diffText = 'Medium';
+                if (diff >= 7) {
+                    diffClass = 'difficulty-hard';
+                    diffText = 'Hard';
+                } else if (diff <= 4) {
+                    diffClass = 'difficulty-easy';
+                    diffText = 'Easy';
+                }
+                statsBadgesEl.innerHTML = `<span class="trail-stat-badge ${diffClass}">${diffText}</span>`;
             }
-            
-            // Duration
-            if (trail.duration) {
-                const hours = Math.floor(trail.duration / 60);
-                const mins = trail.duration % 60;
-                badgesHTML += `<span class="trail-stat-badge">${hours}:${mins.toString().padStart(2, '0')}</span>`;
-            }
-            
-            // Distance
-            if (trail.distance !== undefined && trail.distance !== null) {
-                badgesHTML += `<span class="trail-stat-badge">${trail.distance} km</span>`;
-            }
-            
-            // Elevation gain
-            if (trail.elevation_gain !== undefined && trail.elevation_gain !== null) {
-                badgesHTML += `<span class="trail-stat-badge">${trail.elevation_gain} m</span>`;
-            }
-            
-            // Max elevation
-            if (trail.elevation_profile && trail.elevation_profile.length > 0) {
-                const maxElevation = Math.max(...trail.elevation_profile.map(p => p.elevation || 0));
-                badgesHTML += `<span class="trail-stat-badge">${maxElevation} m</span>`;
-            }
-            
-            statsBadgesEl.innerHTML = badgesHTML;
         }
         
         if (actionButtonsEl) {
             let buttonsHTML = '';
-            buttonsHTML += `<button class="trail-action-btn">👍 Like</button>`;
-            buttonsHTML += `<button class="trail-action-btn">🔗 Share</button>`;
-            buttonsHTML += `<button class="trail-action-btn">💬 Comments</button>`;
-            buttonsHTML += `<button class="trail-action-btn primary">🧭 Navigate</button>`;
-            buttonsHTML += `<button class="trail-action-btn">✏️ Edit</button>`;
-            buttonsHTML += `<button class="trail-action-btn">⋯</button>`;
+            buttonsHTML += `<button class="btn btn-primary">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z"/>
+                </svg>
+                Navigate
+            </button>`;
+            buttonsHTML += `<button class="btn btn-secondary">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 2h-3a4 4 0 00-4 4v3a4 4 0 004 4h3v-2h-3V6h3V2zM2 2h3a4 4 0 014 4v3a4 4 0 01-4 4H2v-2h3V6H2V2z"/>
+                </svg>
+                Share
+            </button>`;
+            buttonsHTML += `<button class="btn btn-secondary">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 2l2.5 6.5L19 9.5l-5 4.5 1.5 7-5.5-3.5L5 21.5l1.5-7-5-4.5 6.5-1L10 2z"/>
+                </svg>
+                Like
+            </button>`;
             actionButtonsEl.innerHTML = buttonsHTML;
         }
     }
@@ -105,11 +121,11 @@ const TrailDetailPage = (function() {
         
         // If no photos, hide gallery
         if (photoList.length === 0) {
-            galleryEl.style.display = 'none';
+            galleryEl.classList.add('hidden');
             return;
         }
         
-        galleryEl.style.display = 'grid';
+        galleryEl.classList.remove('hidden');
         let currentIndex = 0;
         
         // Set main image
@@ -248,12 +264,26 @@ const TrailDetailPage = (function() {
                     const center = coordinates[Math.floor(coordinates.length / 2)];
                     const map = mapManager.initMap(mapId, {
                         zoom: 10,
-                        center: center
+                        center: center,
+                        scrollWheelZoom: false  // Disable scroll wheel zoom so page can scroll when cursor is over map
                     });
                     
                     if (!map) {
                         mapDiv.innerHTML = '<p>Failed to initialize map</p>';
                         return;
+                    }
+                    
+                    // Explicitly disable scroll wheel zoom to ensure page scrolling works
+                    if (map.scrollWheelZoom) {
+                        map.scrollWheelZoom.disable();
+                    }
+                    
+                    // Disable scroll propagation on map container so page can scroll
+                    if (map.getContainer) {
+                        const container = map.getContainer();
+                        if (container && L.DomEvent) {
+                            L.DomEvent.disableScrollPropagation(container);
+                        }
                     }
                     
                     // Add trail polyline
@@ -282,6 +312,38 @@ const TrailDetailPage = (function() {
                     }).addTo(map).bindPopup('End');
                     
                     map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+
+                    
+                    // Invalidate map size after initialization to ensure proper rendering
+                    setTimeout(() => {
+                        if (map) {
+                            try {
+                                map.invalidateSize(true);
+                                const initialCenter = map.getCenter();
+                                const initialZoom = map.getZoom();
+                                map.setView(initialCenter, initialZoom, { 
+                                    reset: false,
+                                    animate: false,
+                                    duration: 0
+                                });
+                            } catch (e) {
+                                console.error('Error invalidating map after init:', e);
+                            }
+                        }
+                    }, 300);
+                    
+                    // Also invalidate on window resize
+                    const resizeHandler = () => {
+                        if (map && typeof map.invalidateSize === 'function') {
+                            map.invalidateSize();
+                        }
+                    };
+                    window.addEventListener('resize', resizeHandler);
+                    
+                    // Store resize handler for cleanup if needed
+                    if (!map._resizeHandler) {
+                        map._resizeHandler = resizeHandler;
+                    }
                 } catch (e) {
                     mapDiv.innerHTML = '<p>Error loading map: ' + escapeHtml(e.message) + '</p>';
                 }
@@ -296,7 +358,7 @@ const TrailDetailPage = (function() {
         if (!trail.elevation_profile || !Array.isArray(trail.elevation_profile) || trail.elevation_profile.length === 0) {
             const elevationSummary = elevationSection.querySelector('#elevation-summary');
             if (elevationSummary) {
-                elevationSummary.innerHTML = '<p>No elevation profile data available for this trail.</p>';
+                elevationSummary.innerHTML = '<div class="empty-state"><p>No elevation profile data available for this trail.</p></div>';
             }
         } else {
             const elevationSummary = elevationSection.querySelector('#elevation-summary');
@@ -311,13 +373,32 @@ const TrailDetailPage = (function() {
                     
                     const maxElevation = Math.max(...elevations);
                     const minElevation = Math.min(...elevations);
-                    const elevationGain = maxElevation - minElevation;
+                    
+                    // Use database elevation_gain as primary source (same as Activity Overview)
+                    // This ensures consistency between sections
+                    let elevationGain;
+                    if (trail.elevation_gain !== undefined && trail.elevation_gain !== null) {
+                        elevationGain = Math.round(trail.elevation_gain);
+                    } else {
+                        // Fallback: Calculate cumulative elevation gain (sum of positive changes)
+                        let cumulativeGain = 0;
+                        for (let i = 1; i < elevations.length; i++) {
+                            const change = elevations[i] - elevations[i - 1];
+                            if (change > 0) {
+                                cumulativeGain += change;
+                            }
+                        }
+                        // If cumulative gain is reasonable, use it; otherwise use range
+                        elevationGain = (cumulativeGain > 10) ? 
+                            Math.round(cumulativeGain) : 
+                            Math.round(maxElevation - minElevation);
+                    }
                     
                     elevationSummary.innerHTML = `
                         <div class="elevation-summary-cards">
                             <div class="elevation-card">
                                 <span class="elevation-label">Max Elevation</span>
-                                <span class="elevation-value">${maxElevation}m</span>
+                                <span class="elevation-value">${Math.round(maxElevation)}m</span>
                             </div>
                             <div class="elevation-card">
                                 <span class="elevation-label">Elevation Gain</span>
@@ -325,7 +406,7 @@ const TrailDetailPage = (function() {
                             </div>
                             <div class="elevation-card">
                                 <span class="elevation-label">Min Elevation</span>
-                                <span class="elevation-value">${minElevation}m</span>
+                                <span class="elevation-value">${Math.round(minElevation)}m</span>
                             </div>
                         </div>
                     `;
@@ -459,7 +540,7 @@ const TrailDetailPage = (function() {
     }
     
     function renderOverviewSection(trail) {
-        const overviewSection = document.getElementById('trail-overview-section');
+        const overviewSection = document.getElementById('section-overview');
         if (!overviewSection) {
             return;
         }
@@ -517,8 +598,8 @@ const TrailDetailPage = (function() {
         if (detailsExpanded) {
             let detailsHTML = '<div class="trail-details-expanded-grid">';
             if (trail.region) detailsHTML += `<div><strong>Region:</strong> ${escapeHtml(trail.region)}</div>`;
-            if (trail.popularity !== undefined && trail.popularity !== null) detailsHTML += `<div><strong>Popularity:</strong> ${trail.popularity}/100</div>`;
-            if (trail.safety_risks) detailsHTML += `<div><strong>Safety:</strong> ${escapeHtml(trail.safety_risks)}</div>`;
+            if (trail.popularity !== undefined && trail.popularity !== null) detailsHTML += `<div><strong>Popularity:</strong> ${trail.popularity}/10</div>`;
+            if (trail.safety_risks) detailsHTML += `<div><strong>Safety:</strong> ${escapeHtml(formatSafetyRisks(trail.safety_risks))}</div>`;
             if (trail.accessibility) detailsHTML += `<div><strong>Accessibility:</strong> ${escapeHtml(trail.accessibility)}</div>`;
             if (trail.closed_seasons) detailsHTML += `<div><strong>Closed Seasons:</strong> ${escapeHtml(trail.closed_seasons)}</div>`;
             detailsHTML += '</div>';
@@ -527,7 +608,7 @@ const TrailDetailPage = (function() {
     }
     
     function renderPerformanceSection(performance, showPredicted = false) {
-        const performanceSection = document.getElementById('trail-performance-section');
+        const performanceSection = document.getElementById('section-performance');
         if (!performanceSection) {
             return;
         }
@@ -538,17 +619,46 @@ const TrailDetailPage = (function() {
             perf = performance.performance;
         } else if (performance && performance.completed) {
             perf = performance;
-        } else if (performance && !performance.completed) {
-            const summaryCards = performanceSection.querySelector('#performance-summary-cards');
-            if (summaryCards) {
-                summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
+        } else {
+            // Trail not completed or no performance data - fetch and show predicted data
+            if (currentTrail && currentUserId) {
+                loadPredictions(currentTrail.trail_id, currentUserId)
+                    .then(predictions => {
+                        if (predictions) {
+                            const predictedPerf = transformPredictionsToPerformance(predictions, currentTrail);
+                            if (predictedPerf) {
+                                renderPerformanceSectionWithData(predictedPerf, true);
+                                renderPerformanceVisualizationsWithPredicted(predictedPerf);
+                            } else {
+                                showEmptyPerformanceMessage(performanceSection);
+                            }
+                        } else {
+                            showEmptyPerformanceMessage(performanceSection);
+                        }
+                    })
+                    .catch(e => {
+                        console.warn('Error loading predictions:', e);
+                        showEmptyPerformanceMessage(performanceSection);
+                    });
+            } else {
+                showEmptyPerformanceMessage(performanceSection);
             }
             return;
-        } else {
-            const summaryCards = performanceSection.querySelector('#performance-summary-cards');
-            if (summaryCards) {
-                summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
-            }
+        }
+        
+        renderPerformanceSectionWithData(perf, showPredicted);
+    }
+    
+    function showEmptyPerformanceMessage(performanceSection) {
+        const summaryCards = performanceSection.querySelector('#performance-summary-cards');
+        if (summaryCards) {
+            summaryCards.innerHTML = '<div class="empty-state"><p>No performance data available. Complete this trail to see your metrics.</p></div>';
+        }
+    }
+    
+    function renderPerformanceSectionWithData(perf, showPredicted = false) {
+        const performanceSection = document.getElementById('section-performance');
+        if (!performanceSection || !perf) {
             return;
         }
         
@@ -563,7 +673,8 @@ const TrailDetailPage = (function() {
                 if (duration !== undefined && duration !== null) {
                     const hours = Math.floor(duration / 60);
                     const minutes = duration % 60;
-                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Duration</span><span class="summary-value">${hours}h ${minutes}m</span></div>`;
+                    const label = showPredicted ? 'Predicted Duration' : 'Duration';
+                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">${label}</span><span class="summary-value">${hours}h ${minutes}m</span></div>`;
                 }
                 
                 if (perf.rating !== undefined && perf.rating !== null && !showPredicted) {
@@ -573,10 +684,16 @@ const TrailDetailPage = (function() {
                 // Show predicted or actual heart rate
                 const avgHeartRate = showPredicted ? perf.predicted_avg_heart_rate : perf.avg_heart_rate;
                 if (avgHeartRate !== undefined && avgHeartRate !== null) {
-                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Avg Heart Rate</span><span class="summary-value">${avgHeartRate} bpm</span></div>`;
+                    const label = showPredicted ? 'Predicted Avg Heart Rate' : 'Avg Heart Rate';
+                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">${label}</span><span class="summary-value">${avgHeartRate} bpm</span></div>`;
                 }
                 
-                if (perf.difficulty_rating !== undefined && perf.difficulty_rating !== null) {
+                // Show predicted speed if available
+                if (showPredicted && perf.predicted_avg_speed !== undefined && perf.predicted_avg_speed !== null) {
+                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Predicted Avg Speed</span><span class="summary-value">${perf.predicted_avg_speed.toFixed(2)} km/h</span></div>`;
+                }
+                
+                if (perf.difficulty_rating !== undefined && perf.difficulty_rating !== null && !showPredicted) {
                     summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Difficulty</span><span class="summary-value">${perf.difficulty_rating}/10</span></div>`;
                 }
                 
@@ -590,7 +707,8 @@ const TrailDetailPage = (function() {
                 let html = '<div class="performance-metrics-grid">';
                 let hasMetrics = false;
                 
-                if (perf.completion_date) {
+                // Only show completion date for actual completions, not predicted data
+                if (perf.completion_date && !showPredicted) {
                     html += `<div class="metric-item"><strong>Completed:</strong> ${new Date(perf.completion_date).toLocaleDateString()}</div>`;
                     hasMetrics = true;
                 }
@@ -603,25 +721,34 @@ const TrailDetailPage = (function() {
                 // Show predicted or actual metrics
                 const maxHeartRate = showPredicted ? perf.predicted_max_heart_rate : perf.max_heart_rate;
                 if (maxHeartRate !== undefined && maxHeartRate !== null) {
-                    html += `<div class="metric-item"><strong>Max Heart Rate:</strong> ${maxHeartRate} bpm</div>`;
+                    const label = showPredicted ? 'Predicted Max Heart Rate' : 'Max Heart Rate';
+                    html += `<div class="metric-item"><strong>${label}:</strong> ${maxHeartRate} bpm</div>`;
                     hasMetrics = true;
                 }
                 
                 const avgHeartRate = showPredicted ? perf.predicted_avg_heart_rate : perf.avg_heart_rate;
                 if (avgHeartRate !== undefined && avgHeartRate !== null) {
-                    html += `<div class="metric-item"><strong>Avg Heart Rate:</strong> ${avgHeartRate} bpm</div>`;
+                    const label = showPredicted ? 'Predicted Avg Heart Rate' : 'Avg Heart Rate';
+                    html += `<div class="metric-item"><strong>${label}:</strong> ${avgHeartRate} bpm</div>`;
                     hasMetrics = true;
                 }
                 
                 const avgSpeed = showPredicted ? perf.predicted_avg_speed : perf.avg_speed;
                 if (avgSpeed !== undefined && avgSpeed !== null) {
-                    html += `<div class="metric-item"><strong>Avg Speed:</strong> ${avgSpeed.toFixed(2)} km/h</div>`;
+                    const label = showPredicted ? 'Predicted Avg Speed' : 'Avg Speed';
+                    html += `<div class="metric-item"><strong>${label}:</strong> ${avgSpeed.toFixed(2)} km/h</div>`;
                     hasMetrics = true;
                 }
                 
                 const maxSpeed = showPredicted ? perf.predicted_max_speed : perf.max_speed;
                 if (maxSpeed !== undefined && maxSpeed !== null) {
-                    html += `<div class="metric-item"><strong>Max Speed:</strong> ${maxSpeed.toFixed(2)} km/h</div>`;
+                    const label = showPredicted ? 'Predicted Max Speed' : 'Max Speed';
+                    html += `<div class="metric-item"><strong>${label}:</strong> ${maxSpeed.toFixed(2)} km/h</div>`;
+                    hasMetrics = true;
+                }
+                
+                if (showPredicted && perf.predicted_calories !== undefined && perf.predicted_calories !== null) {
+                    html += `<div class="metric-item"><strong>Predicted Calories:</strong> ${perf.predicted_calories} cal</div>`;
                     hasMetrics = true;
                 }
                 
@@ -633,31 +760,41 @@ const TrailDetailPage = (function() {
                 html += '</div>';
                 
                 // If no additional metrics beyond completion date, show a helpful message
-                if (!hasMetrics && perf.completion_date) {
+                // Only check completion_date for actual completions, not predicted
+                if (!hasMetrics && perf.completion_date && !showPredicted) {
                     html += '<p class="text-muted" style="margin-top: var(--space-md);">Upload smartwatch data or complete more trails to see detailed performance metrics.</p>';
                 }
                 
                 detailedMetrics.innerHTML = html;
             }
             
-            // Performance chart (only if time series data exists)
-            const chartContainer = performanceSection.querySelector('.chart-container');
-            const canvas = performanceSection.querySelector('#performance-chart');
-            if (chartContainer && canvas) {
-                if (perf.time_series && perf.time_series.length > 0) {
-                    setTimeout(() => {
-                        renderPerformanceChart(perf.time_series);
-                    }, 100);
-                } else {
-                    // Hide chart container if no time series data
-                    chartContainer.style.display = 'none';
+            // Performance chart - will be rendered by renderPerformanceVisualizations
+            // For predicted data, the chart will be rendered separately
+            if (!showPredicted) {
+                const chartContainer = performanceSection.querySelector('.chart-container');
+                const canvas = performanceSection.querySelector('#performance-chart');
+                if (chartContainer && canvas) {
+                    if (perf.time_series && perf.time_series.length > 0) {
+                        setTimeout(() => {
+                            renderPerformanceChart(perf.time_series);
+                        }, 100);
+                    } else {
+                        // Hide chart container if no time series data
+                        chartContainer.classList.add('hidden');
+                    }
+                }
+            } else {
+                // For predicted data, ensure chart container is visible
+                const chartContainer = performanceSection.querySelector('.chart-container');
+                if (chartContainer) {
+                    chartContainer.classList.remove('hidden');
                 }
             }
         }
     }
     
     function renderWeatherSection(weather) {
-        const weatherSection = document.getElementById('trail-weather-section');
+        const weatherSection = document.getElementById('section-weather');
         if (!weatherSection) {
             return;
         }
@@ -665,7 +802,7 @@ const TrailDetailPage = (function() {
         // Hide/remove the full forecast section
         const fullForecast = weatherSection.querySelector('#weather-forecast-full');
         if (fullForecast) {
-            fullForecast.style.display = 'none';
+            fullForecast.classList.add('hidden');
             fullForecast.innerHTML = '';
         }
         
@@ -694,7 +831,7 @@ const TrailDetailPage = (function() {
         } else {
             const summaryCards = weatherSection.querySelector('#weather-summary-cards');
             if (summaryCards) {
-                summaryCards.innerHTML = '<p>No weather forecast available</p>';
+                summaryCards.innerHTML = '<div class="empty-state"><p>No weather forecast available</p></div>';
             }
         }
     }
@@ -711,101 +848,116 @@ const TrailDetailPage = (function() {
     }
     
     function renderRecommendationsSection(recommendations) {
-        const recommendationsSection = document.getElementById('trail-recommendations-section');
+        const recommendationsSection = document.getElementById('section-recommendations');
         if (!recommendationsSection) {
             console.error('Recommendations section element not found');
             return;
         }
         
+        // Clear existing content
+        const keyTips = recommendationsSection.querySelector('#recommendations-key-tips');
+        const fullRecommendations = recommendationsSection.querySelector('#ai-recommendations-full');
+        
         if (recommendations) {
-            // Key tips (always visible - top 3-5)
-            const keyTips = recommendationsSection.querySelector('#recommendations-key-tips');
-            if (keyTips) {
-                let tipsHTML = '<div class="key-tips-section"><h4>Key Tips</h4><ul class="key-tips-list">';
+            let html = '';
+            let hasContent = false;
+            
+            // Primary AI explanation (most important)
+            if (recommendations.ai_explanation && recommendations.ai_explanation.explanation_text) {
+                const explanationText = recommendations.ai_explanation.explanation_text.trim();
                 
-                // Get tips from profile_recommendations or ai_explanation
+                // Parse explanation to separate summary from tips
+                const lines = explanationText.split('\n').map(l => l.trim()).filter(l => l);
+                let summary = '';
                 let tips = [];
-                if (recommendations.profile_recommendations && recommendations.profile_recommendations.tips) {
-                    tips = recommendations.profile_recommendations.tips;
-                } else if (recommendations.ai_explanation && recommendations.ai_explanation.key_factors) {
-                    tips = recommendations.ai_explanation.key_factors;
+                
+                // Find summary (first paragraph, before bullet points)
+                let summaryEnd = -1;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].match(/^[•\-\*]|^MATCHES|^MISMATCHES|^RECOMMENDATIONS/i)) {
+                        summaryEnd = i;
+                        break;
+                    }
                 }
                 
-                // Show top 5 tips
-                tips.slice(0, 5).forEach(tip => {
-                    tipsHTML += `<li class="key-tip-item">${escapeHtml(tip)}</li>`;
-                });
+                if (summaryEnd > 0) {
+                    summary = lines.slice(0, summaryEnd).join(' ').replace(/MATCHES:|MISMATCHES:|RECOMMENDATIONS:/gi, '').trim();
+                    // Extract tips (bullet points)
+                    for (let i = summaryEnd; i < lines.length; i++) {
+                        const line = lines[i].replace(/^[•\-\*]\s*|^MATCHES:|^MISMATCHES:|^RECOMMENDATIONS:/gi, '').trim();
+                        if (line && line.length > 10) {
+                            tips.push(line);
+                        }
+                    }
+                } else {
+                    // No clear separation, use first 2 sentences as summary, rest as tips
+                    const sentences = explanationText.split(/[.!?]+/).filter(s => s.trim().length > 10);
+                    if (sentences.length > 0) {
+                        summary = sentences.slice(0, 2).join('. ').trim() + (sentences.length > 2 ? '.' : '');
+                        // Extract tips from key_factors if available
+                        if (recommendations.ai_explanation.key_factors) {
+                            tips = recommendations.ai_explanation.key_factors.slice(0, 4);
+                        }
+                    } else {
+                        summary = explanationText.substring(0, 200);
+                    }
+                }
                 
-                tipsHTML += '</ul></div>';
-                keyTips.innerHTML = tipsHTML;
+                // Limit tips to 4 most important
+                tips = tips.slice(0, 4);
+                
+                // Render summary
+                if (summary) {
+                    html += `<div class="recommendation-summary">
+                        <p>${escapeHtml(summary)}</p>
+                    </div>`;
+                    hasContent = true;
+                }
+                
+                // Render tips in a clean grid
+                if (tips.length > 0) {
+                    html += '<div class="recommendation-tips-grid">';
+                    tips.forEach(tip => {
+                        html += `
+                            <div class="recommendation-tip-compact">
+                                <span class="tip-icon">💡</span>
+                                <span class="tip-text">${escapeHtml(tip)}</span>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    hasContent = true;
+                }
             }
             
-            // Full recommendations (always visible)
-            const fullRecommendations = recommendationsSection.querySelector('#ai-recommendations-full');
+            // Add safety tips if no AI explanation or as additional info
+            if (recommendations.safety_tips && recommendations.safety_tips.length > 0 && !hasContent) {
+                html += '<div class="recommendation-safety-section">';
+                html += '<h5>Safety Reminders</h5>';
+                html += '<ul class="safety-tips-list">';
+                recommendations.safety_tips.slice(0, 3).forEach(tip => {
+                    html += `<li>${escapeHtml(tip)}</li>`;
+                });
+                html += '</ul></div>';
+                hasContent = true;
+            }
+            
+            // Render to keyTips (main recommendations area)
+            if (keyTips) {
+                if (hasContent) {
+                    keyTips.innerHTML = html;
+                } else {
+                    keyTips.innerHTML = '<div class="empty-state"><p>Complete this trail to see personalized recommendations based on your performance and profile.</p></div>';
+                }
+            }
+            
+            // Keep fullRecommendations empty or minimal
             if (fullRecommendations) {
-                let html = '';
-                let hasContent = false;
-                
-                if (recommendations.ai_explanation && recommendations.ai_explanation.explanation_text) {
-                    html += `<div class="ai-explanation-full"><h5>Full Explanation</h5><p>${escapeHtml(recommendations.ai_explanation.explanation_text)}</p></div>`;
-                    hasContent = true;
-                }
-                
-                if (recommendations.ai_explanation && recommendations.ai_explanation.key_factors && recommendations.ai_explanation.key_factors.length > 0) {
-                    html += '<div class="key-factors-section"><h5>Key Factors</h5><ul>';
-                    recommendations.ai_explanation.key_factors.forEach(factor => {
-                        html += `<li>${escapeHtml(factor)}</li>`;
-                    });
-                    html += '</ul></div>';
-                    hasContent = true;
-                }
-                
-                if (recommendations.profile_recommendations && recommendations.profile_recommendations.tips && recommendations.profile_recommendations.tips.length > 0) {
-                    html += '<div class="all-tips-section"><h5>All Tips</h5><ul>';
-                    recommendations.profile_recommendations.tips.forEach(tip => {
-                        html += `<li>${escapeHtml(tip)}</li>`;
-                    });
-                    html += '</ul></div>';
-                    hasContent = true;
-                }
-                
-                if (recommendations.performance_tips && recommendations.performance_tips.length > 0) {
-                    html += '<div class="performance-tips-section"><h5>Performance Tips</h5><ul>';
-                    recommendations.performance_tips.forEach(tip => {
-                        html += `<li>${escapeHtml(tip)}</li>`;
-                    });
-                    html += '</ul></div>';
-                    hasContent = true;
-                }
-                
-                if (recommendations.safety_tips && recommendations.safety_tips.length > 0) {
-                    html += '<div class="safety-tips-section"><h5>Safety Tips</h5><ul>';
-                    recommendations.safety_tips.forEach(tip => {
-                        html += `<li>${escapeHtml(tip)}</li>`;
-                    });
-                    html += '</ul></div>';
-                    hasContent = true;
-                }
-                
-                if (recommendations.weather_recommendations && recommendations.weather_recommendations.tips && recommendations.weather_recommendations.tips.length > 0) {
-                    html += '<div class="weather-tips-section"><h5>Weather Tips</h5><ul>';
-                    recommendations.weather_recommendations.tips.forEach(tip => {
-                        html += `<li>${escapeHtml(tip)}</li>`;
-                    });
-                    html += '</ul></div>';
-                    hasContent = true;
-                }
-                
-                if (!hasContent) {
-                    html = '<p class="text-muted">Complete this trail to see personalized recommendations based on your performance and profile.</p>';
-                }
-                
-                fullRecommendations.innerHTML = html;
+                fullRecommendations.innerHTML = '';
             }
         } else {
-            const keyTips = recommendationsSection.querySelector('#recommendations-key-tips');
             if (keyTips) {
-                keyTips.innerHTML = '<p>No recommendations available</p>';
+                keyTips.innerHTML = '<div class="empty-state"><p>No recommendations available</p></div>';
             }
         }
     }
@@ -868,11 +1020,15 @@ const TrailDetailPage = (function() {
         const completionEntries = Object.values(loadedCompletions);
         
         if (completionEntries.length === 0) {
-            canvas.parentElement.style.display = 'none';
+            if (canvas.parentElement) {
+                canvas.parentElement.classList.add('hidden');
+            }
             return;
         }
         
-        canvas.parentElement.style.display = 'block';
+        if (canvas.parentElement) {
+            canvas.parentElement.classList.remove('hidden');
+        }
         
         // Normalize all time series to start from 0
         const normalizedCompletions = completionEntries.map(comp => ({
@@ -881,7 +1037,9 @@ const TrailDetailPage = (function() {
         })).filter(comp => comp.normalizedData.length > 0); // Filter out empty data
         
         if (normalizedCompletions.length === 0) {
-            canvas.parentElement.style.display = 'none';
+            if (canvas.parentElement) {
+                canvas.parentElement.classList.add('hidden');
+            }
             return;
         }
         
@@ -949,7 +1107,17 @@ const TrailDetailPage = (function() {
                 plugins: {
                     title: {
                         display: true,
-                        text: `${getMetricLabel(currentMetric)}: Actual vs Predicted`
+                        text: (() => {
+                            const hasPredicted = completionEntries.some(c => c.isPredicted);
+                            const hasActual = completionEntries.some(c => !c.isPredicted);
+                            if (hasPredicted && hasActual) {
+                                return `${getMetricLabel(currentMetric)}: Actual vs Predicted`;
+                            } else if (hasPredicted) {
+                                return `${getMetricLabel(currentMetric)}: Predicted`;
+                            } else {
+                                return `${getMetricLabel(currentMetric)}: Actual`;
+                            }
+                        })()
                     },
                     legend: {
                         display: true,
@@ -1094,6 +1262,52 @@ const TrailDetailPage = (function() {
                 console.warn('Error loading performance:', e);
                 return { completed: false };
             });
+    }
+    
+    function loadPredictions(trailId, userId) {
+        return fetch(`/api/profile/${userId}/trail/${trailId}/predictions`)
+            .then(r => {
+                if (!r.ok) {
+                    console.warn('Predictions API returned', r.status);
+                    return null;
+                }
+                return r.json();
+            })
+            .catch(e => {
+                console.warn('Error loading predictions:', e);
+                return null;
+            });
+    }
+    
+    function transformPredictionsToPerformance(predictions, trail) {
+        if (!predictions) return null;
+        
+        const predictedHR = predictions.predicted_heart_rate || {};
+        
+        return {
+            predicted_duration: predictions.predicted_duration || trail.duration || 120,
+            predicted_avg_heart_rate: predictedHR.avg || null,
+            predicted_max_heart_rate: predictedHR.max || null,
+            predicted_avg_speed: predictions.predicted_speed || null,
+            predicted_max_speed: predictions.predicted_speed ? predictions.predicted_speed * 1.3 : null,
+            predicted_calories: predictions.predicted_calories || null,
+            completion_date: new Date().toISOString(),
+            id: 'predicted'
+        };
+    }
+    
+    function renderPerformanceVisualizationsWithPredicted(predictedPerf) {
+        if (!predictedPerf) return;
+        
+        loadedCompletions = {};
+        const predictedTimeSeries = generatePredictedTimeSeries(predictedPerf);
+        if (predictedTimeSeries && predictedTimeSeries.length > 0) {
+            addCompletionToChart({
+                ...predictedPerf,
+                time_series: predictedTimeSeries,
+                completion_date: predictedPerf.completion_date || new Date().toISOString()
+            }, 'predicted', true);
+        }
     }
     
     function renderPerformanceVisualizations(performanceData, showPredicted = false) {
@@ -1365,10 +1579,20 @@ const TrailDetailPage = (function() {
         currentUserProfile = userProfile;
         completedTrailData = completedData;
         
+        // Set up metric selector change handler
+        const metricSelector = document.getElementById('metric-selector');
+        if (metricSelector && !metricSelector._listenerAttached) {
+            metricSelector.addEventListener('change', function(e) {
+                currentMetric = e.target.value;
+                renderPerformanceChart();
+            });
+            metricSelector._listenerAttached = true;
+        }
+        
         // Hide loading indicator if it exists
         const loadingEl = document.getElementById('trail-detail-loading');
         if (loadingEl) {
-            loadingEl.style.display = 'none';
+            loadingEl.classList.add('hidden');
         }
         
         // Render all sections immediately
@@ -1408,7 +1632,7 @@ const TrailDetailPage = (function() {
             
             if (selectorContainer && selector && completions.length > 0) {
                 // Show selector if there are any completions
-                selectorContainer.style.display = 'block';
+                selectorContainer.classList.remove('hidden');
                 
                 // Populate dropdown with "Predicted" as first option, then actual completions
                 selector.innerHTML = '<option value="predicted" selected>Predicted</option>';
@@ -1462,14 +1686,13 @@ const TrailDetailPage = (function() {
                     }
                 });
                 
-                // Set up metric selector change handler
-                const metricSelector = document.getElementById('metric-selector');
-                if (metricSelector) {
-                    metricSelector.addEventListener('change', (e) => {
-                        currentMetric = e.target.value;
-                        renderPerformanceChart();
+            } else {
+                // No completions - load predictions directly
+                // renderPerformanceSection will handle loading predictions when performance.completed is false
+                loadCompletionPerformance(trailId, userId, null)
+                    .then(performance => {
+                        renderPerformanceSection(performance, false);
                     });
-                }
             }
         });
         

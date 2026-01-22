@@ -18,11 +18,11 @@
  - DB seeding: `adaptive_quiz_system/backend/init_db.py`
  - Trail ingestion: `adaptive_quiz_system/data_pipeline/alps_trails_loader.py`
  
- ## High-level flow
- 1. User hits a page route (demo, recommendations, trail detail, profile).
- 2. Flask resolves user and context, then calls `adapt_trails()`.
- 3. The recommendation engine builds filters, scores trails, enriches weather, ranks, and explains.
- 4. Templates render data and load JS for interactive maps and dashboards.
+## High-level flow
+1. User hits a page route (demo, trail detail, profile).
+2. Flask resolves user and context, then calls `adapt_trails()`.
+3. The recommendation engine builds filters, scores trails, enriches weather, ranks, and explains.
+4. Templates render data and load JS for interactive maps and dashboards.
  
  ## Data stores
  - `adaptive_quiz_system/backend/users.db` (user profiles, performance, uploads)
@@ -34,11 +34,10 @@
  - Open-Elevation API: elevation profiles for trails.
  - OpenAI/OpenRouter: AI explanation generation (optional; requires API key).
  
- ## Runtime URLs (examples)
- - `/demo` - interactive demo mode with multi-user comparisons.
- - `/recommendations/<user_id>` - recommendation view with map/cards.
- - `/trail/<user_id>/<trail_id>` - trail detail view with elevation.
- - `/profile/<user_id>` - user dashboard and trail management.
+## Runtime URLs (examples)
+- `/demo` - interactive demo mode with multi-user comparisons and trail recommendations.
+- `/trail/<user_id>/<trail_id>` - trail detail view with elevation.
+- `/profile/<user_id>` - user dashboard and trail management.
  
  ## Repository layout (core)
  - `adaptive_quiz_system/app/` Flask routes and templates binding.

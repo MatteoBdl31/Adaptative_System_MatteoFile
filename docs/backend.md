@@ -4,13 +4,12 @@
  - Routes live in `adaptive_quiz_system/app/__init__.py`.
  - `run.py` starts the Flask app for local development.
  
- ## Page routes
- | Method | Route | Purpose | Template |
- | --- | --- | --- | --- |
- | GET/POST | `/` | Redirects to demo or forwards to recommendations | (redirect only) |
- | GET | `/demo` | Demo mode with multi-user comparison | `demo.html` |
- | GET | `/recommendations/<user_id>` | Recommendations view | `recommendations.html` |
- | GET | `/trail/<user_id>/<trail_id>` | Trail detail view | `trail_detail.html` |
+## Page routes
+| Method | Route | Purpose | Template |
+| --- | --- | --- | --- |
+| GET/POST | `/` | Redirects to demo | (redirect only) |
+| GET | `/demo` | Demo mode with multi-user comparison and trail recommendations | `demo.html` |
+| GET | `/trail/<user_id>/<trail_id>` | Trail detail view | `trail_detail.html` |
  | POST | `/trail/<user_id>/<trail_id>/complete` | Record completion | (redirect) |
  | GET | `/profile/<user_id>` | Profile dashboard | `profile.html` |
  | GET | `/profile/<user_id>/trail/<trail_id>` | Profile trail detail | `profile_trail_detail.html` |
@@ -56,7 +55,7 @@
  - `backend/trail_analytics.py`: analyze performance and predict metrics.
  - `backend/dashboard_service.py`: compute profile dashboards (fitness, elevation, etc).
  - `backend/weather_service.py`: Open-Meteo forecasts and weather matching.
- - `backend/trail_recommendation_service.py`: AI recommendations for trail detail page.
+ - `backend/trail_recommendation_service.py`: AI recommendations for trail detail page with similar-profile hiker context.
  - `backend/explanation_service.py`: OpenAI/OpenRouter explanation generation.
  - `backend/user_profiling.py`: profile detection based on completed trails.
  

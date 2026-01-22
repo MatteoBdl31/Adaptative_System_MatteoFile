@@ -49,14 +49,14 @@ The Adaptive Trail Recommender provides the following core features:
 **Actor**: Hiker  
 **Preconditions**: User exists in system, trails database populated  
 **Main Flow**:
-1. User navigates to recommendations page with user ID
-2. System extracts context (time available, device, weather, season)
-3. System builds filters from rules and user profile
+1. User navigates to demo page and selects a user
+2. User sets context parameters (time available, device, weather, season)
+3. System extracts context and builds filters from rules and user profile
 4. System scores all candidate trails
 5. System enriches top trails with weather forecasts
 6. System ranks trails into exact matches and suggestions
 7. System generates explanations
-8. User sees personalized trail list with map and cards
+8. User sees personalized trail list with map, list, and card views
 
 **Alternative Flows**:
 - No exact matches: System uses progressive fallback to relax filters
@@ -85,8 +85,10 @@ The Adaptive Trail Recommender provides the following core features:
 2. System loads trail geometry and elevation profile
 3. System fetches performance data for completed trail
 4. System loads weather forecast
-5. System generates AI recommendations
-6. User sees map, elevation chart, performance metrics, and recommendations
+5. System generates AI recommendations with similar-profile hiker context (see Trail Recommendations below)
+6. **System adaptively orders navigation tabs based on user profile** (see Adaptive Navigation below)
+7. User sees map, elevation chart, performance metrics, and concise recommendations
+8. Navigation tabs are sticky and scroll to sections on click
 
 ### UC-4: Compare Users in Demo Mode
 **Actor**: Presenter/Demo User  
@@ -109,6 +111,97 @@ The Adaptive Trail Recommender provides the following core features:
 5. If not matched, user selects trail manually
 6. System processes and stores performance data
 7. System updates user profile
+
+## Adaptive Navigation Behavior
+
+The trail detail page (`profile_trail_detail.html`) features adaptive navigation that reorders tab items based on the user's detected profile type. This ensures the most relevant information is prioritized for each user type.
+
+### Navigation Tab Ordering Rules
+
+**Base Rule**: Activity Overview is always the first tab, regardless of profile.
+
+**Profile-Specific Ordering**:
+
+| Profile Type | Tab Order |
+|--------------|-----------|
+| **Performance Athlete** | Overview → Performance → Route → Weather → Recommendations |
+| **Elevation Lover** | Overview → Route → Weather → Performance → Recommendations |
+| **Photographer** | Overview → Weather → Recommendations → Route → Performance |
+| **Contemplative** | Overview → Recommendations → Weather → Route → Performance |
+| **Explorer** | Overview → Route → Recommendations → Weather → Performance |
+| **Casual/Family** | Overview → Weather → Recommendations → Route → Performance |
+| **Default** (no profile detected) | Overview → Route → Weather → Performance → Recommendations |
+
+### Implementation Details
+
+- Navigation bar is positioned sticky below the app header
+- Tab order is determined at page load based on `userProfile.primary_profile`
+- Active tab highlighting uses `IntersectionObserver` to detect visible sections
+- Clicking tabs smoothly scrolls to the corresponding section
+- Tab reordering happens in the DOM without page reload
+
+### Rationale
+
+Each profile type has different information priorities:
+- **Performance Athletes** need performance metrics first
+- **Elevation Lovers** prioritize route details (elevation profiles)
+- **Photographers** need weather and recommendations for planning
+- **Contemplative** users value recommendations and weather conditions
+- **Explorers** want route details and recommendations
+
+## Trail Recommendations System
+
+The trail detail page includes an enhanced AI-powered recommendations system that provides personalized, actionable advice based on the user's profile and insights from similar-profile hikers.
+
+### Features
+
+1. **Similar-Profile Hiker Context**: The system queries the database for other hikers with the same profile type who have completed the same trail, providing:
+   - Average completion times (compared to trail estimates)
+   - Average ratings from similar hikers
+   - Performance metrics (heart rate, speed) from similar profiles
+   - Difficulty perceptions vs. trail estimates
+   - Key insights and observations
+
+2. **Concise Format**: Recommendations are formatted for clarity:
+   - Brief 1-2 sentence summary (max 50 words)
+   - 3-4 most important actionable tips (max 80 characters each)
+   - Clean, scannable UI with responsive grid layout
+   - No redundant information or verbose sections
+
+3. **Profile-Specific Focus**: Recommendations are tailored to each profile type:
+   - **Elevation Lovers**: Peak timing, steepest sections, elevation challenges
+   - **Photographers**: Photo opportunities, golden hour timing, scenic viewpoints
+   - **Performance Athletes**: Pacing strategy, heart rate zones, training benefits
+   - **Explorers**: Alternative routes, side trails, navigation tips
+   - **Contemplative**: Quiet sections, solitude timing, peaceful viewpoints
+   - **Casual/Family**: Difficulty assessment, pacing, safety considerations
+
+### Implementation
+
+The `TrailRecommendationService` class:
+- Queries `completed_trails` and `user_profiles` tables to find similar-profile hikers
+- Calculates statistics (averages, insights) from completion data
+- Builds enhanced prompts with similar hiker context
+- Generates concise AI explanations via `ExplanationService`
+- Formats recommendations for optimal UI display
+
+### UI Rendering
+
+The recommendations section (`section-recommendations`) displays:
+- **Summary Box**: Highlighted summary with left border accent
+- **Tips Grid**: Responsive 2-3 column grid of compact tip cards
+- **Hover Effects**: Interactive tip cards with visual feedback
+- **Safety Section**: Distinct styling for important safety reminders (when applicable)
+
+### Data Sources
+
+Recommendations incorporate:
+- Trail details (distance, elevation, difficulty, landscapes)
+- User profile (experience, fitness, detected profile type)
+- Weather forecasts and recommendations
+- Similar-profile hiker statistics (completion times, ratings, performance metrics)
+- Performance predictions from `TrailAnalytics`
+- **Casual/Family** users prioritize safety (weather) and recommendations
 
 ## User Profiles
 
@@ -296,6 +389,9 @@ classDiagram
         -ExplanationService explanation_service
         -TrailAnalytics analytics
         +generate_trail_recommendations(trail, user, weather_forecast) Dict
+        -_get_similar_profile_context(trail, profile, current_user_id) Dict
+        -_generate_ai_explanation(trail, user, profile, weather_recommendations, similar_hiker_context) Dict
+        -_build_recommendation_prompt(trail, user, profile, weather_recommendations, similar_hiker_context) str
     }
 ```
 
@@ -440,10 +536,10 @@ flowchart TD
     BuildFilters --> ScoreTrails[System scores trails]
     ScoreTrails --> EnrichWeather[Enrich with weather data]
     EnrichWeather --> Rank[Rank into exact matches and suggestions]
-    Rank --> Display[Display recommendations with map]
+    Rank --> Display[Display recommendations with map/list/cards]
     Display --> ViewDetail{User clicks trail?}
     ViewDetail -->|Yes| TrailDetail[Show trail detail page]
-    ViewDetail -->|No| End([User browses recommendations])
+    ViewDetail -->|No| End([User browses demo recommendations])
     TrailDetail --> End
 ```
 
@@ -498,7 +594,7 @@ flowchart TD
 
 | Feature | Description | User Type | API Endpoint |
 | --- | --- | --- | --- |
-| Get Recommendations | Personalized trail suggestions | All | `/recommendations/<user_id>` |
+| Get Recommendations | Personalized trail suggestions | All | `/demo` |
 | Save Trail | Bookmark trail for later | All | `POST /api/profile/<user_id>/trails/save` |
 | Start Trail | Begin tracking a trail | All | `POST /api/profile/<user_id>/trails/start` |
 | Complete Trail | Mark trail as completed | All | `POST /api/profile/<user_id>/trails/<trail_id>/complete` |

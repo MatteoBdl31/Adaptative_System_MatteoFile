@@ -1,154 +1,238 @@
 {% extends "base.html" %}
 {% block title %}{{ trail.name }} · Personalised Trail View{% endblock %}
-{% block page_class %}detail-page{% endblock %}
+{% block page_class %}detail-page komoot-style{% endblock %}
 {% block extra_head %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 {% endblock %}
 {% block content %}
-    <div class="container">
-        <header class="page-header">
-            <div class="page-header__left">
-                {% set days = (context.time_available // (24 * 60)) %}
-                {% set hours = ((context.time_available % (24 * 60)) // 60) %}
-                <a class="btn btn-ghost" href="{{ url_for('recommendations', user_id=user.id, time_available_days=days, time_available_hours=hours, device=context.device, weather=context.weather, connection=context.connection, season=context.get('season', 'summer')) }}" style="margin-bottom: var(--space-md);">
-                    ← Back to recommendations
-                </a>
-                <h1 class="page-header__title">{{ trail.name }}</h1>
-                <p class="page-header__subtitle">{{ trail.description }}</p>
+    <div class="komoot-trail-detail">
+        <!-- Hero Image Section -->
+        <div class="komoot-hero-section">
+            {% if trail.latitude and trail.longitude %}
+            <div id="trail-hero-map" class="komoot-hero-map"></div>
+            {% else %}
+            <div class="komoot-hero-placeholder">
+                <div class="komoot-hero-icon">🏔️</div>
             </div>
-            <div class="context-pills" style="margin-top: var(--space-lg);">
-                {% set time_avail = context.time_available or 60 %}
-                {% set days = (time_avail // (24 * 60)) %}
-                {% set hours = ((time_avail % (24 * 60)) // 60) %}
-                {% if days > 0 %}
-                    <span class="badge">⏱ {{ days }} day{{ 's' if days != 1 else '' }}{% if hours > 0 %}, {{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}</span>
-                {% else %}
-                    <span class="badge">⏱ {{ hours }} hour{{ 's' if hours != 1 else '' }}</span>
-                {% endif %}
-                <span class="badge">📱 {{ context.device|title }}</span>
-                <span class="badge">🌤 {{ context.weather|title }}</span>
-                <span class="badge">📶 {{ context.connection|title }}</span>
-            </div>
-        </header>
-
-        <section class="card" style="margin-bottom: var(--space-xl);">
-            <div class="grid grid-cols-4" style="gap: var(--space-lg);">
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
-                        {{ trail.distance|default('—') }} km
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">Distance</div>
-                </div>
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
-                        {{ trail.duration|format_duration }}
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">Duration</div>
-                </div>
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
-                        {{ trail.elevation_gain|default('—') }} m
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">Elevation Gain</div>
-                </div>
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
-                        {% if trail.difficulty <= 3 %}Easy{% elif trail.difficulty <= 6 %}Medium{% else %}Hard{% endif %}
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">Difficulty</div>
-                </div>
-            </div>
-        </section>
-
-        <section class="grid grid-cols-2" style="gap: var(--space-xl); margin-bottom: var(--space-xl);">
-            <article class="card">
-                <div class="card__header">
-                    <h2 class="card__title">Trail Geometry</h2>
-                    <p class="card__description">Real GPS trace with interactive map overlay.</p>
-                </div>
-                {% if trail.latitude and trail.longitude %}
-                <div id="trail-map" class="map-container" style="height: 400px;"></div>
-                {% else %}
-                <div class="empty-state">
-                    <div class="empty-state__icon">🗺️</div>
-                    <p class="empty-state__description">Map data unavailable</p>
-                </div>
-                {% endif %}
-            </article>
-
-            <article class="card">
-                <div class="card__header">
-                    <h2 class="card__title">Elevation Profile</h2>
-                    <p class="card__description">{{ "Ready for personalised pacing tips." if trail.elevation_profile else "Elevation data missing for this trail." }}</p>
-                </div>
-                {% if trail.elevation_profile %}
-                <canvas id="elevationChart" style="max-height: 300px;"></canvas>
-                {% else %}
-                <div class="empty-state">
-                    <div class="empty-state__icon">⛰️</div>
-                    <p class="empty-state__description">Elevation samples unavailable</p>
-                </div>
-                {% endif %}
-            </article>
-        </section>
-
-        <section class="grid grid-cols-2" style="gap: var(--space-xl);">
-            <article class="card">
-                <h3 class="card__title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md);">Landscape Highlights</h3>
-                <div class="context-pills" style="margin-bottom: var(--space-md);">
-                    {% for landscape in trail.landscapes.split(',') %}
-                    <span class="context-pill">{{ landscape.strip().title() }}</span>
-                    {% endfor %}
-                </div>
-                <p class="text-muted">Perfect for {{ ", ".join(user.preferences) }} lovers.</p>
-            </article>
-
-            <article class="card">
-                <h3 class="card__title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md);">Safety & Logistics</h3>
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-sm);">
-                    <li><strong>Risks:</strong> {{ trail.safety_risks if trail.safety_risks != 'none' else 'None reported' }}</li>
-                    <li><strong>Accessibility:</strong> {{ trail.accessibility or 'General hiking gear' }}</li>
-                    {% if trail.closed_seasons %}
-                    <li><strong>Closed seasons:</strong> {{ trail.closed_seasons }}</li>
-                    {% else %}
-                    <li><strong>Season access:</strong> Year-round with weather checks</li>
-                    {% endif %}
-                </ul>
-                {% if context.weather != 'sunny' %}
-                <div class="badge badge-warning" style="margin-top: var(--space-md);">Weather alert: {{ context.weather|title }} mode activated</div>
-                {% endif %}
-            </article>
-
-            <article class="card">
-                <h3 class="card__title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md);">Context-aware Tips</h3>
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-sm); color: var(--color-text-secondary);">
-                    <li>Device: {{ context.device|title }} · Connection: {{ context.connection|title }}</li>
+            {% endif %}
+            <div class="komoot-hero-overlay">
+                <div class="komoot-hero-content">
                     {% set days = (context.time_available // (24 * 60)) %}
                     {% set hours = ((context.time_available % (24 * 60)) // 60) %}
-                    <li>Suggested window: {% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% if hours > 0 %}, {{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}{% else %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}</li>
-                    <li>{% if context.connection == 'weak' %}Download map tiles before leaving signal range.{% else %}Streaming-friendly trail assets available.{% endif %}</li>
-                </ul>
-            </article>
+                    <a class="komoot-back-btn" href="{{ url_for('demo') }}?user_id_a={{ user.id }}&a_time_available_days={{ days }}&a_time_available_hours={{ hours }}&a_device={{ context.device }}&a_weather={{ context.weather }}&a_connection={{ context.connection }}&a_season={{ context.get('season', 'summer') }}">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 16l-6-6 6-6"/>
+                        </svg>
+                        Back
+                    </a>
+                    <h1 class="komoot-trail-title">{{ trail.name }}</h1>
+                </div>
+            </div>
+        </div>
 
-            <article class="card">
-                <h3 class="card__title" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md);">Status & Feedback</h3>
-                {% if not completed %}
-                <form method="post" action="{{ url_for('complete_trail', user_id=user.id, trail_id=trail.trail_id) }}" style="display: flex; flex-direction: column; gap: var(--space-md);">
-                    <div class="form-group">
-                        <label class="form-label">Actual duration (min)</label>
-                        <input type="number" name="actual_duration" min="1" value="{{ trail.duration or 60 }}" class="form-input" required>
+        <!-- Key Stats Bar (Always Visible) -->
+        <div class="komoot-stats-bar">
+            <div class="komoot-stats-container">
+                <div class="komoot-stat-item">
+                    <div class="komoot-stat-value">{{ trail.distance|default('—') }}<span class="komoot-stat-unit">km</span></div>
+                    <div class="komoot-stat-label">Distance</div>
+                </div>
+                <div class="komoot-stat-divider"></div>
+                <div class="komoot-stat-item">
+                    <div class="komoot-stat-value">{{ trail.duration|format_duration }}</div>
+                    <div class="komoot-stat-label">Duration</div>
+                </div>
+                <div class="komoot-stat-divider"></div>
+                <div class="komoot-stat-item">
+                    <div class="komoot-stat-value">{{ trail.elevation_gain|default('—') }}<span class="komoot-stat-unit">m</span></div>
+                    <div class="komoot-stat-label">Elevation</div>
+                </div>
+                <div class="komoot-stat-divider"></div>
+                <div class="komoot-stat-item">
+                    <div class="komoot-stat-value">
+                        {% if trail.difficulty <= 3 %}
+                            <span class="komoot-difficulty-badge komoot-difficulty-easy">Easy</span>
+                        {% elif trail.difficulty <= 6 %}
+                            <span class="komoot-difficulty-badge komoot-difficulty-medium">Medium</span>
+                        {% else %}
+                            <span class="komoot-difficulty-badge komoot-difficulty-hard">Hard</span>
+                        {% endif %}
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Rating</label>
-                        <input type="number" name="rating" min="1" max="5" value="5" class="form-input" required>
+                    <div class="komoot-stat-label">Difficulty</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Container -->
+        <div class="komoot-content-container">
+            <!-- Action Buttons -->
+            <div class="komoot-actions">
+                <button class="komoot-action-btn komoot-action-primary">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z"/>
+                    </svg>
+                    Navigate
+                </button>
+                <button class="komoot-action-btn">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 2h-3a4 4 0 00-4 4v3a4 4 0 004 4h3v-2h-3V6h3V2zM2 2h3a4 4 0 014 4v3a4 4 0 01-4 4H2v-2h3V6H2V2z"/>
+                    </svg>
+                    Share
+                </button>
+                <button class="komoot-action-btn">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 2l2.5 6.5L19 9.5l-5 4.5 1.5 7-5.5-3.5L5 21.5l1.5-7-5-4.5 6.5-1L10 2z"/>
+                    </svg>
+                    Like
+                </button>
+            </div>
+
+            <!-- Description -->
+            <div class="komoot-section">
+                <p class="komoot-description">{{ trail.description or 'No description available for this trail.' }}</p>
+            </div>
+
+            <!-- Map and Elevation Section -->
+            <div class="komoot-section komoot-map-elevation-section">
+                <div class="komoot-map-section">
+                    <h2 class="komoot-section-title">Route</h2>
+                    {% if trail.latitude and trail.longitude %}
+                    <div id="trail-map" class="komoot-map-container"></div>
+                    {% else %}
+                    <div class="komoot-empty-state">
+                        <div class="komoot-empty-icon">🗺️</div>
+                        <p>Map data unavailable</p>
                     </div>
-                    <button type="submit" class="btn btn-primary">Mark as completed</button>
-                </form>
-                {% else %}
-                <div class="badge badge-success" style="padding: var(--space-md); text-align: center;">✅ Logged in your history</div>
+                    {% endif %}
+                </div>
+                
+                <div class="komoot-elevation-section">
+                    <h2 class="komoot-section-title">Elevation Profile</h2>
+                    {% if trail.elevation_profile %}
+                    <div class="komoot-elevation-chart-container">
+                        <canvas id="elevationChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="komoot-empty-state">
+                        <div class="komoot-empty-icon">⛰️</div>
+                        <p>Elevation data unavailable</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Additional Info Sections -->
+            <div class="komoot-section">
+                <h2 class="komoot-section-title">Highlights</h2>
+                <div class="komoot-highlights">
+                    {% if trail.landscapes %}
+                    <div class="komoot-highlight-item">
+                        <div class="komoot-highlight-label">Landscapes</div>
+                        <div class="komoot-tags">
+                            {% for landscape in trail.landscapes.split(',') %}
+                            <span class="komoot-tag">{{ landscape.strip().title() }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="komoot-highlight-item">
+                        <div class="komoot-highlight-label">Perfect for</div>
+                        <div class="komoot-tags">
+                            {% for pref in user.preferences %}
+                            <span class="komoot-tag">{{ pref }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety & Logistics -->
+            <div class="komoot-section">
+                <h2 class="komoot-section-title">Safety & Logistics</h2>
+                <div class="komoot-info-grid">
+                    <div class="komoot-info-item">
+                        <div class="komoot-info-label">Risks</div>
+                        <div class="komoot-info-value">{{ trail.safety_risks|format_safety_risks }}</div>
+                    </div>
+                    <div class="komoot-info-item">
+                        <div class="komoot-info-label">Accessibility</div>
+                        <div class="komoot-info-value">{{ trail.accessibility or 'General hiking gear' }}</div>
+                    </div>
+                    {% if trail.closed_seasons %}
+                    <div class="komoot-info-item">
+                        <div class="komoot-info-label">Closed Seasons</div>
+                        <div class="komoot-info-value">{{ trail.closed_seasons }}</div>
+                    </div>
+                    {% else %}
+                    <div class="komoot-info-item">
+                        <div class="komoot-info-label">Season Access</div>
+                        <div class="komoot-info-value">Year-round with weather checks</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if context.weather != 'sunny' %}
+                <div class="komoot-alert">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2L2 18h16L10 2zm0 3l5.5 11h-11L10 5zm0 4v4m0 2v-2"/>
+                    </svg>
+                    Weather alert: {{ context.weather|title }} mode activated
+                </div>
                 {% endif %}
-            </article>
-        </section>
+            </div>
+
+            <!-- Context Info -->
+            <div class="komoot-section">
+                <h2 class="komoot-section-title">Context</h2>
+                <div class="komoot-context-info">
+                    <div class="komoot-context-item">
+                        <span class="komoot-context-label">Device:</span>
+                        <span class="komoot-context-value">{{ context.device|title }}</span>
+                    </div>
+                    <div class="komoot-context-item">
+                        <span class="komoot-context-label">Connection:</span>
+                        <span class="komoot-context-value">{{ context.connection|title }}</span>
+                    </div>
+                    {% set days = (context.time_available // (24 * 60)) %}
+                    {% set hours = ((context.time_available % (24 * 60)) // 60) %}
+                    <div class="komoot-context-item">
+                        <span class="komoot-context-label">Time Available:</span>
+                        <span class="komoot-context-value">
+                            {% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% if hours > 0 %}, {{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}{% else %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="komoot-context-tip">
+                        {% if context.connection == 'weak' %}Download map tiles before leaving signal range.{% else %}Streaming-friendly trail assets available.{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completion Form -->
+            {% if not completed %}
+            <div class="komoot-section">
+                <h2 class="komoot-section-title">Complete Trail</h2>
+                <form method="post" action="{{ url_for('complete_trail', user_id=user.id, trail_id=trail.trail_id) }}" class="komoot-completion-form">
+                    <div class="komoot-form-group">
+                        <label class="komoot-form-label">Actual duration (minutes)</label>
+                        <input type="number" name="actual_duration" min="1" value="{{ trail.duration or 60 }}" class="komoot-form-input" required>
+                    </div>
+                    <div class="komoot-form-group">
+                        <label class="komoot-form-label">Rating (1-5)</label>
+                        <input type="number" name="rating" min="1" max="5" value="5" class="komoot-form-input" required>
+                    </div>
+                    <button type="submit" class="komoot-action-btn komoot-action-primary komoot-submit-btn">Mark as completed</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="komoot-section">
+                <div class="komoot-success-badge">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm4.24 6.24l-5.5 5.5c-.29.29-.77.29-1.06 0l-2.5-2.5c-.29-.29-.29-.77 0-1.06s.77-.29 1.06 0L8.5 11.44l4.68-4.68c.29-.29.77-.29 1.06 0s.29.77 0 1.06z"/>
+                    </svg>
+                    Logged in your history
+                </div>
+            </div>
+            {% endif %}
+        </div>
     </div>
 {% endblock %}
 {% block extra_scripts %}
@@ -160,22 +244,71 @@
         const mapEnabled = Boolean({{ 'true' if trail.latitude and trail.longitude else 'false' }});
 
         if (mapEnabled && typeof L !== 'undefined') {
-            const map = L.map('trail-map');
+            // Hero map (simplified, non-interactive)
+            const heroMapEl = document.getElementById('trail-hero-map');
+            if (heroMapEl) {
+                const heroMap = L.map('trail-hero-map', {
+                    zoomControl: false,
+                    attributionControl: false,
+                    dragging: false,
+                    touchZoom: false,
+                    doubleClickZoom: false,
+                    scrollWheelZoom: false,
+                    boxZoom: false,
+                    keyboard: false
+                });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19
+                }).addTo(heroMap);
+
+                const lat = {{ trail.latitude or 0 }};
+                const lon = {{ trail.longitude or 0 }};
+                
+                if (coordinatesGeoJSON && coordinatesGeoJSON.coordinates) {
+                    const latLngs = coordinatesGeoJSON.coordinates.map(coord => [coord[1], coord[0]]);
+                    const polyline = L.polyline(latLngs, { color: '#00A8FF', weight: 5, opacity: 0.9 }).addTo(heroMap);
+                    heroMap.fitBounds(polyline.getBounds(), { padding: [0, 0] });
+                } else {
+                    heroMap.setView([lat, lon], 12);
+                }
+            }
+
+            // Main interactive map
+            const mainMap = L.map('trail-map');
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
-            }).addTo(map);
+            }).addTo(mainMap);
 
             const lat = {{ trail.latitude or 0 }};
             const lon = {{ trail.longitude or 0 }};
-            const marker = L.marker([lat, lon]).addTo(map).bindPopup("{{ trail.name|escapejs }}");
-
+            
             if (coordinatesGeoJSON && coordinatesGeoJSON.coordinates) {
                 const latLngs = coordinatesGeoJSON.coordinates.map(coord => [coord[1], coord[0]]);
-                const polyline = L.polyline(latLngs, { color: '#6366f1', weight: 4, opacity: 0.85 }).addTo(map);
-                map.fitBounds(polyline.getBounds(), { padding: [18, 18] });
+                const polyline = L.polyline(latLngs, { color: '#00A8FF', weight: 4, opacity: 0.85 }).addTo(mainMap);
+                
+                // Add start marker
+                L.marker(latLngs[0], {
+                    icon: L.divIcon({
+                        className: 'komoot-start-marker',
+                        html: '<div style="background: #10b981; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">S</div>',
+                        iconSize: [24, 24]
+                    })
+                }).addTo(mainMap).bindPopup('Start');
+                
+                // Add end marker
+                L.marker(latLngs[latLngs.length - 1], {
+                    icon: L.divIcon({
+                        className: 'komoot-end-marker',
+                        html: '<div style="background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">E</div>',
+                        iconSize: [24, 24]
+                    })
+                }).addTo(mainMap).bindPopup('End');
+                
+                mainMap.fitBounds(polyline.getBounds(), { padding: [50, 50] });
             } else {
-                map.setView([lat, lon], 12);
+                mainMap.setView([lat, lon], 12);
+                L.marker([lat, lon]).addTo(mainMap).bindPopup("{{ trail.name|escapejs }}");
             }
         }
 
@@ -191,11 +324,12 @@
                         datasets: [{
                             label: 'Elevation (m)',
                             data,
-                            borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                            tension: 0.3,
+                            borderColor: '#00A8FF',
+                            backgroundColor: 'rgba(0, 168, 255, 0.2)',
+                            tension: 0.4,
                             fill: true,
-                            pointRadius: 0
+                            pointRadius: 0,
+                            borderWidth: 2
                         }]
                     },
                     options: {
