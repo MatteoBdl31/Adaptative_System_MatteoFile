@@ -37,3 +37,8 @@ MIN_RESULTS_TO_RETURN = int(os.getenv("REC_MIN_RESULTS", "1"))
 
 # Maximum results per category
 DEFAULT_MAX_TRAILS = int(os.getenv("REC_MAX_TRAILS", "10"))
+
+# Maximum results per category (can be overridden)
+DEFAULT_MAX_EXACT = int(os.getenv("REC_MAX_EXACT", "30"))
+DEFAULT_MAX_SUGGESTIONS = int(os.getenv("REC_MAX_SUGGESTIONS", "20"))
+DEFAULT_MAX_COLLABORATIVE = int(os.getenv("REC_MAX_COLLABORATIVE", "10"))

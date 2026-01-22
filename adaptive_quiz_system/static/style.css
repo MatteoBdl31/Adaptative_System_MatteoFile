@@ -3,6 +3,55 @@
    Built with CSS Variables, Grid, and Flexbox
    ============================================ */
 
+/* Collaborative Trail Styling */
+.trail-item.collaborative,
+.trail-card.collaborative {
+    border-left: 3px solid #f71e50;
+}
+
+/* Collaborative Icon Tooltip */
+.collaborative-icon-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.collaborative-icon-wrapper:hover .collaborative-icon-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.collaborative-icon-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background-color: var(--color-text);
+    color: white;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    z-index: var(--z-tooltip);
+    box-shadow: var(--shadow-md);
+}
+
+.collaborative-icon-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--color-text);
+}
+
 /* CSS Custom Properties (Design Tokens) */
 :root {
     /* Colors - Light Theme */
@@ -606,6 +655,23 @@ body {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
     border-color: var(--color-primary-light);
+}
+
+/* Card Heading - Fix for collaborative icon container */
+.card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.card-heading > div[style*="display: flex"] {
+    display: flex !important;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+    min-width: 0;
 }
 
 .trail-card__header {

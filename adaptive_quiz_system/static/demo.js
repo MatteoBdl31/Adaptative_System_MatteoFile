@@ -35,6 +35,13 @@
             this.setupEventListeners();
             this.initializeResults();
             this.setupDateInputs();
+
+            // #region agent log
+            // Check collaborative icons on initial page load
+            setTimeout(() => {
+                this.checkCollaborativeIcons('on-init');
+            }, 1000);
+            // #endregion
         }
 
         setupDateInputs() {
@@ -901,6 +908,7 @@
                     ${JSON.stringify({
                         exact: result.exact || [],
                         suggestions: result.suggestions || [],
+                        collaborative: result.collaborative || [],
                         user_label: userLabel,
                         user_id: userId
                     })}
@@ -958,6 +966,16 @@
                                     <span class="map-legend__marker" style="background-color: #f59e0b;"></span>
                                     <span class="map-legend__label">Suggestions</span>
                                 </div>
+                                <div class="map-legend__item">
+                                    <span class="map-legend__marker" style="background-color: #f71e50;"></span>
+                                    <span class="map-legend__label">Collaborative</span>
+                                </div>
+                                <div class="map-legend__item">
+                                    <span class="map-legend__marker" style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;">
+                                        <span style="width: 18px; height: 18px; border: 2px dashed #f71e50; border-radius: 50%; background: transparent; pointer-events: none;"></span>
+                                    </span>
+                                    <span class="map-legend__label">Collaborative (with ring)</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -969,6 +987,7 @@
             const isActive = defaultView === 'list';
             const exactTrails = (result.exact || []).map(trail => this.renderTrailItem(trail, 'recommended')).join('');
             const suggestions = (result.suggestions || []).map(trail => this.renderTrailItem(trail, 'suggested')).join('');
+            const collaborative = (result.collaborative || []).map(trail => this.renderTrailItem(trail, 'collaborative')).join('');
 
             return `
                 <div class="view-section ${isActive ? 'active' : ''}" data-view="list" data-panel="${userId}">
@@ -980,6 +999,12 @@
                         <h3>✨ Suggestions (${(result.suggestions || []).length})</h3>
                         <div class="trail-list">${suggestions || '<p class="empty-state">No suggestions</p>'}</div>
                     </div>
+                    ${(result.collaborative || []).length > 0 ? `
+                    <div class="result-section">
+                        <h3>👥 Popular with Similar Hikers (${(result.collaborative || []).length})</h3>
+                        <div class="trail-list">${collaborative || '<p class="empty-state">No collaborative recommendations</p>'}</div>
+                    </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -988,6 +1013,7 @@
             const isActive = defaultView === 'cards';
             const exactTrails = (result.exact || []).map(trail => this.renderTrailCard(trail, 'recommended')).join('');
             const suggestions = (result.suggestions || []).map(trail => this.renderTrailCard(trail, 'suggested')).join('');
+            const collaborative = (result.collaborative || []).map(trail => this.renderTrailCard(trail, 'collaborative')).join('');
 
             return `
                 <div class="view-section ${isActive ? 'active' : ''}" data-view="cards" data-panel="${userId}">
@@ -999,6 +1025,12 @@
                         <h3>✨ Suggestions (${(result.suggestions || []).length})</h3>
                         <div class="trail-grid">${suggestions || '<p class="empty-state">No suggestions</p>'}</div>
                     </div>
+                    ${(result.collaborative || []).length > 0 ? `
+                    <div class="result-section">
+                        <h3>👥 Popular with Similar Hikers (${(result.collaborative || []).length})</h3>
+                        <div class="trail-grid">${collaborative || '<p class="empty-state">No collaborative recommendations</p>'}</div>
+                    </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -1008,6 +1040,22 @@
             const difficultyClass = difficulty <= 3 ? 'easy' : difficulty <= 6 ? 'medium' : 'hard';
             const difficultyText = difficulty <= 3 ? 'Easy' : difficulty <= 6 ? 'Medium' : 'Hard';
             const relevance = type === 'suggested' ? `<span class="trail-item__relevance">${Math.round(trail.relevance_percentage || 0)}% match</span>` : '';
+            
+            // Check if trail is collaborative (for any type, not just 'collaborative')
+            const isCollaborative = trail.is_collaborative || (trail.view_type && trail.view_type.includes('collaborative'));
+            const collaborativeIcon = isCollaborative ? 
+                `<div class="collaborative-icon-wrapper">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; display: inline-block; vertical-align: middle; width: 20px; height: 20px; cursor: help;">
+                        <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
+                        <path d="M10 4.5L11.8 8.2L15.9 9.1L13.1 11.8L13.6 15.9L10 14.2L6.4 15.9L6.9 11.8L4.1 9.1L8.2 8.2L10 4.5Z" fill="#fff"/>
+                    </svg>
+                    <span class="collaborative-icon-tooltip">Similar profiles likes it</span>
+                </div>` : '';
+            
+            const collaborativeBadge = type === 'collaborative' && trail.collaborative_avg_rating ? 
+                `<span style="background: #f71e50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-left: var(--space-xs);">
+                    ⭐ ${trail.collaborative_avg_rating.toFixed(1)}/5 (${trail.collaborative_user_count || 0} users)
+                </span>` : '';
             
             // Truncate description if too long
             let description = trail.description || '';
@@ -1038,14 +1086,18 @@
                         <div class="trail-item__title-group">
                             <h4 class="trail-item__title">${trail.name || 'Unknown'}</h4>
                             ${relevance}
-                            <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}" style="margin-left: var(--space-xs);">
+                            ${collaborativeBadge}
+                            <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}">
                                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                     <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                 </svg>
                             </button>
                         </div>
-                        <span class="trail-item__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                        <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                            ${collaborativeIcon}
+                            <span class="trail-item__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
+                        </div>
                     </div>
                     <div class="trail-explanation-content" id="trail-explanation-${trail.trail_id || ''}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
                         <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
@@ -1058,6 +1110,13 @@
                     </div>
                     ${description ? `<p class="trail-item__description">${description}</p>` : ''}
                     ${landscapesHTML}
+                    ${type === 'collaborative' && trail.recommendation_reason ? `
+                    <div style="margin-top: var(--space-md); padding: var(--space-md); background: #ffeef0; border-radius: var(--radius-md); border-left: 3px solid #f71e50;">
+                        <small style="color: #a00d2f; font-weight: var(--font-weight-medium); display: block;">
+                            💡 ${trail.recommendation_reason}
+                        </small>
+                    </div>
+                    ` : ''}
                     <div class="trail-item__stats">
                         <div class="trail-item__stat">
                             <span class="trail-item__stat-icon">📏</span>
@@ -1102,6 +1161,22 @@
             const difficultyClass = difficulty <= 3 ? 'easy' : difficulty <= 6 ? 'medium' : 'hard';
             const difficultyText = difficulty <= 3 ? 'Easy' : difficulty <= 6 ? 'Medium' : 'Hard';
             const relevance = type === 'suggested' ? `<span class="trail-card__relevance">${Math.round(trail.relevance_percentage || 0)}% match</span>` : '';
+            
+            // Check if trail is collaborative (for any type, not just 'collaborative')
+            const isCollaborative = trail.is_collaborative || (trail.view_type && trail.view_type.includes('collaborative'));
+            const collaborativeIcon = isCollaborative ? 
+                `<div class="collaborative-icon-wrapper">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; display: inline-block; vertical-align: middle; width: 20px; height: 20px; cursor: help;">
+                        <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
+                        <path d="M10 4.5L11.8 8.2L15.9 9.1L13.1 11.8L13.6 15.9L10 14.2L6.4 15.9L6.9 11.8L4.1 9.1L8.2 8.2L10 4.5Z" fill="#fff"/>
+                    </svg>
+                    <span class="collaborative-icon-tooltip">Similar profiles likes it</span>
+                </div>` : '';
+            
+            const collaborativeBadge = type === 'collaborative' && trail.collaborative_avg_rating ? 
+                `<span style="background: #f71e50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-left: var(--space-xs);">
+                    ⭐ ${trail.collaborative_avg_rating.toFixed(1)}/5 (${trail.collaborative_user_count || 0} users)
+                </span>` : '';
 
             // Truncate description if too long
             let description = trail.description || 'No description available';
@@ -1142,6 +1217,8 @@
                         <div class="trail-card__header">
                             <h3 class="trail-card__title">${trail.name || 'Unknown'}</h3>
                             <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                                ${collaborativeIcon}
+                                ${collaborativeBadge}
                                 <span class="trail-card__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
                                 <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}">
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1153,6 +1230,13 @@
                         </div>
                         <p class="trail-card__description">${description}</p>
                         ${landscapesHTML}
+                        ${type === 'collaborative' && trail.recommendation_reason ? `
+                        <div style="margin-top: var(--space-md); padding: var(--space-md); background: #ffeef0; border-radius: var(--radius-md); border-left: 3px solid #f71e50;">
+                            <small style="color: #a00d2f; font-weight: var(--font-weight-medium); display: block;">
+                                💡 ${trail.recommendation_reason}
+                            </small>
+                        </div>
+                        ` : ''}
                         <div class="trail-card__stats">
                             <div class="trail-card__stat">
                                 <span class="trail-card__stat-icon">📏</span>
@@ -1221,6 +1305,13 @@
                 const panel = section.dataset.panel;
                 setTimeout(() => this.initializeCardMinimaps(section), 100);
             });
+
+            // #region agent log
+            // Check collaborative icons in DOM after initialization
+            setTimeout(() => {
+                this.checkCollaborativeIcons('after-init');
+            }, 500);
+            // #endregion
         }
 
         switchView(panel, view) {
@@ -1263,6 +1354,13 @@
                     section.classList.add('hidden');
                 }
             });
+
+            // #region agent log
+            // Check collaborative icons after view switch
+            setTimeout(() => {
+                this.checkCollaborativeIcons(`after-switch-${view}`);
+            }, 200);
+            // #endregion
         }
 
         initializeMap(mapId, userId) {
@@ -1293,10 +1391,14 @@
                 const trailData = JSON.parse(dataScript.textContent);
                 const allTrails = [
                     ...(trailData.exact || []).map(t => ({ ...t, view_type: 'recommended' })),
-                    ...(trailData.suggestions || []).map(t => ({ ...t, view_type: 'suggested' }))
+                    ...(trailData.suggestions || []).map(t => ({ ...t, view_type: 'suggested' })),
+                    ...(trailData.collaborative || []).map(t => ({ ...t, view_type: 'collaborative', is_collaborative: true }))
                 ];
 
-                this.mapManager.addTrailMarkers(map, allTrails, { userId: userId });
+                this.mapManager.addTrailMarkers(map, allTrails, { 
+                    userId: userId,
+                    collaborativeColor: '#f71e50'
+                });
             } catch (e) {
                 console.error('Failed to parse trail data:', e);
             }
@@ -1605,5 +1707,212 @@
             text.textContent = settings.text;
             indicator.style.background = settings.color;
         }
+
+        // #region agent log
+        checkCollaborativeIcons(context) {
+            const logData = {
+                location: 'demo.js:checkCollaborativeIcons',
+                message: 'Checking collaborative icons in DOM',
+                data: {
+                    context: context,
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'run1',
+                    hypothesisId: 'A'
+                }
+            };
+
+            // Find all trail cards with collaborative data
+            const trailCards = document.querySelectorAll('.trail-card[data-is-collab="true"], .trail-card[data-is-collaborative="true"]');
+            const suggestions = Array.from(document.querySelectorAll('.result-section')).flatMap(section => 
+                section.querySelector('.trail-list') ? Array.from(section.querySelectorAll('.trail-card.suggested')) : []
+            );
+            const recommended = Array.from(document.querySelectorAll('.result-section')).flatMap(section => 
+                section.querySelector('.trail-list') ? Array.from(section.querySelectorAll('.trail-card.recommended')) : []
+            );
+
+            const results = {
+                total_collab_cards: trailCards.length,
+                suggestions_count: suggestions.length,
+                recommended_count: recommended.length,
+                icons_found: [],
+                icons_missing: []
+            };
+
+            // Check suggestions section
+            suggestions.forEach((card, idx) => {
+                const trailId = card.dataset.trailId || 'unknown';
+                const isCollab = card.dataset.isCollab === 'true' || card.dataset.isCollaborative === 'true';
+                const viewType = card.dataset.viewType || '';
+                
+                if (isCollab || viewType.includes('collaborative')) {
+                    const cardHeading = card.querySelector('.card-heading');
+                    if (cardHeading) {
+                        const iconContainer = cardHeading.querySelector('div[style*="display: flex"]');
+                        if (iconContainer) {
+                            // Check all SVGs in container to debug
+                            const allSvgs = iconContainer.querySelectorAll('svg');
+                            const svgIcon = iconContainer.querySelector('svg[title="Similar profiles likes it"]');
+                            if (svgIcon) {
+                                const computedStyle = window.getComputedStyle(svgIcon);
+                                const rect = svgIcon.getBoundingClientRect();
+                                const containerStyle = window.getComputedStyle(iconContainer);
+                                const containerRect = iconContainer.getBoundingClientRect();
+                                results.icons_found.push({
+                                    trail_id: trailId,
+                                    section: 'suggestions',
+                                    index: idx,
+                                    visible: computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden' && computedStyle.opacity !== '0',
+                                    display: computedStyle.display,
+                                    visibility: computedStyle.visibility,
+                                    opacity: computedStyle.opacity,
+                                    width: rect.width,
+                                    height: rect.height,
+                                    position: { top: rect.top, left: rect.left },
+                                    svg_attributes: {
+                                        width_attr: svgIcon.getAttribute('width'),
+                                        height_attr: svgIcon.getAttribute('height'),
+                                        style_attr: svgIcon.getAttribute('style'),
+                                        computed_width: computedStyle.width,
+                                        computed_height: computedStyle.height,
+                                        computed_max_width: computedStyle.maxWidth,
+                                        computed_max_height: computedStyle.maxHeight
+                                    },
+                                    container: {
+                                        width: containerRect.width,
+                                        height: containerRect.height,
+                                        display: containerStyle.display,
+                                        flex_direction: containerStyle.flexDirection,
+                                        gap: containerStyle.gap
+                                    },
+                                    all_svgs_in_container: Array.from(allSvgs).map(svg => ({
+                                        title: svg.getAttribute('title'),
+                                        width: svg.getAttribute('width'),
+                                        height: svg.getAttribute('height'),
+                                        viewBox: svg.getAttribute('viewBox'),
+                                        parent_tag: svg.parentElement.tagName,
+                                        parent_class: svg.parentElement.className
+                                    }))
+                                });
+                            } else {
+                                results.icons_missing.push({
+                                    trail_id: trailId,
+                                    section: 'suggestions',
+                                    index: idx,
+                                    reason: 'SVG icon not found in DOM',
+                                    has_container: !!iconContainer,
+                                    container_html: iconContainer.innerHTML.substring(0, 200),
+                                    all_svgs_found: Array.from(allSvgs).map(svg => ({
+                                        title: svg.getAttribute('title'),
+                                        width: svg.getAttribute('width'),
+                                        height: svg.getAttribute('height'),
+                                        parent_tag: svg.parentElement.tagName
+                                    }))
+                                });
+                            }
+                        } else {
+                            results.icons_missing.push({
+                                trail_id: trailId,
+                                section: 'suggestions',
+                                index: idx,
+                                reason: 'Icon container not found'
+                            });
+                        }
+                    }
+                }
+            });
+
+            // Check recommended section
+            recommended.forEach((card, idx) => {
+                const trailId = card.dataset.trailId || 'unknown';
+                const isCollab = card.dataset.isCollab === 'true' || card.dataset.isCollaborative === 'true';
+                const viewType = card.dataset.viewType || '';
+                
+                if (isCollab || viewType.includes('collaborative')) {
+                    const cardHeading = card.querySelector('.card-heading');
+                    if (cardHeading) {
+                        const iconContainer = cardHeading.querySelector('div[style*="display: flex"]');
+                        if (iconContainer) {
+                            // Check all SVGs in container to debug
+                            const allSvgs = iconContainer.querySelectorAll('svg');
+                            const svgIcon = iconContainer.querySelector('svg[title="Similar profiles likes it"]');
+                            if (svgIcon) {
+                                const computedStyle = window.getComputedStyle(svgIcon);
+                                const rect = svgIcon.getBoundingClientRect();
+                                const containerStyle = window.getComputedStyle(iconContainer);
+                                const containerRect = iconContainer.getBoundingClientRect();
+                                results.icons_found.push({
+                                    trail_id: trailId,
+                                    section: 'recommended',
+                                    index: idx,
+                                    visible: computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden' && computedStyle.opacity !== '0',
+                                    display: computedStyle.display,
+                                    visibility: computedStyle.visibility,
+                                    opacity: computedStyle.opacity,
+                                    width: rect.width,
+                                    height: rect.height,
+                                    position: { top: rect.top, left: rect.left },
+                                    svg_attributes: {
+                                        width_attr: svgIcon.getAttribute('width'),
+                                        height_attr: svgIcon.getAttribute('height'),
+                                        style_attr: svgIcon.getAttribute('style'),
+                                        computed_width: computedStyle.width,
+                                        computed_height: computedStyle.height,
+                                        computed_max_width: computedStyle.maxWidth,
+                                        computed_max_height: computedStyle.maxHeight
+                                    },
+                                    container: {
+                                        width: containerRect.width,
+                                        height: containerRect.height,
+                                        display: containerStyle.display,
+                                        flex_direction: containerStyle.flexDirection,
+                                        gap: containerStyle.gap
+                                    },
+                                    all_svgs_in_container: Array.from(allSvgs).map(svg => ({
+                                        title: svg.getAttribute('title'),
+                                        width: svg.getAttribute('width'),
+                                        height: svg.getAttribute('height'),
+                                        viewBox: svg.getAttribute('viewBox'),
+                                        parent_tag: svg.parentElement.tagName,
+                                        parent_class: svg.parentElement.className
+                                    }))
+                                });
+                            } else {
+                                results.icons_missing.push({
+                                    trail_id: trailId,
+                                    section: 'recommended',
+                                    index: idx,
+                                    reason: 'SVG icon not found in DOM',
+                                    has_container: !!iconContainer,
+                                    container_html: iconContainer.innerHTML.substring(0, 200),
+                                    all_svgs_found: Array.from(allSvgs).map(svg => ({
+                                        title: svg.getAttribute('title'),
+                                        width: svg.getAttribute('width'),
+                                        height: svg.getAttribute('height'),
+                                        parent_tag: svg.parentElement.tagName
+                                    }))
+                                });
+                            }
+                        } else {
+                            results.icons_missing.push({
+                                trail_id: trailId,
+                                section: 'recommended',
+                                index: idx,
+                                reason: 'Icon container not found'
+                            });
+                        }
+                    }
+                }
+            });
+
+            logData.data.results = results;
+
+            fetch('http://127.0.0.1:7242/ingest/678178fc-53a3-40eb-9cfc-b7f8fbd8d250', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(logData)
+            }).catch(() => {});
+        }
+        // #endregion
     }
 })();

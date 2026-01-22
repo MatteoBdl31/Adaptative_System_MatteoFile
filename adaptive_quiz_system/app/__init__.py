@@ -17,9 +17,74 @@ from backend.db import (
     USERS_DB,
 )
 import sqlite3
-from adapt_trails import adapt_trails
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def adapt_trails(user, context):
+    """
+    Wrapper function for backward compatibility with the new RecommendationEngine.
+    Returns the same format as the old adapt_trails function, plus collaborative recommendations.
+    """
+    try:
+        from recommendation_engine.engine import RecommendationEngine
+        
+        engine = RecommendationEngine()
+        result = engine.recommend(user, context, max_exact=30, max_suggestions=20, max_collaborative=10)
+        
+        # #region agent log
+        import json
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"app/__init__.py:33","message":"After engine.recommend() call","data":{"has_collaborative_key":"collaborative_recommendations" in result,"collaborative_count":len(result.get("collaborative_recommendations",[]))},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+        # #endregion
+        
+        # Extract metadata if present
+        metadata = result.get("metadata", {})
+        
+        # #region agent log
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"app/__init__.py:36","message":"Before adding to metadata","data":{"metadata_keys":list(metadata.keys()),"has_collaborative_in_result":"collaborative_recommendations" in result},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+        # #endregion
+        
+        # Return in the same format as the old function, but with collaborative recommendations in metadata
+        # We include collaborative_recommendations in metadata to maintain backward compatibility
+        # while still making them available for display
+        if "collaborative_recommendations" in result:
+            collaborative_recommendations = result.get("collaborative_recommendations", [])
+            metadata["collaborative_recommendations"] = collaborative_recommendations
+            # #region agent log
+            with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"app/__init__.py:43","message":"After adding to metadata","data":{"collaborative_count":len(collaborative_recommendations),"in_metadata":len(metadata.get("collaborative_recommendations",[]))},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+            # #endregion
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Added {len(collaborative_recommendations)} collaborative recommendations to metadata")
+        else:
+            # #region agent log
+            with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"app/__init__.py:48","message":"collaborative_recommendations NOT in result","data":{"result_keys":list(result.keys())},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+            # #endregion
+        
+        # #region agent log
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"app/__init__.py:54","message":"Before returning from adapt_trails","data":{"metadata_has_collaborative":"collaborative_recommendations" in metadata,"collaborative_count":len(metadata.get("collaborative_recommendations",[]))},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+        # #endregion
+        
+        return (
+            result.get("exact_matches", []),
+            result.get("suggestions", []),
+            result.get("display_settings", {}),
+            result.get("active_rules", []),
+            metadata
+        )
+    except Exception as e:
+        # Log the error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in adapt_trails: {e}", exc_info=True)
+        
+        # Return empty results instead of crashing
+        return ([], [], {}, [], {})
 
 
 def get_season_from_date(target_date: str = None) -> str:
@@ -138,6 +203,16 @@ def format_duration(minutes):
 
 # Register the filter for use in templates
 app.jinja_env.filters['format_duration'] = format_duration
+
+@app.route('/favicon.ico')
+def favicon():
+    """Return a simple favicon to avoid 404 errors"""
+    from flask import Response
+    # Return a simple SVG favicon (mountain emoji)
+    svg_favicon = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <text y=".9em" font-size="90">🏔️</text>
+    </svg>'''
+    return Response(svg_favicon, mimetype='image/svg+xml')
 
 @app.template_filter('profile_name_en')
 def profile_name_en_filter(profile_key):
@@ -321,22 +396,141 @@ def extract_context_from_request(prefix, request_args):
 
 def build_demo_result(user, context, user_label=None):
     """Build a demo result dictionary from user and context"""
-    exact_matches, suggestions, display_settings, active_rules, metadata = adapt_trails(user, context)
-    return {
-        "scenario": {
-            "title": f"{user.get('name', 'User')} · {user.get('experience', '')} profile",
-            "description": "User-defined context",
-            "user_id": user.get("id")
-        },
-        "user_id": user.get("id"),
-        "user_label": user_label or f"User {user.get('id')}",
-        "context": context,
-        "exact": exact_matches,
-        "suggestions": suggestions,
-        "display": display_settings,
-        "active_rules": active_rules,
-        "metadata": metadata,
-    }
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"Building demo result for user {user.get('id')} with context: {context}")
+        exact_matches, suggestions, display_settings, active_rules, metadata = adapt_trails(user, context)
+        logger.info(f"Got {len(exact_matches)} exact matches and {len(suggestions)} suggestions")
+        
+        # #region agent log
+        import json
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"app/__init__.py:380","message":"After adapt_trails call in build_demo_result","data":{"metadata_keys":list(metadata.keys()),"has_collaborative_in_metadata":"collaborative_recommendations" in metadata},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+        # #endregion
+        
+        # Extract collaborative recommendations from metadata
+        collaborative_recommendations = metadata.get("collaborative_recommendations", [])
+        
+        # #region agent log
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"app/__init__.py:384","message":"After extracting from metadata","data":{"collaborative_count":len(collaborative_recommendations),"trail_ids":[t.get("trail_id") for t in collaborative_recommendations[:3]]},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+        # #endregion
+        
+        logger.info(f"Extracted {len(collaborative_recommendations)} collaborative recommendations from metadata")
+        
+        # Build a map of collaborative trails by trail_id for easy lookup
+        collaborative_trails_map = {t.get("trail_id"): t for t in collaborative_recommendations}
+        
+        # Mark trails in exact_matches and suggestions that are also collaborative
+        # Note: Some trails may already have is_collaborative=True from engine.py (top 5 added to suggestions)
+        for trail in exact_matches + suggestions:
+            trail_id = trail.get("trail_id")
+            
+            # If trail already has is_collaborative=True, preserve it and enrich metadata if needed
+            if trail.get("is_collaborative"):
+                # Trail was already marked as collaborative in engine.py (e.g., top 5 added to suggestions)
+                # Enrich with metadata from collaborative_trails_map if available
+                if trail_id in collaborative_trails_map:
+                    collaborative_trail = collaborative_trails_map[trail_id]
+                    # Only add missing metadata, don't overwrite existing
+                    if "collaborative_avg_rating" not in trail:
+                        trail["collaborative_avg_rating"] = collaborative_trail.get("collaborative_avg_rating")
+                    if "collaborative_user_count" not in trail:
+                        trail["collaborative_user_count"] = collaborative_trail.get("collaborative_user_count")
+                    if "collaborative_completion_count" not in trail:
+                        trail["collaborative_completion_count"] = collaborative_trail.get("collaborative_completion_count")
+                    if "recommendation_reason" not in trail:
+                        trail["recommendation_reason"] = collaborative_trail.get("recommendation_reason")
+                
+                # #region agent log
+                import json
+                with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"app/__init__.py:431","message":"Preserved existing is_collaborative flag in build_demo_result","data":{"trail_id":trail_id,"is_collaborative":trail.get("is_collaborative"),"in_exact":trail in exact_matches,"in_suggestions":trail in suggestions},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+                # #endregion
+            elif trail_id in collaborative_trails_map:
+                # Trail is in collaborative list but not yet marked - mark it now
+                collaborative_trail = collaborative_trails_map[trail_id]
+                trail["is_collaborative"] = True
+                # Add collaborative metadata
+                trail["collaborative_avg_rating"] = collaborative_trail.get("collaborative_avg_rating")
+                trail["collaborative_user_count"] = collaborative_trail.get("collaborative_user_count")
+                trail["collaborative_completion_count"] = collaborative_trail.get("collaborative_completion_count")
+                trail["recommendation_reason"] = collaborative_trail.get("recommendation_reason")
+                # Add collaborative to view_type
+                if "collaborative" not in trail.get("view_type", ""):
+                    trail["view_type"] = f"{trail.get('view_type', '')},collaborative".strip(',')
+                
+                # #region agent log
+                import json
+                with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"app/__init__.py:450","message":"Marked trail as collaborative in build_demo_result","data":{"trail_id":trail_id,"is_collaborative":trail.get("is_collaborative"),"in_exact":trail in exact_matches,"in_suggestions":trail in suggestions},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+                # #endregion
+        
+        # #region agent log
+        # Count collaborative trails in each category before returning
+        exact_collaborative_count = sum(1 for t in exact_matches if t.get("is_collaborative"))
+        suggestions_collaborative_count = sum(1 for t in suggestions if t.get("is_collaborative"))
+        # Log detailed info about each suggestion trail
+        suggestions_with_collab = [{"trail_id": t.get("trail_id"), "is_collaborative": t.get("is_collaborative"), "is_collab_type": type(t.get("is_collaborative")).__name__, "has_key": "is_collaborative" in t} for t in suggestions[:5]]
+        import json
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"app/__init__.py:477","message":"Before returning result from build_demo_result","data":{"exact_count":len(exact_matches),"exact_collaborative":exact_collaborative_count,"suggestions_count":len(suggestions),"suggestions_collaborative":suggestions_collaborative_count,"collaborative_count":len(collaborative_recommendations),"first_5_suggestions":suggestions_with_collab},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+        # #endregion
+        
+        result = {
+            "scenario": {
+                "title": f"{user.get('name', 'User')} · {user.get('experience', '')} profile",
+                "description": "User-defined context",
+                "user_id": user.get("id")
+            },
+            "user_id": user.get("id"),
+            "user_label": user_label or f"User {user.get('id')}",
+            "context": context,
+            "exact": exact_matches,
+            "suggestions": suggestions,
+            "collaborative": collaborative_recommendations,
+            "display": display_settings,
+            "active_rules": active_rules,
+            "metadata": metadata,
+        }
+        
+        # Ensure lists are not None
+        if result["exact"] is None:
+            result["exact"] = []
+        if result["suggestions"] is None:
+            result["suggestions"] = []
+        if result["collaborative"] is None:
+            result["collaborative"] = []
+            
+        logger.info(f"Returning result with {len(result['exact'])} exact, {len(result['suggestions'])} suggestions, {len(result['collaborative'])} collaborative")
+        
+        # #region agent log
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"app/__init__.py:430","message":"Before returning from build_demo_result","data":{"result_has_collaborative":"collaborative" in result,"collaborative_count":len(result.get("collaborative",[]))},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+        # #endregion
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error in build_demo_result: {e}", exc_info=True)
+        # Return empty result instead of crashing
+        return {
+            "scenario": {
+                "title": f"{user.get('name', 'User')} · {user.get('experience', '')} profile",
+                "description": "User-defined context",
+                "user_id": user.get("id")
+            },
+            "user_id": user.get("id"),
+            "user_label": user_label or f"User {user.get('id')}",
+            "context": context,
+            "exact": [],
+            "suggestions": [],
+            "collaborative": [],
+            "display": {},
+            "active_rules": [],
+            "metadata": {},
+        }
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -475,13 +669,56 @@ def recommendations(user_id):
     }
 
     exact_matches, suggestions, display_settings, active_rules, metadata = adapt_trails(user, context)
+    
+    # Extract collaborative recommendations from metadata
+    collaborative_recommendations = metadata.get("collaborative_recommendations", [])
 
+    # Mark view types (trails can have multiple types)
     for trail in exact_matches:
-        trail["view_type"] = "recommended"
+        if "view_type" not in trail:
+            trail["view_type"] = "recommended"
+        elif "recommended" not in trail["view_type"]:
+            trail["view_type"] = f"{trail['view_type']},recommended"
+    
     for trail in suggestions:
-        trail["view_type"] = "suggested"
+        if "view_type" not in trail:
+            trail["view_type"] = "suggested"
+        elif "suggested" not in trail["view_type"]:
+            trail["view_type"] = f"{trail['view_type']},suggested"
+    
+    # Build a map of collaborative trails by trail_id for easy lookup
+    collaborative_trails_map = {t.get("trail_id"): t for t in collaborative_recommendations}
+    
+    # Mark trails in exact_matches and suggestions that are also collaborative
+    for trail in exact_matches + suggestions:
+        trail_id = trail.get("trail_id")
+        if trail_id in collaborative_trails_map:
+            collaborative_trail = collaborative_trails_map[trail_id]
+            trail["is_collaborative"] = True
+            # Add collaborative metadata
+            trail["collaborative_avg_rating"] = collaborative_trail.get("collaborative_avg_rating")
+            trail["collaborative_user_count"] = collaborative_trail.get("collaborative_user_count")
+            trail["collaborative_completion_count"] = collaborative_trail.get("collaborative_completion_count")
+            trail["recommendation_reason"] = collaborative_trail.get("recommendation_reason")
+            # Add collaborative to view_type
+            if "collaborative" not in trail.get("view_type", ""):
+                trail["view_type"] = f"{trail.get('view_type', '')},collaborative".strip(',')
 
-    combined_trails = exact_matches + suggestions
+    # Build combined_trails without duplicates (using trail_id as key)
+    # Priority: exact_matches > suggestions > collaborative_recommendations
+    combined_trails_dict = {}
+    for trail in exact_matches + suggestions:
+        trail_id = trail.get("trail_id")
+        if trail_id:
+            combined_trails_dict[trail_id] = trail
+    
+    # Add collaborative trails that aren't already in exact_matches or suggestions
+    for trail in collaborative_recommendations:
+        trail_id = trail.get("trail_id")
+        if trail_id and trail_id not in combined_trails_dict:
+            combined_trails_dict[trail_id] = trail
+    
+    combined_trails = list(combined_trails_dict.values())
     
     # Get weather forecast summary for context display
     # Use the first trail's forecast as representative, or get a general forecast
@@ -502,6 +739,7 @@ def recommendations(user_id):
         context=context,
         exact_matches=exact_matches,
         suggestions=suggestions,
+        collaborative_recommendations=collaborative_recommendations,
         display_settings=display_settings,
         active_rules=active_rules,
         combined_trails=combined_trails,
@@ -792,7 +1030,6 @@ def api_general_explanation(user_identifier):
     context, _ = extract_context_from_request(user_identifier if user_identifier in ['a', 'b'] else "a", request.args)
     
     # Get recommendations to build context
-    from adapt_trails import adapt_trails
     exact_matches, suggestions, display_settings, active_rules, metadata = adapt_trails(user, context)
     
     # Generate explanation
@@ -949,6 +1186,14 @@ def demo():
     primary_result = build_demo_result(user_a, context_a, user_label="User A") if has_search_params else None
     secondary_result = build_demo_result(user_b, context_b, user_label="User B") if has_search_params and compare_mode and user_b else None
 
+    # #region agent log
+    if primary_result and primary_result.get("suggestions"):
+        import json
+        suggestions_with_collab = [{"trail_id": t.get("trail_id"), "is_collaborative": t.get("is_collaborative"), "has_key": "is_collaborative" in t} for t in primary_result["suggestions"][:5]]
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"TEMPLATE","location":"app/__init__.py:1189","message":"Before render_template - checking suggestions data","data":{"suggestions_count":len(primary_result.get("suggestions",[])),"first_5_suggestions":suggestions_with_collab},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+    # #endregion
+
     return render_template(
         "demo.html",
         users=users,
@@ -997,14 +1242,27 @@ def api_demo_results():
     context_a, _ = extract_context_from_request("a", request.args)
     context_b, _ = extract_context_from_request("b", request.args)
     
-    primary_result = build_demo_result(user_a, context_a, user_label="User A")
-    secondary_result = build_demo_result(user_b, context_b, user_label="User B") if compare_mode and user_b else None
+    try:
+        primary_result = build_demo_result(user_a, context_a, user_label="User A")
+        secondary_result = build_demo_result(user_b, context_b, user_label="User B") if compare_mode and user_b else None
 
-    return jsonify({
-        "primary_result": primary_result,
-        "secondary_result": secondary_result,
-        "compare_mode": compare_mode
-    })
+        # #region agent log
+        import json
+        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"app/__init__.py:1157","message":"Before returning JSON from api_demo_results","data":{"primary_has_collaborative":"collaborative" in primary_result,"primary_collaborative_count":len(primary_result.get("collaborative",[]))},"timestamp":int(__import__('time').time()*1000)}) + '\n')
+        # #endregion
+
+        return jsonify({
+            "primary_result": primary_result,
+            "secondary_result": secondary_result,
+            "compare_mode": compare_mode
+        })
+    except Exception as e:
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in api_demo_results: {e}", exc_info=True)
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
 
 
 # Profile and Trail Management API Routes
