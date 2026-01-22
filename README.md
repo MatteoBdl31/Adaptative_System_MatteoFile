@@ -58,8 +58,7 @@ python run.py
 
 The demo exposes:
 
-- `/recommendations/<user_id>` – toggle between map-first and card-first layouts
-- `/demo` – compare canned contexts side-by-side
+- `/demo` – trail recommendations with map/list/card views and side-by-side user comparison
 - `/trail/<user_id>/<trail_id>` – detailed view with interactive map + elevation profile
 
 All pages automatically reuse the personalised filters stored in SQLite so the UI is ready for

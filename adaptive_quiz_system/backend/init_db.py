@@ -154,6 +154,14 @@ def seed_users(example_trails: List[dict], use_reference: bool = False) -> None:
             max_speed REAL,
             total_calories INTEGER,
             uploaded_data_id INTEGER,
+            difficulty_rating INTEGER,
+            predicted_duration INTEGER,
+            predicted_avg_heart_rate INTEGER,
+            predicted_max_heart_rate INTEGER,
+            predicted_avg_speed REAL,
+            predicted_max_speed REAL,
+            predicted_calories INTEGER,
+            predicted_profile_category TEXT,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
         """
@@ -221,6 +229,10 @@ def seed_users(example_trails: List[dict], use_reference: bool = False) -> None:
         )
         """
     )
+    
+    # Create indexes for trail_performance_data for better query performance
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_trail_perf_completed_trail_id ON trail_performance_data(completed_trail_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_trail_perf_timestamp ON trail_performance_data(completed_trail_id, timestamp)")
     
     # Create uploaded_trail_data table
     cur.execute(
@@ -504,7 +516,7 @@ def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT, use_reference: bool = False) -
                 trail.get("trail_type") or "one_way",
                 trail.get("landscapes") or "alpine",
                 float(trail.get("popularity", 6.0)),
-                trail.get("safety_risks") or "none",
+                trail.get("safety_risks") or "low",
                 trail.get("accessibility") or "",
                 trail.get("closed_seasons") or "",
                 float(trail.get("latitude", 0.0)),

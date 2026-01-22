@@ -111,7 +111,11 @@ def get_user(user_id):
     
     return user
 
-def _insert_completed_trail_sql(user_id, trail_id, completion_date, actual_duration, rating, conn=None):
+def _insert_completed_trail_sql(user_id, trail_id, completion_date, actual_duration, rating, 
+                                conn=None, predicted_duration=None, predicted_avg_heart_rate=None,
+                                predicted_max_heart_rate=None, predicted_avg_speed=None,
+                                predicted_max_speed=None, predicted_calories=None,
+                                predicted_profile_category=None):
     """
     Helper function to insert a completed trail into the database.
     This is the shared SQL insertion logic used by both record_trail_completion()
@@ -124,6 +128,13 @@ def _insert_completed_trail_sql(user_id, trail_id, completion_date, actual_durat
         actual_duration: Duration in minutes
         rating: Rating (1-5)
         conn: Optional existing database connection. If None, creates and closes a new one.
+        predicted_duration: Optional predicted duration in minutes
+        predicted_avg_heart_rate: Optional predicted average heart rate
+        predicted_max_heart_rate: Optional predicted max heart rate
+        predicted_avg_speed: Optional predicted average speed
+        predicted_max_speed: Optional predicted max speed
+        predicted_calories: Optional predicted calories
+        predicted_profile_category: Optional predicted profile category
     
     Returns:
         None
@@ -135,23 +146,55 @@ def _insert_completed_trail_sql(user_id, trail_id, completion_date, actual_durat
     
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO completed_trails (user_id, trail_id, completion_date, actual_duration, rating)
-        VALUES (?, ?, ?, ?, ?)
-    """, (user_id, trail_id, completion_date, actual_duration, rating))
+        INSERT INTO completed_trails (user_id, trail_id, completion_date, actual_duration, rating,
+                                     predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+                                     predicted_avg_speed, predicted_max_speed, predicted_calories,
+                                     predicted_profile_category)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, trail_id, completion_date, actual_duration, rating,
+          predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+          predicted_avg_speed, predicted_max_speed, predicted_calories,
+          predicted_profile_category))
     
     if should_close:
         conn.commit()
         conn.close()
 
-def record_trail_completion(user_id, trail_id, actual_duration, rating):
-    """Record when a user completes a trail and update profile"""
+def record_trail_completion(user_id, trail_id, actual_duration, rating, 
+                           predicted_duration=None, predicted_avg_heart_rate=None,
+                           predicted_max_heart_rate=None, predicted_avg_speed=None,
+                           predicted_max_speed=None, predicted_calories=None,
+                           predicted_profile_category=None):
+    """
+    Record when a user completes a trail and update profile.
+    
+    Args:
+        user_id: User ID
+        trail_id: Trail ID
+        actual_duration: Duration in minutes
+        rating: Rating (1-5)
+        predicted_duration: Optional predicted duration in minutes
+        predicted_avg_heart_rate: Optional predicted average heart rate
+        predicted_max_heart_rate: Optional predicted max heart rate
+        predicted_avg_speed: Optional predicted average speed
+        predicted_max_speed: Optional predicted max speed
+        predicted_calories: Optional predicted calories
+        predicted_profile_category: Optional predicted profile category
+    """
     # Use shared SQL insertion function
     _insert_completed_trail_sql(
         user_id, 
         trail_id, 
         datetime.now().isoformat(), 
         actual_duration, 
-        rating
+        rating,
+        predicted_duration=predicted_duration,
+        predicted_avg_heart_rate=predicted_avg_heart_rate,
+        predicted_max_heart_rate=predicted_max_heart_rate,
+        predicted_avg_speed=predicted_avg_speed,
+        predicted_max_speed=predicted_max_speed,
+        predicted_calories=predicted_calories,
+        predicted_profile_category=predicted_profile_category
     )
     
     # Recalculate user profile
@@ -230,6 +273,23 @@ def _ensure_new_tables():
         cur.execute("ALTER TABLE completed_trails ADD COLUMN total_calories INTEGER")
     if "uploaded_data_id" not in columns:
         cur.execute("ALTER TABLE completed_trails ADD COLUMN uploaded_data_id INTEGER")
+    if "difficulty_rating" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN difficulty_rating INTEGER")
+    # Add predicted metrics columns for future profile comparison
+    if "predicted_duration" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN predicted_duration INTEGER")
+    if "predicted_avg_heart_rate" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN predicted_avg_heart_rate INTEGER")
+    if "predicted_max_heart_rate" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN predicted_max_heart_rate INTEGER")
+    if "predicted_avg_speed" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN predicted_avg_speed REAL")
+    if "predicted_max_speed" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN predicted_max_speed REAL")
+    if "predicted_calories" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN predicted_calories INTEGER")
+    if "predicted_profile_category" not in columns:
+        cur.execute("ALTER TABLE completed_trails ADD COLUMN predicted_profile_category TEXT")
     
     # Create saved_trails table
     cur.execute("""
@@ -276,6 +336,14 @@ def _ensure_new_tables():
         )
     """)
     
+    # Create indexes for trail_performance_data for better query performance
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_trail_perf_completed_trail_id ON trail_performance_data(completed_trail_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_trail_perf_timestamp ON trail_performance_data(completed_trail_id, timestamp)")
+    except sqlite3.OperationalError:
+        # Indexes might already exist, ignore
+        pass
+    
     # Create uploaded_trail_data table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS uploaded_trail_data (
@@ -289,6 +357,18 @@ def _ensure_new_tables():
             parsed_data TEXT,
             status TEXT,
             FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+    
+    # Create trail_photos table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS trail_photos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            completed_trail_id INTEGER,
+            photo_path TEXT,
+            upload_date TEXT,
+            caption TEXT,
+            FOREIGN KEY(completed_trail_id) REFERENCES completed_trails(id)
         )
     """)
     

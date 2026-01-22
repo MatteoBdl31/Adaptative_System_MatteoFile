@@ -597,14 +597,20 @@ class DashboardCalculator:
     # Helper methods
     
     def _get_completed_trails_with_details(self, user_id: int) -> List[Dict]:
-        """Get completed trails with full trail details."""
+        """Get completed trails with full trail details, including predicted metrics."""
         conn = sqlite3.connect(self.users_db)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute("""
             SELECT ct.id, ct.trail_id, ct.completion_date, ct.actual_duration, ct.rating,
                    ct.avg_heart_rate, ct.max_heart_rate, ct.avg_speed, ct.max_speed,
-                   ct.total_calories
+                   ct.total_calories,
+                   ct.predicted_duration, ct.predicted_avg_heart_rate, ct.predicted_max_heart_rate,
+                   ct.predicted_avg_speed, ct.predicted_max_speed, ct.predicted_calories,
+                   ct.predicted_profile_category,
+                   CASE WHEN EXISTS (
+                       SELECT 1 FROM trail_performance_data tpd WHERE tpd.completed_trail_id = ct.id
+                   ) THEN 1 ELSE 0 END as has_time_series_data
             FROM completed_trails ct
             WHERE ct.user_id = ?
             ORDER BY ct.completion_date DESC
@@ -636,6 +642,199 @@ class DashboardCalculator:
         data = [dict(row) for row in cur.fetchall()]
         conn.close()
         return data
+    
+    def _get_aggregated_heart_rate_metrics(self, user_id: int) -> Dict:
+        """Calculate aggregated heart rate metrics across all completions."""
+        conn = sqlite3.connect(self.users_db)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        # Get all heart rate data from time-series
+        cur.execute("""
+            SELECT tpd.heart_rate, ct.completion_date
+            FROM trail_performance_data tpd
+            JOIN completed_trails ct ON tpd.completed_trail_id = ct.id
+            WHERE ct.user_id = ? AND tpd.heart_rate IS NOT NULL
+            ORDER BY ct.completion_date ASC, tpd.timestamp ASC
+        """, (user_id,))
+        
+        heart_rate_data = [dict(row) for row in cur.fetchall()]
+        conn.close()
+        
+        if not heart_rate_data:
+            return {
+                "avg_heart_rate": None,
+                "max_heart_rate": None,
+                "min_heart_rate": None,
+                "heart_rate_trend": []
+            }
+        
+        heart_rates = [d["heart_rate"] for d in heart_rate_data]
+        
+        # Calculate trends by completion date
+        trends_by_date = {}
+        for d in heart_rate_data:
+            date = d["completion_date"][:10]  # Just the date part
+            if date not in trends_by_date:
+                trends_by_date[date] = []
+            trends_by_date[date].append(d["heart_rate"])
+        
+        heart_rate_trend = [
+            {
+                "date": date,
+                "avg_hr": int(sum(hrs) / len(hrs)),
+                "max_hr": max(hrs),
+                "min_hr": min(hrs)
+            }
+            for date, hrs in sorted(trends_by_date.items())
+        ]
+        
+        return {
+            "avg_heart_rate": int(sum(heart_rates) / len(heart_rates)),
+            "max_heart_rate": max(heart_rates),
+            "min_heart_rate": min(heart_rates),
+            "heart_rate_trend": heart_rate_trend
+        }
+    
+    def _get_aggregated_gps_metrics(self, user_id: int) -> Dict:
+        """Calculate aggregated GPS-based metrics (total distance, elevation profiles)."""
+        conn = sqlite3.connect(self.users_db)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        
+        # Get GPS data from time-series
+        cur.execute("""
+            SELECT tpd.latitude, tpd.longitude, tpd.elevation, tpd.speed, ct.completion_date, ct.trail_id
+            FROM trail_performance_data tpd
+            JOIN completed_trails ct ON tpd.completed_trail_id = ct.id
+            WHERE ct.user_id = ? AND tpd.latitude IS NOT NULL AND tpd.longitude IS NOT NULL
+            ORDER BY ct.completion_date ASC, tpd.timestamp ASC
+        """, (user_id,))
+        
+        gps_data = [dict(row) for row in cur.fetchall()]
+        conn.close()
+        
+        if not gps_data:
+            return {
+                "total_distance_km": 0,
+                "total_elevation_gain_m": 0,
+                "gps_points_count": 0,
+                "elevation_profiles": []
+            }
+        
+        # Calculate distance from GPS points (simplified - using Haversine would be more accurate)
+        total_distance = 0
+        elevation_profiles = {}
+        
+        for i in range(len(gps_data) - 1):
+            p1 = gps_data[i]
+            p2 = gps_data[i + 1]
+            
+            # Simple distance calculation (approximate)
+            lat_diff = abs(p2["latitude"] - p1["latitude"])
+            lon_diff = abs(p2["longitude"] - p1["longitude"])
+            # Rough conversion: 1 degree ≈ 111 km
+            distance_km = ((lat_diff ** 2 + lon_diff ** 2) ** 0.5) * 111
+            total_distance += distance_km
+            
+            # Group elevation profiles by trail
+            trail_id = p1["trail_id"]
+            if trail_id not in elevation_profiles:
+                elevation_profiles[trail_id] = []
+            elevation_profiles[trail_id].append({
+                "elevation": p1.get("elevation", 0),
+                "timestamp": i
+            })
+        
+        # Calculate total elevation gain
+        total_elevation_gain = 0
+        for trail_id, profile in elevation_profiles.items():
+            elevations = [p["elevation"] for p in profile if p["elevation"]]
+            if elevations:
+                total_elevation_gain += max(elevations) - min(elevations)
+        
+        return {
+            "total_distance_km": round(total_distance, 2),
+            "total_elevation_gain_m": int(total_elevation_gain),
+            "gps_points_count": len(gps_data),
+            "elevation_profiles": {
+                trail_id: profile[:100]  # Limit to 100 points per trail
+                for trail_id, profile in elevation_profiles.items()
+            }
+        }
+    
+    def calculate_heart_rate_trends(self, user_id: int) -> Dict:
+        """Calculate heart rate trends over time."""
+        metrics = self._get_aggregated_heart_rate_metrics(user_id)
+        return {
+            "trends": metrics.get("heart_rate_trend", []),
+            "overall_avg": metrics.get("avg_heart_rate"),
+            "overall_max": metrics.get("max_heart_rate"),
+            "overall_min": metrics.get("min_heart_rate")
+        }
+    
+    def calculate_gps_aggregates(self, user_id: int) -> Dict:
+        """Calculate GPS-based aggregates (total distance, elevation gain from GPS data)."""
+        return self._get_aggregated_gps_metrics(user_id)
+    
+    def calculate_performance_improvements(self, user_id: int) -> Dict:
+        """Compare actual vs predicted performance over time."""
+        completed_trails = self._get_completed_trails_with_details(user_id)
+        
+        if not completed_trails:
+            return {
+                "improvements": [],
+                "avg_duration_diff_pct": 0,
+                "avg_hr_diff_pct": 0,
+                "avg_speed_diff_pct": 0
+            }
+        
+        improvements = []
+        duration_diffs = []
+        hr_diffs = []
+        speed_diffs = []
+        
+        for trail in completed_trails:
+            if not trail.get("predicted_duration"):
+                continue
+            
+            actual_duration = trail.get("actual_duration", 0)
+            predicted_duration = trail.get("predicted_duration", 0)
+            actual_hr = trail.get("avg_heart_rate")
+            predicted_hr = trail.get("predicted_avg_heart_rate")
+            actual_speed = trail.get("avg_speed")
+            predicted_speed = trail.get("predicted_avg_speed")
+            
+            duration_diff_pct = 0
+            hr_diff_pct = 0
+            speed_diff_pct = 0
+            
+            if predicted_duration > 0:
+                duration_diff_pct = ((actual_duration - predicted_duration) / predicted_duration) * 100
+                duration_diffs.append(duration_diff_pct)
+            
+            if predicted_hr and actual_hr:
+                hr_diff_pct = ((actual_hr - predicted_hr) / predicted_hr) * 100
+                hr_diffs.append(hr_diff_pct)
+            
+            if predicted_speed and actual_speed:
+                speed_diff_pct = ((actual_speed - predicted_speed) / predicted_speed) * 100
+                speed_diffs.append(speed_diff_pct)
+            
+            improvements.append({
+                "trail_id": trail.get("trail_id"),
+                "completion_date": trail.get("completion_date"),
+                "duration_diff_pct": round(duration_diff_pct, 1),
+                "hr_diff_pct": round(hr_diff_pct, 1),
+                "speed_diff_pct": round(speed_diff_pct, 1)
+            })
+        
+        return {
+            "improvements": improvements,
+            "avg_duration_diff_pct": round(sum(duration_diffs) / len(duration_diffs), 1) if duration_diffs else 0,
+            "avg_hr_diff_pct": round(sum(hr_diffs) / len(hr_diffs), 1) if hr_diffs else 0,
+            "avg_speed_diff_pct": round(sum(speed_diffs) / len(speed_diffs), 1) if speed_diffs else 0
+        }
     
     def _get_saved_trails(self, user_id: int) -> List[Dict]:
         """Get saved trails for a user."""

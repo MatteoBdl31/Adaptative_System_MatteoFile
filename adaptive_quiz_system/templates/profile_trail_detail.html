@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+{% block title %}{{ trail.name }} - Trail Details{% endblock %}
+{% block page_class %}trail-detail-page{% endblock %}
+{% block extra_head %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="trail-detail-page-container">
+    <!-- Header Section -->
+    <div class="trail-detail-back">
+        <a href="{{ url_for('profile', user_id=user.id) }}" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 16l-6-6 6-6"/>
+            </svg>
+            Back to Profile
+        </a>
+    </div>
+    
+    <div class="trail-detail-header">
+        <div class="trail-detail-header-main">
+            <h2 id="trail-detail-name">{{ trail.name or trail.trail_id }}</h2>
+            <div class="trail-detail-stats-badges" id="trail-detail-stats-badges">
+                {% if trail.distance %}
+                <span class="trail-stat-badge">{{ trail.distance }} km</span>
+                {% endif %}
+                {% if trail.duration %}
+                <span class="trail-stat-badge">{{ (trail.duration // 60) }}h {{ trail.duration % 60 }}m</span>
+                {% endif %}
+                {% if trail.elevation_gain %}
+                <span class="trail-stat-badge">{{ trail.elevation_gain }}m elevation</span>
+                {% endif %}
+                {% if trail.difficulty %}
+                    {% if trail.difficulty <= 3 %}
+                        <span class="trail-stat-badge difficulty-easy">Easy</span>
+                    {% elif trail.difficulty <= 6 %}
+                        <span class="trail-stat-badge difficulty-medium">Medium</span>
+                    {% else %}
+                        <span class="trail-stat-badge difficulty-hard">Hard</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        <div class="trail-detail-action-buttons" id="trail-detail-action-buttons">
+            <!-- Action buttons will be rendered here by JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Map Section -->
+    <section class="trail-detail-section map-section" aria-labelledby="map-heading">
+        <h3 id="map-heading">Trail Map</h3>
+        <div id="trail-map-container" class="trail-map-container" role="img" aria-label="Trail route map"></div>
+    </section>
+    
+    <!-- Sticky Navigation Bar -->
+    <nav class="trail-detail-nav-bar" id="trail-detail-nav-bar" role="navigation" aria-label="Trail detail sections">
+        <button class="trail-nav-tab active" data-section="overview" aria-controls="section-overview" aria-selected="true">Activity Overview</button>
+        <button class="trail-nav-tab" data-section="route" aria-controls="section-route" aria-selected="false">Route Details</button>
+        <button class="trail-nav-tab" data-section="weather" aria-controls="section-weather" aria-selected="false">Weather</button>
+        <button class="trail-nav-tab" data-section="performance" aria-controls="section-performance" aria-selected="false">Performance</button>
+        <button class="trail-nav-tab" data-section="recommendations" aria-controls="section-recommendations" aria-selected="false">Recommendations</button>
+    </nav>
+    
+    <!-- Image Gallery Section -->
+    <div class="trail-detail-section hidden" id="section-gallery">
+        <div class="trail-detail-image-gallery" id="trail-detail-image-gallery">
+            <div class="trail-gallery-main">
+                <img id="trail-gallery-main-image" src="" alt="Trail photo" />
+                <button class="gallery-nav-btn gallery-prev" id="gallery-prev">‹</button>
+                <button class="gallery-nav-btn gallery-next" id="gallery-next">›</button>
+            </div>
+            <div class="trail-gallery-thumbnails" id="trail-gallery-thumbnails">
+                <!-- Thumbnails will be rendered here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading indicator -->
+    <div id="trail-detail-loading" class="trail-detail-loading">
+        <p>Loading trail details...</p>
+    </div>
+    
+    <!-- Overview Section -->
+    <section class="trail-detail-section trail-overview-section" id="section-overview" aria-labelledby="overview-heading">
+        <h3 id="overview-heading">Activity Overview</h3>
+        <div id="trail-description-summary"></div>
+        <div id="trail-key-stats-grid"></div>
+        <div id="trail-landscapes-summary"></div>
+        <div class="trail-details-expanded" id="trail-details-expanded"></div>
+        <div class="trail-description-full" id="trail-description-full"></div>
+    </div>
+    
+    <!-- Route Details Section -->
+    <section class="trail-detail-section" id="section-route" aria-labelledby="route-heading">
+        <h3 id="route-heading">Route Details</h3>
+        <div class="trail-elevation-section">
+            <h4>Elevation Profile</h4>
+            <div class="elevation-summary" id="elevation-summary"></div>
+            <div class="chart-container elevation-chart">
+                <canvas id="elevation-chart"></canvas>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Weather Section -->
+    <section class="trail-detail-section trail-weather-section" id="section-weather" aria-labelledby="weather-heading">
+        <h3 id="weather-heading">Weather</h3>
+        <div id="weather-summary-cards" class="weather-summary-cards"></div>
+    </section>
+    
+    <!-- Performance Section -->
+    <section class="trail-detail-section trail-performance-section" id="section-performance" aria-labelledby="performance-heading">
+        <h3 id="performance-heading">Performance</h3>
+        <div class="completion-selector hidden" id="completion-selector-container">
+            <div class="form-group">
+                <label for="completion-selector" class="form-label">View Performance:</label>
+                <select id="completion-selector" class="form-select">
+                    <option value="">Select completion...</option>
+                </select>
+            </div>
+        </div>
+        <div id="performance-summary-cards" class="performance-summary-cards"></div>
+        <div id="performance-metrics-detailed"></div>
+        <div class="performance-chart-controls">
+            <div class="form-group">
+                <label for="metric-selector" class="form-label">Metric:</label>
+                <select id="metric-selector" class="form-select">
+                    <option value="heart_rate">Heart Rate (bpm)</option>
+                    <option value="speed">Speed (km/h)</option>
+                    <option value="cadence">Cadence (steps/min)</option>
+                </select>
+            </div>
+            <div class="spacer"></div>
+            <div id="loaded-completions-legend" class="legend-container">
+                <!-- Comparison legend items will be added here -->
+            </div>
+        </div>
+        <div class="chart-container performance-chart">
+            <canvas id="performance-chart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Recommendations Section -->
+    <section class="trail-detail-section trail-recommendations-section" id="section-recommendations" aria-labelledby="recommendations-heading">
+        <h3 id="recommendations-heading">Recommendations</h3>
+        <div id="recommendations-key-tips"></div>
+        <div id="ai-recommendations-full"></div>
+    </section>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+<script src="{{ url_for('static', filename='trail_detail_page.js') }}"></script>
+<script>
+    // Pass trail data to JavaScript
+    const trailData = {{ trail|tojson }};
+    const userId = {{ user.id }};
+    const userProfile = {{ (user_profile or '')|tojson }};
+    const completedTrailData = {{ (completed_trail_data or {})|tojson }};
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Hide loading indicator
+        const loadingEl = document.getElementById('trail-detail-loading');
+        if (loadingEl) {
+            loadingEl.style.display = 'none';
+        }
+        
+        // Initialize sticky navigation with adaptive ordering
+        initStickyNavigation(userProfile);
+        
+        // Import trail detail rendering functions
+        if (typeof TrailDetailPage !== 'undefined') {
+            try {
+                TrailDetailPage.init(trailData, userId, userProfile, completedTrailData);
+            } catch (e) {
+                console.error('Error initializing TrailDetailPage:', e);
+                if (loadingEl) {
+                    loadingEl.className = 'trail-detail-error';
+                    loadingEl.innerHTML = '<p>Error loading trail details. Please check the console for details.</p>';
+                }
+            }
+        } else {
+            console.error('TrailDetailPage not loaded. Check if trail_detail_page.js is loaded.');
+            if (loadingEl) {
+                loadingEl.className = 'trail-detail-error';
+                loadingEl.innerHTML = '<p>Error: TrailDetailPage JavaScript not loaded. Please refresh the page.</p>';
+            }
+        }
+    });
+    
+    function initStickyNavigation(userProfile) {
+        const navBar = document.getElementById('trail-detail-nav-bar');
+        if (!navBar) return;
+        
+        // Default order: Activity Overview is always first
+        const defaultOrder = ['overview', 'route', 'weather', 'performance', 'recommendations'];
+        
+        // Adaptive ordering based on user profile
+        let orderedSections = [...defaultOrder];
+        const profileType = userProfile && typeof userProfile === 'string' ? userProfile : 
+                           (userProfile && userProfile.primary_profile ? userProfile.primary_profile : null);
+        
+        if (profileType) {
+            switch(profileType) {
+                case 'performance_athlete':
+                    // Performance athletes care most about performance metrics
+                    orderedSections = ['overview', 'performance', 'route', 'weather', 'recommendations'];
+                    break;
+                case 'elevation_lover':
+                    // Elevation lovers prioritize route details (elevation profile)
+                    orderedSections = ['overview', 'route', 'weather', 'performance', 'recommendations'];
+                    break;
+                case 'photographer':
+                    // Photographers care about weather and recommendations
+                    orderedSections = ['overview', 'weather', 'recommendations', 'route', 'performance'];
+                    break;
+                case 'contemplative':
+                    // Contemplative users prioritize recommendations and weather
+                    orderedSections = ['overview', 'recommendations', 'weather', 'route', 'performance'];
+                    break;
+                case 'explorer':
+                    // Explorers want route details and recommendations
+                    orderedSections = ['overview', 'route', 'recommendations', 'weather', 'performance'];
+                    break;
+                case 'casual':
+                case 'family':
+                    // Casual and family users prioritize weather and recommendations
+                    orderedSections = ['overview', 'weather', 'recommendations', 'route', 'performance'];
+                    break;
+                default:
+                    // Keep default order
+                    break;
+            }
+        }
+        
+        // Reorder navigation tabs
+        const tabs = Array.from(navBar.querySelectorAll('.trail-nav-tab'));
+        const tabMap = {};
+        tabs.forEach(tab => {
+            const section = tab.getAttribute('data-section');
+            tabMap[section] = tab;
+            tab.remove();
+        });
+        
+        // Add tabs in new order
+        orderedSections.forEach(section => {
+            if (tabMap[section]) {
+                navBar.appendChild(tabMap[section]);
+            }
+        });
+        
+        // Reorder sections in DOM to match navigation order
+        const sectionsContainer = navBar.parentElement; // Get parent container (trail-detail-page-container)
+        if (sectionsContainer) {
+            // Collect all section elements that need to be reordered
+            const sectionElements = [];
+            orderedSections.forEach(sectionId => {
+                const sectionEl = document.getElementById(`section-${sectionId}`);
+                if (sectionEl) {
+                    sectionElements.push(sectionEl);
+                }
+            });
+            
+            // Remove all sections from their current positions
+            sectionElements.forEach(el => {
+                if (el.parentNode) {
+                    el.remove();
+                }
+            });
+            
+            // Insert sections in the new order right after the nav bar
+            // Insert in reverse order so they appear in correct order (last inserted becomes first after nav)
+            for (let i = sectionElements.length - 1; i >= 0; i--) {
+                const sectionEl = sectionElements[i];
+                // Insert right after nav bar
+                const nextSibling = navBar.nextSibling;
+                if (nextSibling) {
+                    sectionsContainer.insertBefore(sectionEl, nextSibling);
+                } else {
+                    sectionsContainer.appendChild(sectionEl);
+                }
+            }
+        }
+        
+        // Set up sticky positioning
+        const appHeader = document.querySelector('.app-header');
+        const headerHeight = appHeader ? appHeader.offsetHeight : 0;
+        const headerStyle = appHeader ? window.getComputedStyle(appHeader) : null;
+        const headerIsSticky = headerStyle && headerStyle.position === 'sticky';
+        const stickyTop = headerIsSticky ? `${headerHeight}px` : '0';
+        
+        navBar.style.position = 'sticky';
+        navBar.style.setProperty('top', stickyTop, 'important');
+        navBar.style.zIndex = '101';
+        
+        // Set up scroll-to-section functionality
+        const sections = document.querySelectorAll('section[id^="section-"], [id^="section-"]');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const sectionId = entry.target.id.replace('section-', '');
+                    tabs.forEach(t => {
+                        if (t.getAttribute('data-section') === sectionId) {
+                            t.classList.add('active');
+                            t.setAttribute('aria-selected', 'true');
+                        } else {
+                            t.classList.remove('active');
+                            t.setAttribute('aria-selected', 'false');
+                        }
+                    });
+                }
+            });
+        }, {
+            rootMargin: '-100px 0px -80% 0px',
+            threshold: 0
+        });
+        
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+        
+        // Tab click handlers
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetSection = this.getAttribute('data-section');
+                const targetElement = document.getElementById(`section-${targetSection}`);
+                
+                if (targetElement) {
+                    tabs.forEach(t => {
+                        t.classList.remove('active');
+                        t.setAttribute('aria-selected', 'false');
+                    });
+                    this.classList.add('active');
+                    this.setAttribute('aria-selected', 'true');
+                    
+                    const headerOffset = navBar.offsetHeight + 20;
+                    const elementPosition = targetElement.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                    
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}

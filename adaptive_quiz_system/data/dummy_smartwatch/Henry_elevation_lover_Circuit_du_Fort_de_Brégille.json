@@ -1,0 +1,1438 @@
+{
+  "trail_id": "jura_1070136",
+  "trail_name": "Circuit du Fort de Brégille",
+  "start_time": "2026-01-21T16:31:34.104956",
+  "end_time": "2026-01-21T18:54:34.104975",
+  "data_points": [
+    {
+      "timestamp": 0,
+      "heart_rate": 164,
+      "speed": 1.9,
+      "elevation": 4725.9,
+      "latitude": 45.500026,
+      "longitude": 6.200004,
+      "calories": 3,
+      "cadence": 127
+    },
+    {
+      "timestamp": 60,
+      "heart_rate": 165,
+      "speed": 2.18,
+      "elevation": 4733.5,
+      "latitude": 45.500741,
+      "longitude": 6.200774,
+      "calories": 7,
+      "cadence": 127
+    },
+    {
+      "timestamp": 120,
+      "heart_rate": 164,
+      "speed": 2.5,
+      "elevation": 4737.6,
+      "latitude": 45.501422,
+      "longitude": 6.201361,
+      "calories": 11,
+      "cadence": 120
+    },
+    {
+      "timestamp": 180,
+      "heart_rate": 164,
+      "speed": 2.29,
+      "elevation": 4745.1,
+      "latitude": 45.502181,
+      "longitude": 6.202207,
+      "calories": 14,
+      "cadence": 113
+    },
+    {
+      "timestamp": 240,
+      "heart_rate": 163,
+      "speed": 1.9,
+      "elevation": 4748.1,
+      "latitude": 45.502794,
+      "longitude": 6.202776,
+      "calories": 18,
+      "cadence": 95
+    },
+    {
+      "timestamp": 300,
+      "heart_rate": 170,
+      "speed": 2.55,
+      "elevation": 4742.7,
+      "latitude": 45.503518,
+      "longitude": 6.203525,
+      "calories": 22,
+      "cadence": 130
+    },
+    {
+      "timestamp": 360,
+      "heart_rate": 169,
+      "speed": 2.17,
+      "elevation": 4754.3,
+      "latitude": 45.504237,
+      "longitude": 6.204158,
+      "calories": 26,
+      "cadence": 126
+    },
+    {
+      "timestamp": 420,
+      "heart_rate": 169,
+      "speed": 2.16,
+      "elevation": 4752.5,
+      "latitude": 45.50484,
+      "longitude": 6.204925,
+      "calories": 29,
+      "cadence": 96
+    },
+    {
+      "timestamp": 480,
+      "heart_rate": 169,
+      "speed": 2.13,
+      "elevation": 4758.0,
+      "latitude": 45.505571,
+      "longitude": 6.205618,
+      "calories": 33,
+      "cadence": 104
+    },
+    {
+      "timestamp": 540,
+      "heart_rate": 172,
+      "speed": 2.42,
+      "elevation": 4779.9,
+      "latitude": 45.506382,
+      "longitude": 6.206278,
+      "calories": 37,
+      "cadence": 95
+    },
+    {
+      "timestamp": 600,
+      "heart_rate": 166,
+      "speed": 2.43,
+      "elevation": 4766.9,
+      "latitude": 45.507017,
+      "longitude": 6.206968,
+      "calories": 41,
+      "cadence": 102
+    },
+    {
+      "timestamp": 660,
+      "heart_rate": 163,
+      "speed": 1.84,
+      "elevation": 4773.9,
+      "latitude": 45.50779,
+      "longitude": 6.207719,
+      "calories": 44,
+      "cadence": 115
+    },
+    {
+      "timestamp": 720,
+      "heart_rate": 162,
+      "speed": 1.93,
+      "elevation": 4775.8,
+      "latitude": 45.508328,
+      "longitude": 6.208483,
+      "calories": 48,
+      "cadence": 128
+    },
+    {
+      "timestamp": 780,
+      "heart_rate": 171,
+      "speed": 1.81,
+      "elevation": 4800.5,
+      "latitude": 45.509022,
+      "longitude": 6.209019,
+      "calories": 52,
+      "cadence": 114
+    },
+    {
+      "timestamp": 840,
+      "heart_rate": 164,
+      "speed": 2.5,
+      "elevation": 4802.8,
+      "latitude": 45.509731,
+      "longitude": 6.209868,
+      "calories": 56,
+      "cadence": 133
+    },
+    {
+      "timestamp": 900,
+      "heart_rate": 165,
+      "speed": 2.31,
+      "elevation": 4810.8,
+      "latitude": 45.510485,
+      "longitude": 6.210447,
+      "calories": 59,
+      "cadence": 122
+    },
+    {
+      "timestamp": 960,
+      "heart_rate": 170,
+      "speed": 1.82,
+      "elevation": 4814.5,
+      "latitude": 45.511143,
+      "longitude": 6.211149,
+      "calories": 63,
+      "cadence": 109
+    },
+    {
+      "timestamp": 1020,
+      "heart_rate": 167,
+      "speed": 2.7,
+      "elevation": 4802.0,
+      "latitude": 45.511924,
+      "longitude": 6.211931,
+      "calories": 67,
+      "cadence": 118
+    },
+    {
+      "timestamp": 1080,
+      "heart_rate": 163,
+      "speed": 2.65,
+      "elevation": 4816.0,
+      "latitude": 45.512526,
+      "longitude": 6.212655,
+      "calories": 71,
+      "cadence": 112
+    },
+    {
+      "timestamp": 1140,
+      "heart_rate": 172,
+      "speed": 2.03,
+      "elevation": 4821.4,
+      "latitude": 45.513346,
+      "longitude": 6.213315,
+      "calories": 74,
+      "cadence": 96
+    },
+    {
+      "timestamp": 1200,
+      "heart_rate": 166,
+      "speed": 2.11,
+      "elevation": 4817.4,
+      "latitude": 45.514036,
+      "longitude": 6.21397,
+      "calories": 78,
+      "cadence": 95
+    },
+    {
+      "timestamp": 1260,
+      "heart_rate": 164,
+      "speed": 2.36,
+      "elevation": 4827.4,
+      "latitude": 45.514665,
+      "longitude": 6.214683,
+      "calories": 82,
+      "cadence": 108
+    },
+    {
+      "timestamp": 1320,
+      "heart_rate": 164,
+      "speed": 2.33,
+      "elevation": 4829.8,
+      "latitude": 45.515343,
+      "longitude": 6.215447,
+      "calories": 86,
+      "cadence": 119
+    },
+    {
+      "timestamp": 1380,
+      "heart_rate": 164,
+      "speed": 2.66,
+      "elevation": 4845.9,
+      "latitude": 45.516007,
+      "longitude": 6.216098,
+      "calories": 89,
+      "cadence": 131
+    },
+    {
+      "timestamp": 1440,
+      "heart_rate": 170,
+      "speed": 2.15,
+      "elevation": 4848.9,
+      "latitude": 45.516865,
+      "longitude": 6.216848,
+      "calories": 93,
+      "cadence": 103
+    },
+    {
+      "timestamp": 1500,
+      "heart_rate": 162,
+      "speed": 2.65,
+      "elevation": 4849.3,
+      "latitude": 45.517437,
+      "longitude": 6.217511,
+      "calories": 97,
+      "cadence": 128
+    },
+    {
+      "timestamp": 1560,
+      "heart_rate": 170,
+      "speed": 2.23,
+      "elevation": 4850.0,
+      "latitude": 45.518103,
+      "longitude": 6.218154,
+      "calories": 101,
+      "cadence": 121
+    },
+    {
+      "timestamp": 1620,
+      "heart_rate": 163,
+      "speed": 1.98,
+      "elevation": 4865.5,
+      "latitude": 45.51891,
+      "longitude": 6.218929,
+      "calories": 104,
+      "cadence": 107
+    },
+    {
+      "timestamp": 1680,
+      "heart_rate": 165,
+      "speed": 2.66,
+      "elevation": 4878.0,
+      "latitude": 45.519535,
+      "longitude": 6.219656,
+      "calories": 108,
+      "cadence": 126
+    },
+    {
+      "timestamp": 1740,
+      "heart_rate": 177,
+      "speed": 1.8,
+      "elevation": 4879.1,
+      "latitude": 45.520267,
+      "longitude": 6.220319,
+      "calories": 112,
+      "cadence": 95
+    },
+    {
+      "timestamp": 1800,
+      "heart_rate": 183,
+      "speed": 2.45,
+      "elevation": 4883.6,
+      "latitude": 45.521094,
+      "longitude": 6.220951,
+      "calories": 116,
+      "cadence": 131
+    },
+    {
+      "timestamp": 1860,
+      "heart_rate": 178,
+      "speed": 2.47,
+      "elevation": 4877.3,
+      "latitude": 45.521615,
+      "longitude": 6.221603,
+      "calories": 119,
+      "cadence": 97
+    },
+    {
+      "timestamp": 1920,
+      "heart_rate": 178,
+      "speed": 1.84,
+      "elevation": 4889.9,
+      "latitude": 45.52241,
+      "longitude": 6.222367,
+      "calories": 123,
+      "cadence": 120
+    },
+    {
+      "timestamp": 1980,
+      "heart_rate": 177,
+      "speed": 2.04,
+      "elevation": 4885.8,
+      "latitude": 45.523075,
+      "longitude": 6.223082,
+      "calories": 127,
+      "cadence": 105
+    },
+    {
+      "timestamp": 2040,
+      "heart_rate": 185,
+      "speed": 2.22,
+      "elevation": 4904.2,
+      "latitude": 45.523765,
+      "longitude": 6.223739,
+      "calories": 131,
+      "cadence": 126
+    },
+    {
+      "timestamp": 2100,
+      "heart_rate": 181,
+      "speed": 1.81,
+      "elevation": 4904.9,
+      "latitude": 45.524512,
+      "longitude": 6.224468,
+      "calories": 134,
+      "cadence": 121
+    },
+    {
+      "timestamp": 2160,
+      "heart_rate": 177,
+      "speed": 2.22,
+      "elevation": 4906.0,
+      "latitude": 45.525218,
+      "longitude": 6.225208,
+      "calories": 138,
+      "cadence": 96
+    },
+    {
+      "timestamp": 2220,
+      "heart_rate": 182,
+      "speed": 2.61,
+      "elevation": 4918.9,
+      "latitude": 45.525878,
+      "longitude": 6.225907,
+      "calories": 142,
+      "cadence": 132
+    },
+    {
+      "timestamp": 2280,
+      "heart_rate": 180,
+      "speed": 2.5,
+      "elevation": 4918.5,
+      "latitude": 45.526528,
+      "longitude": 6.226657,
+      "calories": 146,
+      "cadence": 125
+    },
+    {
+      "timestamp": 2340,
+      "heart_rate": 183,
+      "speed": 2.35,
+      "elevation": 4921.4,
+      "latitude": 45.527302,
+      "longitude": 6.227331,
+      "calories": 149,
+      "cadence": 132
+    },
+    {
+      "timestamp": 2400,
+      "heart_rate": 189,
+      "speed": 2.32,
+      "elevation": 4930.6,
+      "latitude": 45.527919,
+      "longitude": 6.227981,
+      "calories": 153,
+      "cadence": 124
+    },
+    {
+      "timestamp": 2460,
+      "heart_rate": 182,
+      "speed": 2.21,
+      "elevation": 4935.7,
+      "latitude": 45.528651,
+      "longitude": 6.228665,
+      "calories": 157,
+      "cadence": 99
+    },
+    {
+      "timestamp": 2520,
+      "heart_rate": 187,
+      "speed": 1.9,
+      "elevation": 4949.2,
+      "latitude": 45.529351,
+      "longitude": 6.229302,
+      "calories": 161,
+      "cadence": 96
+    },
+    {
+      "timestamp": 2580,
+      "heart_rate": 191,
+      "speed": 1.9,
+      "elevation": 4941.8,
+      "latitude": 45.530119,
+      "longitude": 6.230073,
+      "calories": 164,
+      "cadence": 118
+    },
+    {
+      "timestamp": 2640,
+      "heart_rate": 191,
+      "speed": 2.12,
+      "elevation": 4958.6,
+      "latitude": 45.530852,
+      "longitude": 6.230713,
+      "calories": 168,
+      "cadence": 114
+    },
+    {
+      "timestamp": 2700,
+      "heart_rate": 187,
+      "speed": 2.08,
+      "elevation": 4958.2,
+      "latitude": 45.531421,
+      "longitude": 6.231401,
+      "calories": 172,
+      "cadence": 114
+    },
+    {
+      "timestamp": 2760,
+      "heart_rate": 194,
+      "speed": 2.27,
+      "elevation": 4953.8,
+      "latitude": 45.532155,
+      "longitude": 6.232193,
+      "calories": 176,
+      "cadence": 104
+    },
+    {
+      "timestamp": 2820,
+      "heart_rate": 188,
+      "speed": 2.42,
+      "elevation": 4970.9,
+      "latitude": 45.532859,
+      "longitude": 6.232946,
+      "calories": 179,
+      "cadence": 110
+    },
+    {
+      "timestamp": 2880,
+      "heart_rate": 187,
+      "speed": 2.33,
+      "elevation": 4976.0,
+      "latitude": 45.533514,
+      "longitude": 6.233628,
+      "calories": 183,
+      "cadence": 99
+    },
+    {
+      "timestamp": 2940,
+      "heart_rate": 192,
+      "speed": 2.64,
+      "elevation": 4968.3,
+      "latitude": 45.534348,
+      "longitude": 6.234281,
+      "calories": 187,
+      "cadence": 113
+    },
+    {
+      "timestamp": 3000,
+      "heart_rate": 187,
+      "speed": 2.28,
+      "elevation": 4987.8,
+      "latitude": 45.535022,
+      "longitude": 6.234886,
+      "calories": 191,
+      "cadence": 98
+    },
+    {
+      "timestamp": 3060,
+      "heart_rate": 187,
+      "speed": 2.13,
+      "elevation": 4981.2,
+      "latitude": 45.535709,
+      "longitude": 6.235718,
+      "calories": 194,
+      "cadence": 132
+    },
+    {
+      "timestamp": 3120,
+      "heart_rate": 194,
+      "speed": 1.89,
+      "elevation": 4984.0,
+      "latitude": 45.536433,
+      "longitude": 6.236347,
+      "calories": 198,
+      "cadence": 119
+    },
+    {
+      "timestamp": 3180,
+      "heart_rate": 191,
+      "speed": 1.87,
+      "elevation": 4998.1,
+      "latitude": 45.536967,
+      "longitude": 6.237105,
+      "calories": 202,
+      "cadence": 128
+    },
+    {
+      "timestamp": 3240,
+      "heart_rate": 198,
+      "speed": 2.09,
+      "elevation": 5010.5,
+      "latitude": 45.53773,
+      "longitude": 6.237793,
+      "calories": 206,
+      "cadence": 99
+    },
+    {
+      "timestamp": 3300,
+      "heart_rate": 199,
+      "speed": 2.14,
+      "elevation": 4998.2,
+      "latitude": 45.538472,
+      "longitude": 6.238556,
+      "calories": 209,
+      "cadence": 123
+    },
+    {
+      "timestamp": 3360,
+      "heart_rate": 189,
+      "speed": 2.18,
+      "elevation": 5017.6,
+      "latitude": 45.539072,
+      "longitude": 6.239146,
+      "calories": 213,
+      "cadence": 133
+    },
+    {
+      "timestamp": 3420,
+      "heart_rate": 196,
+      "speed": 2.53,
+      "elevation": 5010.5,
+      "latitude": 45.539872,
+      "longitude": 6.239805,
+      "calories": 217,
+      "cadence": 95
+    },
+    {
+      "timestamp": 3480,
+      "heart_rate": 200,
+      "speed": 2.39,
+      "elevation": 5015.3,
+      "latitude": 45.540564,
+      "longitude": 6.240482,
+      "calories": 221,
+      "cadence": 95
+    },
+    {
+      "timestamp": 3540,
+      "heart_rate": 192,
+      "speed": 2.39,
+      "elevation": 5030.3,
+      "latitude": 45.54137,
+      "longitude": 6.241351,
+      "calories": 224,
+      "cadence": 108
+    },
+    {
+      "timestamp": 3600,
+      "heart_rate": 200,
+      "speed": 1.83,
+      "elevation": 5033.9,
+      "latitude": 45.541948,
+      "longitude": 6.241997,
+      "calories": 228,
+      "cadence": 110
+    },
+    {
+      "timestamp": 3660,
+      "heart_rate": 196,
+      "speed": 2.68,
+      "elevation": 5046.5,
+      "latitude": 45.542715,
+      "longitude": 6.242648,
+      "calories": 232,
+      "cadence": 100
+    },
+    {
+      "timestamp": 3720,
+      "heart_rate": 198,
+      "speed": 2.47,
+      "elevation": 5048.5,
+      "latitude": 45.543307,
+      "longitude": 6.243367,
+      "calories": 236,
+      "cadence": 95
+    },
+    {
+      "timestamp": 3780,
+      "heart_rate": 200,
+      "speed": 1.83,
+      "elevation": 5041.5,
+      "latitude": 45.54417,
+      "longitude": 6.24403,
+      "calories": 239,
+      "cadence": 123
+    },
+    {
+      "timestamp": 3840,
+      "heart_rate": 199,
+      "speed": 1.87,
+      "elevation": 5051.4,
+      "latitude": 45.544734,
+      "longitude": 6.244775,
+      "calories": 243,
+      "cadence": 106
+    },
+    {
+      "timestamp": 3900,
+      "heart_rate": 199,
+      "speed": 2.35,
+      "elevation": 5068.4,
+      "latitude": 45.545416,
+      "longitude": 6.245482,
+      "calories": 247,
+      "cadence": 119
+    },
+    {
+      "timestamp": 3960,
+      "heart_rate": 199,
+      "speed": 2.16,
+      "elevation": 5065.4,
+      "latitude": 45.546209,
+      "longitude": 6.246103,
+      "calories": 251,
+      "cadence": 115
+    },
+    {
+      "timestamp": 4020,
+      "heart_rate": 200,
+      "speed": 1.95,
+      "elevation": 5070.1,
+      "latitude": 45.546837,
+      "longitude": 6.2468,
+      "calories": 254,
+      "cadence": 120
+    },
+    {
+      "timestamp": 4080,
+      "heart_rate": 200,
+      "speed": 2.65,
+      "elevation": 5074.3,
+      "latitude": 45.547605,
+      "longitude": 6.24755,
+      "calories": 258,
+      "cadence": 116
+    },
+    {
+      "timestamp": 4140,
+      "heart_rate": 200,
+      "speed": 1.87,
+      "elevation": 5074.7,
+      "latitude": 45.54828,
+      "longitude": 6.248249,
+      "calories": 262,
+      "cadence": 106
+    },
+    {
+      "timestamp": 4200,
+      "heart_rate": 200,
+      "speed": 2.58,
+      "elevation": 5077.1,
+      "latitude": 45.548931,
+      "longitude": 6.24892,
+      "calories": 266,
+      "cadence": 114
+    },
+    {
+      "timestamp": 4260,
+      "heart_rate": 200,
+      "speed": 2.46,
+      "elevation": 5091.3,
+      "latitude": 45.549558,
+      "longitude": 6.249594,
+      "calories": 269,
+      "cadence": 121
+    },
+    {
+      "timestamp": 4320,
+      "heart_rate": 200,
+      "speed": 2.02,
+      "elevation": 5090.4,
+      "latitude": 45.550398,
+      "longitude": 6.250337,
+      "calories": 273,
+      "cadence": 112
+    },
+    {
+      "timestamp": 4380,
+      "heart_rate": 200,
+      "speed": 2.66,
+      "elevation": 5087.1,
+      "latitude": 45.5511,
+      "longitude": 6.251,
+      "calories": 277,
+      "cadence": 132
+    },
+    {
+      "timestamp": 4440,
+      "heart_rate": 200,
+      "speed": 2.01,
+      "elevation": 5076.2,
+      "latitude": 45.551683,
+      "longitude": 6.251772,
+      "calories": 281,
+      "cadence": 130
+    },
+    {
+      "timestamp": 4500,
+      "heart_rate": 200,
+      "speed": 2.13,
+      "elevation": 5079.6,
+      "latitude": 45.552524,
+      "longitude": 6.252525,
+      "calories": 284,
+      "cadence": 95
+    },
+    {
+      "timestamp": 4560,
+      "heart_rate": 200,
+      "speed": 1.86,
+      "elevation": 5066.0,
+      "latitude": 45.553094,
+      "longitude": 6.253093,
+      "calories": 288,
+      "cadence": 114
+    },
+    {
+      "timestamp": 4620,
+      "heart_rate": 200,
+      "speed": 2.38,
+      "elevation": 5063.1,
+      "latitude": 45.553914,
+      "longitude": 6.253762,
+      "calories": 292,
+      "cadence": 99
+    },
+    {
+      "timestamp": 4680,
+      "heart_rate": 200,
+      "speed": 2.21,
+      "elevation": 5049.5,
+      "latitude": 45.5546,
+      "longitude": 6.254474,
+      "calories": 296,
+      "cadence": 95
+    },
+    {
+      "timestamp": 4740,
+      "heart_rate": 200,
+      "speed": 1.9,
+      "elevation": 5055.9,
+      "latitude": 45.555206,
+      "longitude": 6.255216,
+      "calories": 299,
+      "cadence": 131
+    },
+    {
+      "timestamp": 4800,
+      "heart_rate": 200,
+      "speed": 2.62,
+      "elevation": 5040.7,
+      "latitude": 45.556016,
+      "longitude": 6.256057,
+      "calories": 303,
+      "cadence": 106
+    },
+    {
+      "timestamp": 4860,
+      "heart_rate": 200,
+      "speed": 1.93,
+      "elevation": 5044.2,
+      "latitude": 45.556674,
+      "longitude": 6.256647,
+      "calories": 307,
+      "cadence": 115
+    },
+    {
+      "timestamp": 4920,
+      "heart_rate": 200,
+      "speed": 2.35,
+      "elevation": 5042.1,
+      "latitude": 45.55727,
+      "longitude": 6.257312,
+      "calories": 311,
+      "cadence": 122
+    },
+    {
+      "timestamp": 4980,
+      "heart_rate": 200,
+      "speed": 2.2,
+      "elevation": 5030.8,
+      "latitude": 45.557949,
+      "longitude": 6.258096,
+      "calories": 314,
+      "cadence": 109
+    },
+    {
+      "timestamp": 5040,
+      "heart_rate": 200,
+      "speed": 2.35,
+      "elevation": 5027.0,
+      "latitude": 45.558695,
+      "longitude": 6.258789,
+      "calories": 318,
+      "cadence": 125
+    },
+    {
+      "timestamp": 5100,
+      "heart_rate": 200,
+      "speed": 1.88,
+      "elevation": 5025.0,
+      "latitude": 45.559373,
+      "longitude": 6.259468,
+      "calories": 322,
+      "cadence": 114
+    },
+    {
+      "timestamp": 5160,
+      "heart_rate": 200,
+      "speed": 1.99,
+      "elevation": 5027.4,
+      "latitude": 45.560118,
+      "longitude": 6.2601,
+      "calories": 326,
+      "cadence": 108
+    },
+    {
+      "timestamp": 5220,
+      "heart_rate": 200,
+      "speed": 1.83,
+      "elevation": 5018.7,
+      "latitude": 45.560786,
+      "longitude": 6.260884,
+      "calories": 329,
+      "cadence": 107
+    },
+    {
+      "timestamp": 5280,
+      "heart_rate": 200,
+      "speed": 2.12,
+      "elevation": 5014.5,
+      "latitude": 45.561607,
+      "longitude": 6.261541,
+      "calories": 333,
+      "cadence": 121
+    },
+    {
+      "timestamp": 5340,
+      "heart_rate": 200,
+      "speed": 2.57,
+      "elevation": 5000.8,
+      "latitude": 45.562174,
+      "longitude": 6.262236,
+      "calories": 337,
+      "cadence": 117
+    },
+    {
+      "timestamp": 5400,
+      "heart_rate": 200,
+      "speed": 2.69,
+      "elevation": 4998.9,
+      "latitude": 45.563023,
+      "longitude": 6.262849,
+      "calories": 341,
+      "cadence": 100
+    },
+    {
+      "timestamp": 5460,
+      "heart_rate": 200,
+      "speed": 2.61,
+      "elevation": 4990.6,
+      "latitude": 45.563725,
+      "longitude": 6.263674,
+      "calories": 344,
+      "cadence": 127
+    },
+    {
+      "timestamp": 5520,
+      "heart_rate": 200,
+      "speed": 2.14,
+      "elevation": 4983.6,
+      "latitude": 45.564311,
+      "longitude": 6.264263,
+      "calories": 348,
+      "cadence": 133
+    },
+    {
+      "timestamp": 5580,
+      "heart_rate": 200,
+      "speed": 2.57,
+      "elevation": 4985.6,
+      "latitude": 45.565089,
+      "longitude": 6.264971,
+      "calories": 352,
+      "cadence": 121
+    },
+    {
+      "timestamp": 5640,
+      "heart_rate": 200,
+      "speed": 2.57,
+      "elevation": 4982.2,
+      "latitude": 45.565795,
+      "longitude": 6.265678,
+      "calories": 356,
+      "cadence": 117
+    },
+    {
+      "timestamp": 5700,
+      "heart_rate": 200,
+      "speed": 2.45,
+      "elevation": 4966.7,
+      "latitude": 45.566367,
+      "longitude": 6.266359,
+      "calories": 359,
+      "cadence": 114
+    },
+    {
+      "timestamp": 5760,
+      "heart_rate": 200,
+      "speed": 2.33,
+      "elevation": 4974.2,
+      "latitude": 45.567193,
+      "longitude": 6.26709,
+      "calories": 363,
+      "cadence": 103
+    },
+    {
+      "timestamp": 5820,
+      "heart_rate": 200,
+      "speed": 2.01,
+      "elevation": 4969.8,
+      "latitude": 45.567785,
+      "longitude": 6.267774,
+      "calories": 367,
+      "cadence": 105
+    },
+    {
+      "timestamp": 5880,
+      "heart_rate": 200,
+      "speed": 2.46,
+      "elevation": 4962.3,
+      "latitude": 45.568514,
+      "longitude": 6.268574,
+      "calories": 371,
+      "cadence": 126
+    },
+    {
+      "timestamp": 5940,
+      "heart_rate": 200,
+      "speed": 1.89,
+      "elevation": 4949.4,
+      "latitude": 45.569146,
+      "longitude": 6.269306,
+      "calories": 374,
+      "cadence": 116
+    },
+    {
+      "timestamp": 6000,
+      "heart_rate": 200,
+      "speed": 2.22,
+      "elevation": 4945.7,
+      "latitude": 45.569998,
+      "longitude": 6.269991,
+      "calories": 378,
+      "cadence": 121
+    },
+    {
+      "timestamp": 6060,
+      "heart_rate": 200,
+      "speed": 2.32,
+      "elevation": 4933.9,
+      "latitude": 45.570605,
+      "longitude": 6.27066,
+      "calories": 382,
+      "cadence": 130
+    },
+    {
+      "timestamp": 6120,
+      "heart_rate": 200,
+      "speed": 2.05,
+      "elevation": 4932.2,
+      "latitude": 45.571292,
+      "longitude": 6.271278,
+      "calories": 386,
+      "cadence": 106
+    },
+    {
+      "timestamp": 6180,
+      "heart_rate": 200,
+      "speed": 2.3,
+      "elevation": 4934.2,
+      "latitude": 45.571986,
+      "longitude": 6.271987,
+      "calories": 389,
+      "cadence": 100
+    },
+    {
+      "timestamp": 6240,
+      "heart_rate": 200,
+      "speed": 2.38,
+      "elevation": 4920.7,
+      "latitude": 45.572711,
+      "longitude": 6.272766,
+      "calories": 393,
+      "cadence": 123
+    },
+    {
+      "timestamp": 6300,
+      "heart_rate": 200,
+      "speed": 1.81,
+      "elevation": 4923.6,
+      "latitude": 45.573433,
+      "longitude": 6.273425,
+      "calories": 397,
+      "cadence": 106
+    },
+    {
+      "timestamp": 6360,
+      "heart_rate": 200,
+      "speed": 2.37,
+      "elevation": 4916.3,
+      "latitude": 45.574073,
+      "longitude": 6.274152,
+      "calories": 401,
+      "cadence": 131
+    },
+    {
+      "timestamp": 6420,
+      "heart_rate": 200,
+      "speed": 2.12,
+      "elevation": 4917.4,
+      "latitude": 45.574816,
+      "longitude": 6.274808,
+      "calories": 404,
+      "cadence": 101
+    },
+    {
+      "timestamp": 6480,
+      "heart_rate": 200,
+      "speed": 2.44,
+      "elevation": 4905.5,
+      "latitude": 45.575456,
+      "longitude": 6.275529,
+      "calories": 408,
+      "cadence": 117
+    },
+    {
+      "timestamp": 6540,
+      "heart_rate": 200,
+      "speed": 2.42,
+      "elevation": 4905.7,
+      "latitude": 45.576286,
+      "longitude": 6.276207,
+      "calories": 412,
+      "cadence": 120
+    },
+    {
+      "timestamp": 6600,
+      "heart_rate": 200,
+      "speed": 2.69,
+      "elevation": 4888.9,
+      "latitude": 45.576922,
+      "longitude": 6.276948,
+      "calories": 416,
+      "cadence": 101
+    },
+    {
+      "timestamp": 6660,
+      "heart_rate": 200,
+      "speed": 2.49,
+      "elevation": 4887.1,
+      "latitude": 45.577675,
+      "longitude": 6.277621,
+      "calories": 419,
+      "cadence": 115
+    },
+    {
+      "timestamp": 6720,
+      "heart_rate": 200,
+      "speed": 2.5,
+      "elevation": 4882.0,
+      "latitude": 45.578245,
+      "longitude": 6.278368,
+      "calories": 423,
+      "cadence": 101
+    },
+    {
+      "timestamp": 6780,
+      "heart_rate": 200,
+      "speed": 2.69,
+      "elevation": 4874.9,
+      "latitude": 45.579008,
+      "longitude": 6.27904,
+      "calories": 427,
+      "cadence": 107
+    },
+    {
+      "timestamp": 6840,
+      "heart_rate": 200,
+      "speed": 2.69,
+      "elevation": 4878.8,
+      "latitude": 45.579755,
+      "longitude": 6.279704,
+      "calories": 431,
+      "cadence": 96
+    },
+    {
+      "timestamp": 6900,
+      "heart_rate": 200,
+      "speed": 2.18,
+      "elevation": 4867.8,
+      "latitude": 45.580414,
+      "longitude": 6.28039,
+      "calories": 434,
+      "cadence": 128
+    },
+    {
+      "timestamp": 6960,
+      "heart_rate": 200,
+      "speed": 2.19,
+      "elevation": 4872.3,
+      "latitude": 45.581185,
+      "longitude": 6.281099,
+      "calories": 438,
+      "cadence": 98
+    },
+    {
+      "timestamp": 7020,
+      "heart_rate": 200,
+      "speed": 1.86,
+      "elevation": 4865.6,
+      "latitude": 45.581783,
+      "longitude": 6.281735,
+      "calories": 442,
+      "cadence": 109
+    },
+    {
+      "timestamp": 7080,
+      "heart_rate": 200,
+      "speed": 2.08,
+      "elevation": 4862.4,
+      "latitude": 45.58252,
+      "longitude": 6.282461,
+      "calories": 446,
+      "cadence": 107
+    },
+    {
+      "timestamp": 7140,
+      "heart_rate": 200,
+      "speed": 2.48,
+      "elevation": 4840.4,
+      "latitude": 45.58322,
+      "longitude": 6.283235,
+      "calories": 449,
+      "cadence": 131
+    },
+    {
+      "timestamp": 7200,
+      "heart_rate": 200,
+      "speed": 2.68,
+      "elevation": 4835.9,
+      "latitude": 45.583819,
+      "longitude": 6.283958,
+      "calories": 453,
+      "cadence": 110
+    },
+    {
+      "timestamp": 7260,
+      "heart_rate": 200,
+      "speed": 2.25,
+      "elevation": 4831.5,
+      "latitude": 45.584654,
+      "longitude": 6.284635,
+      "calories": 457,
+      "cadence": 95
+    },
+    {
+      "timestamp": 7320,
+      "heart_rate": 200,
+      "speed": 1.93,
+      "elevation": 4830.6,
+      "latitude": 45.585274,
+      "longitude": 6.285239,
+      "calories": 461,
+      "cadence": 125
+    },
+    {
+      "timestamp": 7380,
+      "heart_rate": 200,
+      "speed": 2.59,
+      "elevation": 4817.0,
+      "latitude": 45.585898,
+      "longitude": 6.286056,
+      "calories": 464,
+      "cadence": 110
+    },
+    {
+      "timestamp": 7440,
+      "heart_rate": 200,
+      "speed": 2.45,
+      "elevation": 4831.7,
+      "latitude": 45.586715,
+      "longitude": 6.28667,
+      "calories": 468,
+      "cadence": 115
+    },
+    {
+      "timestamp": 7500,
+      "heart_rate": 200,
+      "speed": 2.05,
+      "elevation": 4822.7,
+      "latitude": 45.587387,
+      "longitude": 6.287532,
+      "calories": 472,
+      "cadence": 95
+    },
+    {
+      "timestamp": 7560,
+      "heart_rate": 200,
+      "speed": 1.85,
+      "elevation": 4814.9,
+      "latitude": 45.588133,
+      "longitude": 6.28816,
+      "calories": 476,
+      "cadence": 104
+    },
+    {
+      "timestamp": 7620,
+      "heart_rate": 200,
+      "speed": 1.95,
+      "elevation": 4802.4,
+      "latitude": 45.588768,
+      "longitude": 6.288756,
+      "calories": 479,
+      "cadence": 96
+    },
+    {
+      "timestamp": 7680,
+      "heart_rate": 200,
+      "speed": 2.18,
+      "elevation": 4796.3,
+      "latitude": 45.589428,
+      "longitude": 6.289556,
+      "calories": 483,
+      "cadence": 126
+    },
+    {
+      "timestamp": 7740,
+      "heart_rate": 200,
+      "speed": 2.24,
+      "elevation": 4797.3,
+      "latitude": 45.590302,
+      "longitude": 6.290306,
+      "calories": 487,
+      "cadence": 105
+    },
+    {
+      "timestamp": 7800,
+      "heart_rate": 200,
+      "speed": 2.17,
+      "elevation": 4793.4,
+      "latitude": 45.591028,
+      "longitude": 6.290802,
+      "calories": 491,
+      "cadence": 113
+    },
+    {
+      "timestamp": 7860,
+      "heart_rate": 200,
+      "speed": 2.62,
+      "elevation": 4782.5,
+      "latitude": 45.591646,
+      "longitude": 6.291669,
+      "calories": 494,
+      "cadence": 103
+    },
+    {
+      "timestamp": 7920,
+      "heart_rate": 200,
+      "speed": 2.45,
+      "elevation": 4771.0,
+      "latitude": 45.592325,
+      "longitude": 6.292366,
+      "calories": 498,
+      "cadence": 106
+    },
+    {
+      "timestamp": 7980,
+      "heart_rate": 200,
+      "speed": 2.55,
+      "elevation": 4771.3,
+      "latitude": 45.592911,
+      "longitude": 6.292902,
+      "calories": 502,
+      "cadence": 96
+    },
+    {
+      "timestamp": 8040,
+      "heart_rate": 200,
+      "speed": 2.69,
+      "elevation": 4761.9,
+      "latitude": 45.593712,
+      "longitude": 6.293697,
+      "calories": 506,
+      "cadence": 115
+    },
+    {
+      "timestamp": 8100,
+      "heart_rate": 200,
+      "speed": 2.51,
+      "elevation": 4763.0,
+      "latitude": 45.594387,
+      "longitude": 6.294374,
+      "calories": 509,
+      "cadence": 95
+    },
+    {
+      "timestamp": 8160,
+      "heart_rate": 200,
+      "speed": 2.02,
+      "elevation": 4750.0,
+      "latitude": 45.595172,
+      "longitude": 6.295004,
+      "calories": 513,
+      "cadence": 113
+    },
+    {
+      "timestamp": 8220,
+      "heart_rate": 200,
+      "speed": 2.47,
+      "elevation": 4748.4,
+      "latitude": 45.595786,
+      "longitude": 6.295874,
+      "calories": 517,
+      "cadence": 123
+    },
+    {
+      "timestamp": 8280,
+      "heart_rate": 200,
+      "speed": 1.84,
+      "elevation": 4757.4,
+      "latitude": 45.59642,
+      "longitude": 6.296594,
+      "calories": 521,
+      "cadence": 115
+    },
+    {
+      "timestamp": 8340,
+      "heart_rate": 200,
+      "speed": 2.29,
+      "elevation": 4734.4,
+      "latitude": 45.597255,
+      "longitude": 6.297238,
+      "calories": 524,
+      "cadence": 133
+    },
+    {
+      "timestamp": 8400,
+      "heart_rate": 200,
+      "speed": 2.05,
+      "elevation": 4747.8,
+      "latitude": 45.597947,
+      "longitude": 6.297876,
+      "calories": 528,
+      "cadence": 117
+    },
+    {
+      "timestamp": 8460,
+      "heart_rate": 200,
+      "speed": 2.64,
+      "elevation": 4725.1,
+      "latitude": 45.598661,
+      "longitude": 6.298488,
+      "calories": 532,
+      "cadence": 105
+    },
+    {
+      "timestamp": 8520,
+      "heart_rate": 200,
+      "speed": 2.64,
+      "elevation": 4721.7,
+      "latitude": 45.599375,
+      "longitude": 6.299318,
+      "calories": 536,
+      "cadence": 119
+    }
+  ]
+}

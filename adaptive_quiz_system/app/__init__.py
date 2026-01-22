@@ -214,6 +214,21 @@ def favicon():
     </svg>'''
     return Response(svg_favicon, mimetype='image/svg+xml')
 
+def format_safety_risks(safety_risks):
+    """Format safety risks for display - converts 'low'/'none' to user-friendly text."""
+    if not safety_risks:
+        return 'No information'
+    risks = safety_risks.lower().strip()
+    if risks == 'low' or risks == 'none' or risks == '':
+        return 'Low risk - Generally safe'
+    # Format other risks (e.g., "slippery,exposed" -> "Slippery, Exposed")
+    return ', '.join([
+        ' '.join(word.capitalize() for word in r.strip().split(' '))
+        for r in risks.split(',')
+    ])
+
+app.jinja_env.filters['format_safety_risks'] = format_safety_risks
+
 @app.template_filter('profile_name_en')
 def profile_name_en_filter(profile_key):
     """Convert profile key to English display name."""
@@ -568,12 +583,14 @@ def index():
         if hike_end_date:
             params["hike_end_date"] = hike_end_date
         
-        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
-        return redirect(url_for("recommendations", user_id=user_id) + "?" + query_string)
+        # Redirect to demo with context parameters
+        query_string = "&".join([f"a_{k}={v}" for k, v in params.items()])
+        return redirect(url_for("demo") + "?user_id_a=" + str(user_id) + "&" + query_string)
     
     return redirect(url_for("demo"))
 
 
+<<<<<<< HEAD
 @app.route("/recommendations/<int:user_id>")
 def recommendations(user_id):
     """Adaptive trail recommendations page"""
@@ -821,6 +838,67 @@ def profile(user_id):
     users = get_all_users()
 
     return render_template("profile.html", user=user, users=users)
+
+
+@app.route("/profile/<int:user_id>/trail/<trail_id>")
+def profile_trail_detail(user_id, trail_id):
+    """Trail detail page for profile view - single page layout"""
+    user = get_user(user_id)
+    if not user:
+        return "User not found", 404
+    
+    trail = get_trail(trail_id)
+    if not trail:
+        return "Trail not found", 404
+    
+    # Get user's trail data (saved, started, completed)
+    from backend.trail_management import get_user_trails
+    user_trails = get_user_trails(user_id)
+    
+    # Check if trail is completed and get completion data
+    completed_trail_data = None
+    matching_completed = [ct for ct in user_trails.get("completed", []) if ct.get("trail_id") == trail_id]
+    if matching_completed:
+        completed_trail_data = matching_completed[-1]  # Most recent completion
+    
+    # Get user profile
+    user_profile = user.get("detected_profile")
+    
+    return render_template(
+        "profile_trail_detail.html",
+        user=user,
+        trail=trail,
+        user_profile=user_profile,
+        completed_trail_data=completed_trail_data,
+        user_trails=user_trails
+    )
+
+
+@app.route("/api/dashboard/<int:user_id>/heart-rate-trends", methods=["GET"])
+def api_heart_rate_trends(user_id):
+    """Get heart rate trends for dashboard."""
+    from backend.dashboard_service import DashboardCalculator
+    calculator = DashboardCalculator()
+    trends = calculator.calculate_heart_rate_trends(user_id)
+    return jsonify(trends)
+
+
+@app.route("/api/dashboard/<int:user_id>/gps-aggregates", methods=["GET"])
+def api_gps_aggregates(user_id):
+    """Get GPS aggregates for dashboard."""
+    from backend.dashboard_service import DashboardCalculator
+    calculator = DashboardCalculator()
+    aggregates = calculator.calculate_gps_aggregates(user_id)
+    return jsonify(aggregates)
+
+
+@app.route("/api/dashboard/<int:user_id>/performance-improvements", methods=["GET"])
+def api_performance_improvements(user_id):
+    """Get performance improvements (actual vs predicted) for dashboard."""
+    from backend.dashboard_service import DashboardCalculator
+    calculator = DashboardCalculator()
+    improvements = calculator.calculate_performance_improvements(user_id)
+    return jsonify(improvements)
 
 
 @app.route("/dashboard/<int:user_id>")
@@ -1322,12 +1400,184 @@ def api_update_progress(user_id, trail_id):
 
 @app.route("/api/profile/<int:user_id>/trails/<trail_id>/complete", methods=["POST"])
 def api_complete_trail(user_id, trail_id):
-    """Mark a started trail as completed."""
+    """Mark a started trail as completed with rating, difficulty, photos, and optional file."""
     from backend.trail_management import complete_started_trail
-    data = request.get_json() or {}
+    from backend.upload_service import UploadService
+    from backend.trail_analytics import TrailAnalytics
+    from backend.db import get_user, get_trail
+    import json as json_lib
+    from werkzeug.utils import secure_filename
+    import shutil
     
-    actual_duration = data.get("actual_duration")
-    rating = data.get("rating")
+    uploaded_file_id = None
+    actual_duration_from_file = None
+    
+    # Handle both JSON and form-data requests
+    if request.is_json:
+        data = request.get_json() or {}
+        actual_duration = data.get("actual_duration")
+        rating = data.get("rating")
+        difficulty_rating = data.get("difficulty_rating")
+        photos = data.get("photos", [])  # List of photo paths/URLs
+        uploaded_file_id = data.get("uploaded_file_id")
+    else:
+        # Form data
+        actual_duration = request.form.get("actual_duration")
+        if actual_duration:
+            try:
+                actual_duration = float(actual_duration)
+            except (ValueError, TypeError):
+                actual_duration = None
+        
+        rating = request.form.get("rating")
+        if rating:
+            try:
+                # Ensure rating is a number, not string
+                rating = float(rating) if isinstance(rating, str) else float(rating)
+            except (ValueError, TypeError):
+                rating = None
+        
+        difficulty_rating = request.form.get("difficulty_rating")
+        if difficulty_rating:
+            try:
+                # Ensure difficulty_rating is an integer
+                difficulty_rating = int(float(difficulty_rating)) if isinstance(difficulty_rating, str) else int(difficulty_rating)
+            except (ValueError, TypeError):
+                difficulty_rating = None
+        
+        uploaded_file_id = request.form.get("uploaded_file_id")
+        if uploaded_file_id:
+            try:
+                uploaded_file_id = int(uploaded_file_id)
+            except (ValueError, TypeError):
+                uploaded_file_id = None
+        
+        # Handle smartwatch data file upload
+        if "trail_file" in request.files:
+            trail_file = request.files["trail_file"]
+            if trail_file and trail_file.filename:
+                try:
+                    # Read file content
+                    file_content = trail_file.read().decode("utf-8")
+                    filename = trail_file.filename
+                    
+                    # Process file using UploadService
+                    upload_service = UploadService()
+                    
+                    # Save uploaded file metadata
+                    upload_id = upload_service.save_uploaded_file(
+                        user_id,
+                        filename,
+                        file_content,
+                        "json"
+                    )
+                    
+                    # Parse and validate data
+                    parse_result = upload_service.parse_uploaded_data(file_content, "json")
+                    
+                    if not parse_result["success"]:
+                        upload_service.update_upload_status(upload_id, "error")
+                        return jsonify({"error": "Failed to parse file", "details": parse_result["errors"]}), 400
+                    
+                    # Validate data
+                    is_valid, errors = upload_service.validate_trail_data(parse_result["data"])
+                    if not is_valid:
+                        upload_service.update_upload_status(upload_id, "error")
+                        return jsonify({"error": "Invalid data format", "details": errors}), 400
+                    
+                    # Normalize data
+                    normalized_data = upload_service.normalize_performance_data(parse_result["data"])
+                    
+                    # Extract trail_id from file if available, otherwise use provided trail_id
+                    # Note: We use the provided trail_id for completion (the one being completed)
+                    # The file_trail_id is only used for matching/storing performance data
+                    file_trail_id = normalized_data.get("trail_id") or trail_id
+                    
+                    # Get user and trail for predictions (use file_trail_id for trail lookup)
+                    user = get_user(user_id)
+                    trail = get_trail(file_trail_id)
+                    
+                    # Calculate predicted metrics
+                    predicted_duration = None
+                    predicted_avg_heart_rate = None
+                    predicted_max_heart_rate = None
+                    predicted_avg_speed = None
+                    predicted_max_speed = None
+                    predicted_calories = None
+                    predicted_profile_category = None
+                    
+                    if user and trail:
+                        analytics = TrailAnalytics()
+                        predicted = analytics.predict_metrics(trail, user)
+                        predicted_duration = predicted.get("predicted_duration")
+                        predicted_hr = predicted.get("predicted_heart_rate", {})
+                        predicted_avg_heart_rate = predicted_hr.get("avg")
+                        predicted_max_heart_rate = predicted_hr.get("max")
+                        predicted_speed = predicted.get("predicted_speed")
+                        predicted_avg_speed = predicted_speed
+                        predicted_max_speed = predicted_speed * 1.3 if predicted_speed else None
+                        predicted_calories = predicted.get("predicted_calories")
+                        
+                        # Get user profile
+                        from backend.db import get_user_profile
+                        profile = get_user_profile(user_id)
+                        predicted_profile_category = profile.get("primary_profile") if profile else None
+                    
+                    # Calculate duration from timestamps if available
+                    data_points = normalized_data.get("data_points", [])
+                    if data_points:
+                        timestamps = [p.get("timestamp") for p in data_points if p.get("timestamp")]
+                        if timestamps:
+                            actual_duration_from_file = (max(timestamps) - min(timestamps)) // 60
+                    
+                    # Store performance data (this will create/update completed_trail record)
+                    # Use the provided trail_id (the one being completed), not file_trail_id
+                    # This ensures we complete the correct trail that was started
+                    store_success, completed_trail_id = upload_service.store_performance_data(
+                        user_id,
+                        trail_id,  # Use the trail_id from the request (the one being completed)
+                        normalized_data,
+                        upload_id,
+                        predicted_duration=predicted_duration,
+                        predicted_avg_heart_rate=predicted_avg_heart_rate,
+                        predicted_max_heart_rate=predicted_max_heart_rate,
+                        predicted_avg_speed=predicted_avg_speed,
+                        predicted_max_speed=predicted_max_speed,
+                        predicted_calories=predicted_calories,
+                        predicted_profile_category=predicted_profile_category
+                    )
+                    
+                    if not store_success:
+                        upload_service.update_upload_status(upload_id, "error")
+                        return jsonify({"error": "Failed to store performance data"}), 500
+                    
+                    # Update upload status
+                    upload_service.update_upload_status(upload_id, "processed", file_trail_id, json_lib.dumps(normalized_data))
+                    
+                    uploaded_file_id = upload_id
+                    
+                    # Use duration from file if not provided manually
+                    if actual_duration is None and actual_duration_from_file:
+                        actual_duration = actual_duration_from_file
+                    
+                except Exception as e:
+                    print(f"Error processing smartwatch file: {e}")
+                    return jsonify({"error": f"Error processing file: {str(e)}"}), 500
+        
+        # Handle photo uploads
+        photos = []
+        if "photos" in request.files:
+            photo_files = request.files.getlist("photos")
+            upload_dir = os.path.join(BASE_DIR, "adaptive_quiz_system", "static", "uploads", "photos")
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            for photo_file in photo_files:
+                if photo_file and photo_file.filename:
+                    filename = secure_filename(f"{user_id}_{trail_id}_{datetime.now().timestamp()}_{photo_file.filename}")
+                    filepath = os.path.join(upload_dir, filename)
+                    photo_file.save(filepath)
+                    # Store relative path
+                    photos.append(f"uploads/photos/{filename}")
     
     # Validate rating if provided
     if rating is not None:
@@ -1338,20 +1588,109 @@ def api_complete_trail(user_id, trail_id):
         except (ValueError, TypeError):
             return jsonify({"error": "Invalid rating format"}), 400
     
+    # Validate difficulty_rating if provided
+    if difficulty_rating is not None:
+        try:
+            difficulty_rating = int(difficulty_rating)
+            if difficulty_rating < 1 or difficulty_rating > 10:
+                return jsonify({"error": "Difficulty rating must be between 1 and 10"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid difficulty rating format"}), 400
+    
+    # If file was uploaded and performance data stored, we may already have a completed_trail record
+    # Check if we need to update it or create a new one
+    if uploaded_file_id and actual_duration_from_file:
+        # Performance data already stored, just update rating and difficulty if provided
+        import sqlite3
+        from backend.db import USERS_DB
+        conn = sqlite3.connect(USERS_DB)
+        cur = conn.cursor()
+        
+        # Find the completed trail that was just created
+        cur.execute("""
+            SELECT id FROM completed_trails
+            WHERE user_id = ? AND trail_id = ? AND uploaded_data_id = ?
+            ORDER BY completion_date DESC
+            LIMIT 1
+        """, (user_id, trail_id, uploaded_file_id))
+        
+        existing = cur.fetchone()
+        if existing:
+            completed_trail_id = existing[0]
+            # Update rating and difficulty if provided
+            updates = []
+            params = []
+            if rating is not None:
+                updates.append("rating = ?")
+                params.append(rating)
+            if difficulty_rating is not None:
+                updates.append("difficulty_rating = ?")
+                params.append(difficulty_rating)
+            
+            if updates:
+                params.append(completed_trail_id)
+                cur.execute(f"""
+                    UPDATE completed_trails
+                    SET {', '.join(updates)}
+                    WHERE id = ?
+                """, params)
+            
+            # Remove from started_trails if it exists there
+            # Get the most recent started trail for this user and trail
+            cur.execute("""
+                SELECT start_date FROM started_trails
+                WHERE user_id = ? AND trail_id = ?
+                ORDER BY start_date DESC
+                LIMIT 1
+            """, (user_id, trail_id))
+            
+            started_trail = cur.fetchone()
+            if started_trail:
+                # Remove the started trail that was just completed
+                cur.execute("""
+                    DELETE FROM started_trails
+                    WHERE user_id = ? AND trail_id = ? AND start_date = ?
+                """, (user_id, trail_id, started_trail[0]))
+            
+            conn.commit()
+            conn.close()
+            
+            # Update user profile after completion
+            try:
+                from backend.user_profiling import UserProfiler
+                from backend.db import update_user_profile
+                profiler = UserProfiler()
+                primary_profile, scores = profiler.detect_profile(user_id)
+                if primary_profile:
+                    update_user_profile(user_id, primary_profile, scores)
+            except Exception as e:
+                print(f"Warning: Could not update user profile: {e}")
+            
+            return jsonify({
+                "success": True,
+                "completed_trail_id": completed_trail_id,
+                "uploaded_file_id": uploaded_file_id
+            }), 200
+    
+    # Otherwise, complete the trail normally (using complete_started_trail which handles removal)
     success, completed_trail_id = complete_started_trail(
         user_id,
         trail_id,
         actual_duration=actual_duration,
-        rating=rating
+        rating=rating,
+        difficulty_rating=difficulty_rating,
+        photos=photos,
+        uploaded_file_id=uploaded_file_id
     )
     
     if success:
         return jsonify({
             "success": True,
-            "completed_trail_id": completed_trail_id
+            "completed_trail_id": completed_trail_id,
+            "uploaded_file_id": uploaded_file_id
         }), 200
     else:
-        return jsonify({"error": "Trail not found or already completed"}), 404
+        return jsonify({"error": "Failed to complete trail"}), 400
 
 
 @app.route("/api/profile/<int:user_id>/trails", methods=["GET"])
@@ -1394,6 +1733,60 @@ def api_get_user_trails(user_id):
             enriched["completed"].append(completed)
     
     return jsonify(enriched)
+
+
+@app.route("/api/profile/<int:user_id>/trails/<trail_id>/photos", methods=["POST"])
+def api_upload_trail_photos(user_id, trail_id):
+    """Upload photos for a completed trail."""
+    from werkzeug.utils import secure_filename
+    
+    if "photos" not in request.files:
+        return jsonify({"error": "No photos provided"}), 400
+    
+    photo_files = request.files.getlist("photos")
+    if not photo_files or not any(f.filename for f in photo_files):
+        return jsonify({"error": "No files selected"}), 400
+    
+    # Get completed_trail_id (use the most recent completion)
+    from backend.trail_management import get_user_trails
+    trails = get_user_trails(user_id)
+    completed_trails = [t for t in trails["completed"] if t["trail_id"] == trail_id]
+    
+    if not completed_trails:
+        return jsonify({"error": "Trail not completed yet"}), 404
+    
+    completed_trail_id = completed_trails[-1]["id"]  # Most recent completion
+    
+    # Save photos
+    upload_dir = os.path.join(BASE_DIR, "adaptive_quiz_system", "static", "uploads", "photos")
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    uploaded_photos = []
+    for photo_file in photo_files:
+        if photo_file and photo_file.filename:
+            filename = secure_filename(f"{user_id}_{trail_id}_{datetime.now().timestamp()}_{photo_file.filename}")
+            filepath = os.path.join(upload_dir, filename)
+            photo_file.save(filepath)
+            relative_path = f"uploads/photos/{filename}"
+            uploaded_photos.append(relative_path)
+            
+            # Store in database
+            import sqlite3
+            from backend.db import USERS_DB
+            conn = sqlite3.connect(USERS_DB)
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO trail_photos (completed_trail_id, photo_path, upload_date)
+                VALUES (?, ?, ?)
+            """, (completed_trail_id, relative_path, datetime.now().isoformat()))
+            conn.commit()
+            conn.close()
+    
+    return jsonify({
+        "success": True,
+        "photos": uploaded_photos,
+        "count": len(uploaded_photos)
+    }), 200
 
 
 # Dashboard API Routes
@@ -1536,9 +1929,9 @@ def api_get_trail_recommendations(user_id, trail_id):
     return jsonify(recommendations)
 
 
-@app.route("/api/profile/<int:user_id>/trail/<trail_id>/performance", methods=["GET"])
-def api_get_trail_performance(user_id, trail_id):
-    """Get completed trail performance data for a user and trail."""
+@app.route("/api/profile/<int:user_id>/trail/<trail_id>/completions", methods=["GET"])
+def api_get_trail_completions(user_id, trail_id):
+    """Get all completions for a trail by a user."""
     import sqlite3
     from backend.db import USERS_DB
     
@@ -1546,16 +1939,65 @@ def api_get_trail_performance(user_id, trail_id):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     
-    # Get the most recent completion of this trail by this user
+    # Get all completions of this trail by this user
     cur.execute("""
-        SELECT id, trail_id, completion_date, actual_duration, rating,
+        SELECT id, completion_date, actual_duration, rating,
                avg_heart_rate, max_heart_rate, avg_speed, max_speed,
-               total_calories, uploaded_data_id
+               total_calories, difficulty_rating
         FROM completed_trails
         WHERE user_id = ? AND trail_id = ?
         ORDER BY completion_date DESC
-        LIMIT 1
     """, (user_id, trail_id))
+    
+    completions = [dict(row) for row in cur.fetchall()]
+    conn.close()
+    
+    return jsonify({
+        "completions": completions
+    })
+
+
+@app.route("/api/profile/<int:user_id>/trail/<trail_id>/performance", methods=["GET"])
+def api_get_trail_performance(user_id, trail_id):
+    """Get completed trail performance data for a user and trail.
+    
+    Query parameters:
+        completion_id: Optional ID of specific completion to fetch. If not provided, returns most recent.
+    """
+    import sqlite3
+    from backend.db import USERS_DB
+    
+    completion_id = request.args.get("completion_id", type=int)
+    
+    conn = sqlite3.connect(USERS_DB)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    
+    # Get the specified completion or most recent completion of this trail by this user
+    if completion_id:
+        cur.execute("""
+            SELECT id, trail_id, completion_date, actual_duration, rating,
+                   avg_heart_rate, max_heart_rate, avg_speed, max_speed,
+                   total_calories, uploaded_data_id, difficulty_rating,
+                   predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+                   predicted_avg_speed, predicted_max_speed, predicted_calories,
+                   predicted_profile_category
+            FROM completed_trails
+            WHERE user_id = ? AND trail_id = ? AND id = ?
+        """, (user_id, trail_id, completion_id))
+    else:
+        cur.execute("""
+            SELECT id, trail_id, completion_date, actual_duration, rating,
+                   avg_heart_rate, max_heart_rate, avg_speed, max_speed,
+                   total_calories, uploaded_data_id, difficulty_rating,
+                   predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+                   predicted_avg_speed, predicted_max_speed, predicted_calories,
+                   predicted_profile_category
+            FROM completed_trails
+            WHERE user_id = ? AND trail_id = ?
+            ORDER BY completion_date DESC
+            LIMIT 1
+        """, (user_id, trail_id))
     
     completed_trail = cur.fetchone()
     
@@ -1576,6 +2018,15 @@ def api_get_trail_performance(user_id, trail_id):
     
     time_series = [dict(row) for row in cur.fetchall()]
     performance_data["time_series"] = time_series
+    
+    # Get photos for this completion
+    cur.execute("""
+        SELECT photo_path, caption FROM trail_photos
+        WHERE completed_trail_id = ?
+        ORDER BY upload_date ASC
+    """, (performance_data["id"],))
+    photos = [{"path": p[0], "caption": p[1]} for p in cur.fetchall()]
+    performance_data["photos"] = photos
     
     conn.close()
     

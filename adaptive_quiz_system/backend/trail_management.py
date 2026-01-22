@@ -67,13 +67,14 @@ def unsave_trail(user_id: int, trail_id: str) -> bool:
 def start_trail(user_id: int, trail_id: str) -> bool:
     """
     Mark a trail as started for a user.
+    Allows multiple starts - does not remove from saved_trails.
     
     Args:
         user_id: User ID
         trail_id: Trail ID
     
     Returns:
-        True if started successfully, False if already started
+        True if started successfully
     """
     conn = sqlite3.connect(USERS_DB)
     cur = conn.cursor()
@@ -84,10 +85,9 @@ def start_trail(user_id: int, trail_id: str) -> bool:
         """, (user_id, trail_id, datetime.now().isoformat()))
         conn.commit()
         return True
-    except sqlite3.IntegrityError:
-        # Check if already started
-        cur.execute("SELECT id FROM started_trails WHERE user_id = ? AND trail_id = ?", (user_id, trail_id))
-        return cur.fetchone() is not None
+    except Exception as e:
+        print(f"Error starting trail: {e}")
+        return False
     finally:
         conn.close()
 
@@ -152,62 +152,99 @@ def complete_started_trail(
     user_id: int, 
     trail_id: str, 
     actual_duration: Optional[float] = None,
-    rating: Optional[float] = None
+    rating: Optional[float] = None,
+    difficulty_rating: Optional[int] = None,
+    photos: Optional[List[str]] = None,
+    uploaded_file_id: Optional[int] = None,
+    predicted_duration: Optional[int] = None,
+    predicted_avg_heart_rate: Optional[int] = None,
+    predicted_max_heart_rate: Optional[int] = None,
+    predicted_avg_speed: Optional[float] = None,
+    predicted_max_speed: Optional[float] = None,
+    predicted_calories: Optional[int] = None,
+    predicted_profile_category: Optional[str] = None
 ) -> Tuple[bool, Optional[int]]:
     """
     Mark a started trail as completed.
-    Moves the trail from started_trails to completed_trails.
+    Does NOT remove from started_trails - trail can be completed multiple times.
     
     Args:
         user_id: User ID
         trail_id: Trail ID
         actual_duration: Optional duration in minutes
         rating: Optional rating (1-5)
+        difficulty_rating: Optional difficulty rating (1-10)
+        photos: Optional list of photo paths
+        uploaded_file_id: Optional ID of uploaded file (smartwatch data)
+        predicted_duration: Optional predicted duration in minutes
+        predicted_avg_heart_rate: Optional predicted average heart rate
+        predicted_max_heart_rate: Optional predicted max heart rate
+        predicted_avg_speed: Optional predicted average speed
+        predicted_max_speed: Optional predicted max speed
+        predicted_calories: Optional predicted calories
+        predicted_profile_category: Optional predicted profile category
     
     Returns:
         (success: bool, completed_trail_id: Optional[int])
     """
-    from backend.db import _insert_completed_trail_sql
-    
     conn = sqlite3.connect(USERS_DB)
     cur = conn.cursor()
     
     try:
-        # Get the started trail info
+        # Get the started trail info (use the most recent one)
         cur.execute("""
             SELECT start_date, progress_percentage
             FROM started_trails
             WHERE user_id = ? AND trail_id = ?
+            ORDER BY start_date DESC
+            LIMIT 1
         """, (user_id, trail_id))
         
         started_trail = cur.fetchone()
-        if not started_trail:
-            conn.close()
-            return (False, None)
         
         # Calculate duration if not provided (estimate based on start date)
         if actual_duration is None:
-            start_date = datetime.fromisoformat(started_trail[0])
-            time_elapsed = (datetime.now() - start_date).total_seconds() / 60  # minutes
-            actual_duration = max(30, time_elapsed)  # Minimum 30 minutes
+            if started_trail:
+                start_date = datetime.fromisoformat(started_trail[0])
+                time_elapsed = (datetime.now() - start_date).total_seconds() / 60  # minutes
+                actual_duration = max(30, time_elapsed)  # Minimum 30 minutes
+            else:
+                actual_duration = 60  # Default 1 hour
         
         # Default rating if not provided
         if rating is None:
             rating = 4.0  # Default rating
         
-        # Remove from started_trails first
-        cur.execute("""
-            DELETE FROM started_trails
-            WHERE user_id = ? AND trail_id = ?
-        """, (user_id, trail_id))
-        
         # Record completion (insert into completed_trails)
         completion_date = datetime.now().isoformat()
         cur.execute("""
-            INSERT INTO completed_trails (user_id, trail_id, completion_date, actual_duration, rating)
-            VALUES (?, ?, ?, ?, ?)
-        """, (user_id, trail_id, completion_date, actual_duration, rating))
+            INSERT INTO completed_trails (user_id, trail_id, completion_date, actual_duration, rating, 
+                                         difficulty_rating, uploaded_data_id,
+                                         predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+                                         predicted_avg_speed, predicted_max_speed, predicted_calories,
+                                         predicted_profile_category)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, trail_id, completion_date, actual_duration, rating, difficulty_rating, uploaded_file_id,
+              predicted_duration, predicted_avg_heart_rate, predicted_max_heart_rate,
+              predicted_avg_speed, predicted_max_speed, predicted_calories,
+              predicted_profile_category))
         completed_trail_id = cur.lastrowid
+        
+        # Remove the specific started_trail record that was completed (most recent one)
+        # This allows multiple starts - only the completed one is removed
+        if started_trail:
+            cur.execute("""
+                DELETE FROM started_trails
+                WHERE user_id = ? AND trail_id = ? AND start_date = ?
+            """, (user_id, trail_id, started_trail[0]))
+        
+        # Store photos if provided
+        if photos:
+            for photo_path in photos:
+                cur.execute("""
+                    INSERT INTO trail_photos (completed_trail_id, photo_path, upload_date)
+                    VALUES (?, ?, ?)
+                """, (completed_trail_id, photo_path, completion_date))
         
         conn.commit()
         conn.close()
@@ -232,9 +269,49 @@ def complete_started_trail(
         return (False, None)
 
 
+def get_trail_statistics(user_id: int, trail_id: str) -> Dict[str, int]:
+    """
+    Get statistics for a trail (how many times started and completed).
+    
+    Args:
+        user_id: User ID
+        trail_id: Trail ID
+    
+    Returns:
+        {
+            "start_count": int,
+            "completion_count": int
+        }
+    """
+    conn = sqlite3.connect(USERS_DB)
+    cur = conn.cursor()
+    
+    # Count starts
+    cur.execute("""
+        SELECT COUNT(*) FROM started_trails
+        WHERE user_id = ? AND trail_id = ?
+    """, (user_id, trail_id))
+    start_count = cur.fetchone()[0]
+    
+    # Count completions
+    cur.execute("""
+        SELECT COUNT(*) FROM completed_trails
+        WHERE user_id = ? AND trail_id = ?
+    """, (user_id, trail_id))
+    completion_count = cur.fetchone()[0]
+    
+    conn.close()
+    
+    return {
+        "start_count": start_count,
+        "completion_count": completion_count
+    }
+
+
 def get_user_trails(user_id: int) -> Dict[str, List[Dict]]:
     """
     Get all trails for a user (saved, started, completed).
+    Includes statistics for saved trails.
     
     Args:
         user_id: User ID
@@ -250,14 +327,21 @@ def get_user_trails(user_id: int) -> Dict[str, List[Dict]]:
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     
-    # Get saved trails
+    # Get saved trails with statistics
     cur.execute("""
         SELECT trail_id, saved_date, notes
         FROM saved_trails
         WHERE user_id = ?
         ORDER BY saved_date DESC
     """, (user_id,))
-    saved = [dict(row) for row in cur.fetchall()]
+    saved = []
+    for row in cur.fetchall():
+        trail = dict(row)
+        # Add statistics
+        stats = get_trail_statistics(user_id, trail["trail_id"])
+        trail["start_count"] = stats["start_count"]
+        trail["completion_count"] = stats["completion_count"]
+        saved.append(trail)
     
     # Get started trails
     cur.execute("""
@@ -282,16 +366,38 @@ def get_user_trails(user_id: int) -> Dict[str, List[Dict]]:
                 trail["pause_points"] = []
         started.append(trail)
     
-    # Get completed trails
+    # Get completed trails with photos
     cur.execute("""
         SELECT id, trail_id, completion_date, actual_duration, rating,
                avg_heart_rate, max_heart_rate, avg_speed, max_speed,
-               total_calories, uploaded_data_id
+               total_calories, uploaded_data_id, difficulty_rating
         FROM completed_trails
         WHERE user_id = ?
         ORDER BY completion_date DESC
     """, (user_id,))
-    completed = [dict(row) for row in cur.fetchall()]
+    completed = []
+    for row in cur.fetchall():
+        trail = dict(row)
+        # Ensure rating and difficulty_rating are numbers, not strings
+        if trail.get("rating") is not None:
+            try:
+                trail["rating"] = float(trail["rating"])
+            except (ValueError, TypeError):
+                trail["rating"] = None
+        if trail.get("difficulty_rating") is not None:
+            try:
+                trail["difficulty_rating"] = int(trail["difficulty_rating"])
+            except (ValueError, TypeError):
+                trail["difficulty_rating"] = None
+        # Get photos for this completion
+        cur.execute("""
+            SELECT photo_path, caption FROM trail_photos
+            WHERE completed_trail_id = ?
+            ORDER BY upload_date ASC
+        """, (trail["id"],))
+        photos = [{"path": p[0], "caption": p[1]} for p in cur.fetchall()]
+        trail["photos"] = photos
+        completed.append(trail)
     
     conn.close()
     
