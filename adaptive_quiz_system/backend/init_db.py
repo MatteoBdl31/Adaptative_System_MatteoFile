@@ -516,7 +516,7 @@ def seed_trails(limit: int = DEFAULT_TRAIL_LIMIT, use_reference: bool = False) -
                 trail.get("trail_type") or "one_way",
                 trail.get("landscapes") or "alpine",
                 float(trail.get("popularity", 6.0)),
-                trail.get("safety_risks") or "none",
+                trail.get("safety_risks") or "low",
                 trail.get("accessibility") or "",
                 trail.get("closed_seasons") or "",
                 float(trail.get("latitude", 0.0)),

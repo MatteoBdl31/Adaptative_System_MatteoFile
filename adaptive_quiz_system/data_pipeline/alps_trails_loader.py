@@ -244,7 +244,7 @@ def _parse_safety(props: Dict[str, str]) -> str:
         risks.append("exposed")
     if props.get("avalanche") == "yes":
         risks.append("avalanche")
-    return ",".join(risks) if risks else "none"
+    return ",".join(risks) if risks else "low"
 
 
 def _parse_accessibility(props: Dict[str, str]) -> str:
@@ -625,7 +625,7 @@ def load_french_trails(
                 "trail_type": trail_type or "one_way",
                 "landscapes": landscapes or "alpine",
                 "popularity": float(popularity) if popularity is not None else 6.0,
-                "safety_risks": safety or "none",
+                "safety_risks": safety or "low",
                 "accessibility": accessibility or "",
                 "closed_seasons": "",
                 "latitude": float(centroid_lat) if centroid_lat is not None else 0.0,

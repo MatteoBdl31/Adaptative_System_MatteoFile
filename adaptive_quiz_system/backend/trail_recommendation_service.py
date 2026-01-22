@@ -4,10 +4,11 @@ Trail recommendation service for generating profile-specific AI recommendations.
 """
 
 from typing import Dict, List, Optional
+import sqlite3
 from backend.explanation_service import ExplanationService
 from backend.weather_service import get_weekly_forecast, get_weather_recommendations
 from backend.trail_analytics import TrailAnalytics
-from backend.db import get_trail, get_user
+from backend.db import get_trail, get_user, USERS_DB
 
 
 class TrailRecommendationService:
@@ -61,8 +62,13 @@ class TrailRecommendationService:
         # Generate safety tips
         safety_tips = self._generate_safety_tips(trail, user)
         
-        # Generate AI explanation
-        ai_explanation = self._generate_ai_explanation(trail, user, user_profile, weather_recommendations)
+        # Get similar profile hiker context (exclude current user)
+        similar_hiker_context = self._get_similar_profile_context(trail, user_profile, user.get("id"))
+        
+        # Generate AI explanation with similar hiker context
+        ai_explanation = self._generate_ai_explanation(
+            trail, user, user_profile, weather_recommendations, similar_hiker_context
+        )
         
         return {
             "profile_recommendations": profile_recommendations,
@@ -256,16 +262,140 @@ class TrailRecommendationService:
         
         return tips
     
+    def _get_similar_profile_context(
+        self,
+        trail: Dict,
+        profile: Optional[str],
+        current_user_id: Optional[int] = None
+    ) -> Dict:
+        """
+        Get context from other hikers with similar profiles who completed this trail.
+        
+        Returns:
+            {
+                "completion_count": int,
+                "average_duration": float,
+                "average_rating": float,
+                "common_challenges": List[str],
+                "insights": List[str],
+                "average_heart_rate": float,
+                "average_speed": float
+            }
+        """
+        if not profile:
+            return {}
+        
+        trail_id = trail.get("trail_id")
+        if not trail_id:
+            return {}
+        
+        try:
+            conn = sqlite3.connect(USERS_DB)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            
+            # Get users with the same profile who completed this trail (exclude current user)
+            if current_user_id:
+                cur.execute("""
+                    SELECT 
+                        ct.actual_duration,
+                        ct.rating,
+                        ct.avg_heart_rate,
+                        ct.max_heart_rate,
+                        ct.avg_speed,
+                        ct.max_speed,
+                        ct.difficulty_rating,
+                        ct.completion_date
+                    FROM completed_trails ct
+                    JOIN user_profiles up ON ct.user_id = up.user_id
+                    WHERE ct.trail_id = ? 
+                      AND up.primary_profile = ?
+                      AND ct.user_id != ?
+                    ORDER BY ct.completion_date DESC
+                    LIMIT 20
+                """, (trail_id, profile, current_user_id))
+            else:
+                cur.execute("""
+                    SELECT 
+                        ct.actual_duration,
+                        ct.rating,
+                        ct.avg_heart_rate,
+                        ct.max_heart_rate,
+                        ct.avg_speed,
+                        ct.max_speed,
+                        ct.difficulty_rating,
+                        ct.completion_date
+                    FROM completed_trails ct
+                    JOIN user_profiles up ON ct.user_id = up.user_id
+                    WHERE ct.trail_id = ? 
+                      AND up.primary_profile = ?
+                    ORDER BY ct.completion_date DESC
+                    LIMIT 20
+                """, (trail_id, profile))
+            
+            completions = [dict(row) for row in cur.fetchall()]
+            conn.close()
+            
+            if not completions:
+                return {}
+            
+            # Calculate statistics
+            durations = [c["actual_duration"] for c in completions if c.get("actual_duration")]
+            ratings = [c["rating"] for c in completions if c.get("rating")]
+            heart_rates = [c["avg_heart_rate"] for c in completions if c.get("avg_heart_rate")]
+            speeds = [c["avg_speed"] for c in completions if c.get("avg_speed")]
+            difficulty_ratings = [c["difficulty_rating"] for c in completions if c.get("difficulty_rating")]
+            
+            context = {
+                "completion_count": len(completions),
+                "average_duration": sum(durations) / len(durations) if durations else None,
+                "average_rating": sum(ratings) / len(ratings) if ratings else None,
+                "average_heart_rate": sum(heart_rates) / len(heart_rates) if heart_rates else None,
+                "average_speed": sum(speeds) / len(speeds) if speeds else None,
+                "average_difficulty_rating": sum(difficulty_ratings) / len(difficulty_ratings) if difficulty_ratings else None,
+                "insights": []
+            }
+            
+            # Generate insights based on data
+            if context["average_rating"]:
+                if context["average_rating"] >= 4.5:
+                    context["insights"].append(f"Highly rated by {profile.replace('_', ' ')}s (avg {context['average_rating']:.1f}/5)")
+                elif context["average_rating"] <= 3.0:
+                    context["insights"].append(f"Mixed reviews from {profile.replace('_', ' ')}s (avg {context['average_rating']:.1f}/5)")
+            
+            if context["average_duration"]:
+                trail_duration = trail.get("duration", 0)
+                if context["average_duration"] > trail_duration * 1.2:
+                    context["insights"].append(f"Similar hikers typically take {context['average_duration']/60:.1f} hours (longer than estimated)")
+                elif context["average_duration"] < trail_duration * 0.8:
+                    context["insights"].append(f"Similar hikers typically complete in {context['average_duration']/60:.1f} hours (faster than estimated)")
+            
+            if context["average_difficulty_rating"]:
+                trail_difficulty = trail.get("difficulty", 5.0)
+                if context["average_difficulty_rating"] > trail_difficulty + 1:
+                    context["insights"].append(f"Similar hikers found it more challenging than expected (rated {context['average_difficulty_rating']:.1f}/10)")
+                elif context["average_difficulty_rating"] < trail_difficulty - 1:
+                    context["insights"].append(f"Similar hikers found it easier than expected (rated {context['average_difficulty_rating']:.1f}/10)")
+            
+            return context
+            
+        except Exception as e:
+            print(f"Error getting similar profile context: {e}")
+            return {}
+    
     def _generate_ai_explanation(
         self,
         trail: Dict,
         user: Dict,
         profile: Optional[str],
-        weather_recommendations: Dict
+        weather_recommendations: Dict,
+        similar_hiker_context: Optional[Dict] = None
     ) -> Dict:
         """Generate AI-powered explanation using ExplanationService."""
         # Build prompt
-        prompt = self._build_recommendation_prompt(trail, user, profile, weather_recommendations)
+        prompt = self._build_recommendation_prompt(
+            trail, user, profile, weather_recommendations, similar_hiker_context
+        )
         
         # Generate explanation
         explanation = self.explanation_service.generate_explanation(prompt)
@@ -289,9 +419,10 @@ class TrailRecommendationService:
         trail: Dict,
         user: Dict,
         profile: Optional[str],
-        weather_recommendations: Dict
+        weather_recommendations: Dict,
+        similar_hiker_context: Optional[Dict] = None
     ) -> str:
-        """Build prompt for AI explanation."""
+        """Build enhanced prompt for AI explanation with similar hiker context."""
         profile_names = {
             "elevation_lover": "Elevation Enthusiast",
             "performance_athlete": "Performance Athlete",
@@ -304,33 +435,105 @@ class TrailRecommendationService:
         
         profile_name = profile_names.get(profile, "Hiker") if profile else "Hiker"
         
-        prompt = f"""Generate personalized hiking recommendations for a {profile_name} planning to hike the trail "{trail.get('name', 'Unknown')}".
+        prompt = f"""Generate personalized, actionable hiking recommendations for a {profile_name} planning to hike the trail "{trail.get('name', 'Unknown')}".
 
-Trail Details:
+TRAIL DETAILS:
 - Distance: {trail.get('distance', 'Unknown')} km
-- Duration: {trail.get('duration', 'Unknown')} minutes
+- Estimated Duration: {trail.get('duration', 'Unknown')} minutes ({trail.get('duration', 0) / 60:.1f} hours)
 - Elevation Gain: {trail.get('elevation_gain', 'Unknown')}m
 - Difficulty: {trail.get('difficulty', 'Unknown')}/10
 - Landscapes: {trail.get('landscapes', 'Unknown')}
 - Trail Type: {trail.get('trail_type', 'Unknown')}
+- Region: {trail.get('region', 'Unknown')}
+- Popularity: {trail.get('popularity', 'Unknown')}/10
 
-User Profile:
-- Experience: {user.get('experience', 'Unknown')}
+USER PROFILE:
+- Experience Level: {user.get('experience', 'Unknown')}
 - Fitness Level: {user.get('fitness_level', 'Unknown')}
 - Profile Type: {profile_name}
-
 """
         
+        # Add similar hiker context if available
+        if similar_hiker_context and similar_hiker_context.get("completion_count", 0) > 0:
+            prompt += f"\nINSIGHTS FROM SIMILAR {profile_name.upper()}S WHO COMPLETED THIS TRAIL:\n"
+            prompt += f"- {similar_hiker_context['completion_count']} {profile_name.lower()}s have completed this trail\n"
+            
+            if similar_hiker_context.get("average_rating"):
+                prompt += f"- Average rating: {similar_hiker_context['average_rating']:.1f}/5.0\n"
+            
+            if similar_hiker_context.get("average_duration"):
+                avg_hours = similar_hiker_context['average_duration'] / 60
+                estimated_hours = trail.get('duration', 0) / 60
+                prompt += f"- Average completion time: {avg_hours:.1f} hours (estimated: {estimated_hours:.1f} hours)\n"
+            
+            if similar_hiker_context.get("average_heart_rate"):
+                prompt += f"- Average heart rate: {similar_hiker_context['average_heart_rate']:.0f} bpm\n"
+            
+            if similar_hiker_context.get("average_speed"):
+                prompt += f"- Average speed: {similar_hiker_context['average_speed']:.1f} km/h\n"
+            
+            if similar_hiker_context.get("average_difficulty_rating"):
+                trail_diff = trail.get('difficulty', 5.0)
+                user_rated_diff = similar_hiker_context['average_difficulty_rating']
+                if abs(user_rated_diff - trail_diff) > 0.5:
+                    prompt += f"- Similar hikers rated difficulty: {user_rated_diff:.1f}/10 (trail estimate: {trail_diff:.1f}/10)\n"
+            
+            if similar_hiker_context.get("insights"):
+                prompt += "\nKey observations from similar hikers:\n"
+                for insight in similar_hiker_context["insights"][:3]:  # Limit to top 3
+                    prompt += f"- {insight}\n"
+        
+        # Weather context
         if weather_recommendations.get("best_days"):
-            prompt += f"Weather: Best conditions on {len(weather_recommendations['best_days'])} day(s). "
+            prompt += f"\nWEATHER: Best conditions expected on {len(weather_recommendations['best_days'])} day(s) in the forecast. "
+            if weather_recommendations.get("best_days"):
+                best_day = weather_recommendations['best_days'][0]
+                prompt += f"Recommended day: {best_day.get('date', 'N/A')} with {best_day.get('condition', 'good')} conditions. "
         
+        # Profile-specific focus areas
+        prompt += "\n\nFOCUS AREAS FOR THIS PROFILE:\n"
         if profile == "elevation_lover":
-            prompt += "Focus on: Best times to reach peaks, steepest sections, elevation challenges. "
+            prompt += "- Best times to reach peaks for optimal views\n"
+            prompt += "- Steepest sections and elevation challenges\n"
+            prompt += "- Rest points and viewpoints along the ascent\n"
+            prompt += "- Weather conditions at elevation\n"
         elif profile == "photographer":
-            prompt += "Focus on: Best photo opportunities, golden hour timing, Instagram-worthy viewpoints. "
+            prompt += "- Best photo opportunities and Instagram-worthy viewpoints\n"
+            prompt += "- Golden hour timing (sunrise/sunset) for optimal lighting\n"
+            prompt += "- Scenic sections and landscape highlights\n"
+            prompt += "- Equipment recommendations for photography\n"
         elif profile == "performance_athlete":
-            prompt += "Focus on: Optimal pacing, heart rate zones, training benefits. "
+            prompt += "- Optimal pacing strategy and heart rate zones\n"
+            prompt += "- Training benefits and fitness goals\n"
+            prompt += "- Performance benchmarks from similar athletes\n"
+            prompt += "- Recovery and nutrition considerations\n"
+        elif profile == "explorer":
+            prompt += "- Alternative routes and side trails\n"
+            prompt += "- Less-traveled sections and hidden gems\n"
+            prompt += "- Navigation tips and trail marking quality\n"
+            prompt += "- Nearby exploration opportunities\n"
+        elif profile == "contemplative":
+            prompt += "- Quiet sections for meditation and reflection\n"
+            prompt += "- Best times for solitude\n"
+            prompt += "- Natural settings ideal for contemplation\n"
+            prompt += "- Peaceful viewpoints and rest areas\n"
+        elif profile == "casual" or profile == "family":
+            prompt += "- Suitable difficulty and pacing for casual hiking\n"
+            prompt += "- Family-friendly sections and safety considerations\n"
+            prompt += "- Rest stops and snack breaks\n"
+            prompt += "- Accessibility and trail conditions\n"
+        else:
+            prompt += "- General hiking tips and trail highlights\n"
+            prompt += "- Safety considerations\n"
+            prompt += "- Best times to hike\n"
         
-        prompt += "\nProvide 2-3 sentences of personalized advice and 3-5 specific tips as bullet points."
+        prompt += "\nINSTRUCTIONS:\n"
+        prompt += "1. Provide a BRIEF 1-2 sentence summary tailored to this hiker profile (max 50 words)\n"
+        prompt += "2. Include ONLY 3-4 most important, actionable tips as bullet points (one line each, max 80 characters per tip)\n"
+        prompt += "3. Reference insights from similar hikers when relevant (if provided above)\n"
+        prompt += "4. Be concise, specific, and practical - avoid generic advice\n"
+        prompt += "5. Focus on what matters most for this profile type on this specific trail\n"
+        prompt += "6. Do NOT repeat information already shown in trail details\n"
+        prompt += "7. Format response as: Brief summary paragraph, then bullet points (no sections like MATCHES/MISMATCHES)\n"
         
         return prompt

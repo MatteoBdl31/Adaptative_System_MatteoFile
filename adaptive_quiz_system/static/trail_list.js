@@ -488,9 +488,24 @@ const TrailListManager = (function() {
     }
     
     function escapeHtml(text) {
+        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    function formatSafetyRisks(safetyRisks) {
+        if (!safetyRisks) return 'No information';
+        const risks = safetyRisks.toLowerCase().trim();
+        if (risks === 'low' || risks === 'none' || risks === '') {
+            return 'Low risk - Generally safe';
+        }
+        // Format other risks (e.g., "slippery,exposed" -> "Slippery, Exposed")
+        return risks.split(',').map(r => {
+            return r.trim().split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }).join(', ');
     }
     
     function getEmptyState(status) {
@@ -499,7 +514,7 @@ const TrailListManager = (function() {
                 title: 'No saved trails yet',
                 description: 'Browse trails and save your favorites to plan your next adventure!',
                 cta: 'Browse Trails',
-                ctaLink: '/recommendations'
+                ctaLink: '/demo'
             },
             started: {
                 title: 'No started trails yet',
@@ -511,7 +526,7 @@ const TrailListManager = (function() {
                 title: 'No completed trails yet',
                 description: 'Complete trails to see your achievements and track your progress!',
                 cta: 'View Recommendations',
-                ctaLink: '/recommendations'
+                ctaLink: '/demo'
             }
         };
         
@@ -1599,8 +1614,8 @@ const TrailListManager = (function() {
         if (detailsExpanded) {
             let detailsHTML = '<div class="trail-details-expanded-grid">';
             if (trail.region) detailsHTML += `<div><strong>Region:</strong> ${escapeHtml(trail.region)}</div>`;
-            if (trail.popularity !== undefined) detailsHTML += `<div><strong>Popularity:</strong> ${trail.popularity}/100</div>`;
-            if (trail.safety_risks) detailsHTML += `<div><strong>Safety:</strong> ${escapeHtml(trail.safety_risks)}</div>`;
+            if (trail.popularity !== undefined) detailsHTML += `<div><strong>Popularity:</strong> ${trail.popularity}/10</div>`;
+            if (trail.safety_risks) detailsHTML += `<div><strong>Safety:</strong> ${escapeHtml(formatSafetyRisks(trail.safety_risks))}</div>`;
             if (trail.accessibility) detailsHTML += `<div><strong>Accessibility:</strong> ${escapeHtml(trail.accessibility)}</div>`;
             if (trail.closed_seasons) detailsHTML += `<div><strong>Closed Seasons:</strong> ${escapeHtml(trail.closed_seasons)}</div>`;
             detailsHTML += '</div>';
