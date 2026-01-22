@@ -538,17 +538,46 @@ const TrailDetailPage = (function() {
             perf = performance.performance;
         } else if (performance && performance.completed) {
             perf = performance;
-        } else if (performance && !performance.completed) {
-            const summaryCards = performanceSection.querySelector('#performance-summary-cards');
-            if (summaryCards) {
-                summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
+        } else {
+            // Trail not completed or no performance data - fetch and show predicted data
+            if (currentTrail && currentUserId) {
+                loadPredictions(currentTrail.trail_id, currentUserId)
+                    .then(predictions => {
+                        if (predictions) {
+                            const predictedPerf = transformPredictionsToPerformance(predictions, currentTrail);
+                            if (predictedPerf) {
+                                renderPerformanceSectionWithData(predictedPerf, true);
+                                renderPerformanceVisualizationsWithPredicted(predictedPerf);
+                            } else {
+                                showEmptyPerformanceMessage(performanceSection);
+                            }
+                        } else {
+                            showEmptyPerformanceMessage(performanceSection);
+                        }
+                    })
+                    .catch(e => {
+                        console.warn('Error loading predictions:', e);
+                        showEmptyPerformanceMessage(performanceSection);
+                    });
+            } else {
+                showEmptyPerformanceMessage(performanceSection);
             }
             return;
-        } else {
-            const summaryCards = performanceSection.querySelector('#performance-summary-cards');
-            if (summaryCards) {
-                summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
-            }
+        }
+        
+        renderPerformanceSectionWithData(perf, showPredicted);
+    }
+    
+    function showEmptyPerformanceMessage(performanceSection) {
+        const summaryCards = performanceSection.querySelector('#performance-summary-cards');
+        if (summaryCards) {
+            summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
+        }
+    }
+    
+    function renderPerformanceSectionWithData(perf, showPredicted = false) {
+        const performanceSection = document.getElementById('trail-performance-section');
+        if (!performanceSection || !perf) {
             return;
         }
         
@@ -563,7 +592,8 @@ const TrailDetailPage = (function() {
                 if (duration !== undefined && duration !== null) {
                     const hours = Math.floor(duration / 60);
                     const minutes = duration % 60;
-                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Duration</span><span class="summary-value">${hours}h ${minutes}m</span></div>`;
+                    const label = showPredicted ? 'Predicted Duration' : 'Duration';
+                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">${label}</span><span class="summary-value">${hours}h ${minutes}m</span></div>`;
                 }
                 
                 if (perf.rating !== undefined && perf.rating !== null && !showPredicted) {
@@ -573,10 +603,16 @@ const TrailDetailPage = (function() {
                 // Show predicted or actual heart rate
                 const avgHeartRate = showPredicted ? perf.predicted_avg_heart_rate : perf.avg_heart_rate;
                 if (avgHeartRate !== undefined && avgHeartRate !== null) {
-                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Avg Heart Rate</span><span class="summary-value">${avgHeartRate} bpm</span></div>`;
+                    const label = showPredicted ? 'Predicted Avg Heart Rate' : 'Avg Heart Rate';
+                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">${label}</span><span class="summary-value">${avgHeartRate} bpm</span></div>`;
                 }
                 
-                if (perf.difficulty_rating !== undefined && perf.difficulty_rating !== null) {
+                // Show predicted speed if available
+                if (showPredicted && perf.predicted_avg_speed !== undefined && perf.predicted_avg_speed !== null) {
+                    summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Predicted Avg Speed</span><span class="summary-value">${perf.predicted_avg_speed.toFixed(2)} km/h</span></div>`;
+                }
+                
+                if (perf.difficulty_rating !== undefined && perf.difficulty_rating !== null && !showPredicted) {
                     summaryHTML += `<div class="performance-summary-card"><span class="summary-label">Difficulty</span><span class="summary-value">${perf.difficulty_rating}/10</span></div>`;
                 }
                 
@@ -603,25 +639,34 @@ const TrailDetailPage = (function() {
                 // Show predicted or actual metrics
                 const maxHeartRate = showPredicted ? perf.predicted_max_heart_rate : perf.max_heart_rate;
                 if (maxHeartRate !== undefined && maxHeartRate !== null) {
-                    html += `<div class="metric-item"><strong>Max Heart Rate:</strong> ${maxHeartRate} bpm</div>`;
+                    const label = showPredicted ? 'Predicted Max Heart Rate' : 'Max Heart Rate';
+                    html += `<div class="metric-item"><strong>${label}:</strong> ${maxHeartRate} bpm</div>`;
                     hasMetrics = true;
                 }
                 
                 const avgHeartRate = showPredicted ? perf.predicted_avg_heart_rate : perf.avg_heart_rate;
                 if (avgHeartRate !== undefined && avgHeartRate !== null) {
-                    html += `<div class="metric-item"><strong>Avg Heart Rate:</strong> ${avgHeartRate} bpm</div>`;
+                    const label = showPredicted ? 'Predicted Avg Heart Rate' : 'Avg Heart Rate';
+                    html += `<div class="metric-item"><strong>${label}:</strong> ${avgHeartRate} bpm</div>`;
                     hasMetrics = true;
                 }
                 
                 const avgSpeed = showPredicted ? perf.predicted_avg_speed : perf.avg_speed;
                 if (avgSpeed !== undefined && avgSpeed !== null) {
-                    html += `<div class="metric-item"><strong>Avg Speed:</strong> ${avgSpeed.toFixed(2)} km/h</div>`;
+                    const label = showPredicted ? 'Predicted Avg Speed' : 'Avg Speed';
+                    html += `<div class="metric-item"><strong>${label}:</strong> ${avgSpeed.toFixed(2)} km/h</div>`;
                     hasMetrics = true;
                 }
                 
                 const maxSpeed = showPredicted ? perf.predicted_max_speed : perf.max_speed;
                 if (maxSpeed !== undefined && maxSpeed !== null) {
-                    html += `<div class="metric-item"><strong>Max Speed:</strong> ${maxSpeed.toFixed(2)} km/h</div>`;
+                    const label = showPredicted ? 'Predicted Max Speed' : 'Max Speed';
+                    html += `<div class="metric-item"><strong>${label}:</strong> ${maxSpeed.toFixed(2)} km/h</div>`;
+                    hasMetrics = true;
+                }
+                
+                if (showPredicted && perf.predicted_calories !== undefined && perf.predicted_calories !== null) {
+                    html += `<div class="metric-item"><strong>Predicted Calories:</strong> ${perf.predicted_calories} cal</div>`;
                     hasMetrics = true;
                 }
                 
@@ -640,17 +685,26 @@ const TrailDetailPage = (function() {
                 detailedMetrics.innerHTML = html;
             }
             
-            // Performance chart (only if time series data exists)
-            const chartContainer = performanceSection.querySelector('.chart-container');
-            const canvas = performanceSection.querySelector('#performance-chart');
-            if (chartContainer && canvas) {
-                if (perf.time_series && perf.time_series.length > 0) {
-                    setTimeout(() => {
-                        renderPerformanceChart(perf.time_series);
-                    }, 100);
-                } else {
-                    // Hide chart container if no time series data
-                    chartContainer.style.display = 'none';
+            // Performance chart - will be rendered by renderPerformanceVisualizations
+            // For predicted data, the chart will be rendered separately
+            if (!showPredicted) {
+                const chartContainer = performanceSection.querySelector('.chart-container');
+                const canvas = performanceSection.querySelector('#performance-chart');
+                if (chartContainer && canvas) {
+                    if (perf.time_series && perf.time_series.length > 0) {
+                        setTimeout(() => {
+                            renderPerformanceChart(perf.time_series);
+                        }, 100);
+                    } else {
+                        // Hide chart container if no time series data
+                        chartContainer.style.display = 'none';
+                    }
+                }
+            } else {
+                // For predicted data, ensure chart container is visible
+                const chartContainer = performanceSection.querySelector('.chart-container');
+                if (chartContainer) {
+                    chartContainer.style.display = 'block';
                 }
             }
         }
@@ -949,7 +1003,17 @@ const TrailDetailPage = (function() {
                 plugins: {
                     title: {
                         display: true,
-                        text: `${getMetricLabel(currentMetric)}: Actual vs Predicted`
+                        text: (() => {
+                            const hasPredicted = completionEntries.some(c => c.isPredicted);
+                            const hasActual = completionEntries.some(c => !c.isPredicted);
+                            if (hasPredicted && hasActual) {
+                                return `${getMetricLabel(currentMetric)}: Actual vs Predicted`;
+                            } else if (hasPredicted) {
+                                return `${getMetricLabel(currentMetric)}: Predicted`;
+                            } else {
+                                return `${getMetricLabel(currentMetric)}: Actual`;
+                            }
+                        })()
                     },
                     legend: {
                         display: true,
@@ -1094,6 +1158,52 @@ const TrailDetailPage = (function() {
                 console.warn('Error loading performance:', e);
                 return { completed: false };
             });
+    }
+    
+    function loadPredictions(trailId, userId) {
+        return fetch(`/api/profile/${userId}/trail/${trailId}/predictions`)
+            .then(r => {
+                if (!r.ok) {
+                    console.warn('Predictions API returned', r.status);
+                    return null;
+                }
+                return r.json();
+            })
+            .catch(e => {
+                console.warn('Error loading predictions:', e);
+                return null;
+            });
+    }
+    
+    function transformPredictionsToPerformance(predictions, trail) {
+        if (!predictions) return null;
+        
+        const predictedHR = predictions.predicted_heart_rate || {};
+        
+        return {
+            predicted_duration: predictions.predicted_duration || trail.duration || 120,
+            predicted_avg_heart_rate: predictedHR.avg || null,
+            predicted_max_heart_rate: predictedHR.max || null,
+            predicted_avg_speed: predictions.predicted_speed || null,
+            predicted_max_speed: predictions.predicted_speed ? predictions.predicted_speed * 1.3 : null,
+            predicted_calories: predictions.predicted_calories || null,
+            completion_date: new Date().toISOString(),
+            id: 'predicted'
+        };
+    }
+    
+    function renderPerformanceVisualizationsWithPredicted(predictedPerf) {
+        if (!predictedPerf) return;
+        
+        loadedCompletions = {};
+        const predictedTimeSeries = generatePredictedTimeSeries(predictedPerf);
+        if (predictedTimeSeries && predictedTimeSeries.length > 0) {
+            addCompletionToChart({
+                ...predictedPerf,
+                time_series: predictedTimeSeries,
+                completion_date: predictedPerf.completion_date || new Date().toISOString()
+            }, 'predicted', true);
+        }
     }
     
     function renderPerformanceVisualizations(performanceData, showPredicted = false) {
@@ -1365,6 +1475,16 @@ const TrailDetailPage = (function() {
         currentUserProfile = userProfile;
         completedTrailData = completedData;
         
+        // Set up metric selector change handler
+        const metricSelector = document.getElementById('metric-selector');
+        if (metricSelector && !metricSelector._listenerAttached) {
+            metricSelector.addEventListener('change', function(e) {
+                currentMetric = e.target.value;
+                renderPerformanceChart();
+            });
+            metricSelector._listenerAttached = true;
+        }
+        
         // Hide loading indicator if it exists
         const loadingEl = document.getElementById('trail-detail-loading');
         if (loadingEl) {
@@ -1462,14 +1582,13 @@ const TrailDetailPage = (function() {
                     }
                 });
                 
-                // Set up metric selector change handler
-                const metricSelector = document.getElementById('metric-selector');
-                if (metricSelector) {
-                    metricSelector.addEventListener('change', (e) => {
-                        currentMetric = e.target.value;
-                        renderPerformanceChart();
+            } else {
+                // No completions - load predictions directly
+                // renderPerformanceSection will handle loading predictions when performance.completed is false
+                loadCompletionPerformance(trailId, userId, null)
+                    .then(performance => {
+                        renderPerformanceSection(performance, false);
                     });
-                }
             }
         });
         
