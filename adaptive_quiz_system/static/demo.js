@@ -876,22 +876,17 @@
                             <div class="context-modal__tab-content" data-content="explanation">
                                 <div class="explanation-content" id="explanation-content-${userId}">
                                     <div class="explanation-loading" id="explanation-loading-${userId}">
-                                        <p style="text-align: center; color: var(--color-text-secondary); padding: var(--space-xl);">
-                                            <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span>
-                                            <br>Generating explanation...
-                                        </p>
+                                        <p><span class="spinner">⏳</span><br>Generating explanation...</p>
                                     </div>
-                                    <div class="explanation-loaded" id="explanation-loaded-${userId}" style="display: none;">
+                                    <div class="explanation-loaded" id="explanation-loaded-${userId}">
                                         <p class="explanation-text" id="explanation-text-${userId}"></p>
                                         <div class="explanation-details">
                                             <h4 class="explanation-details__title">Key Matching Factors:</h4>
                                             <ul class="explanation-details__list" id="explanation-factors-${userId}"></ul>
                                         </div>
                                     </div>
-                                    <div class="explanation-error" id="explanation-error-${userId}" style="display: none;">
-                                        <p style="text-align: center; color: var(--color-text-secondary); padding: var(--space-xl);">
-                                            Unable to generate explanation. Please try again later.
-                                        </p>
+                                    <div class="explanation-error" id="explanation-error-${userId}">
+                                        <p>Unable to generate explanation. Please try again later.</p>
                                     </div>
                                 </div>
                             </div>
@@ -959,15 +954,15 @@
                             <div class="map-legend__title">Trail Types</div>
                             <div class="map-legend__items">
                                 <div class="map-legend__item">
-                                    <span class="map-legend__marker" style="background-color: #5b8df9;"></span>
+                                    <span class="map-legend__marker map-legend__marker--recommended"></span>
                                     <span class="map-legend__label">Recommended</span>
                                 </div>
                                 <div class="map-legend__item">
-                                    <span class="map-legend__marker" style="background-color: #f59e0b;"></span>
+                                    <span class="map-legend__marker map-legend__marker--suggestion"></span>
                                     <span class="map-legend__label">Suggestions</span>
                                 </div>
                                 <div class="map-legend__item">
-                                    <span class="map-legend__marker" style="background-color: #f71e50;"></span>
+                                    <span class="map-legend__marker map-legend__marker--collaborative"></span>
                                     <span class="map-legend__label">Collaborative</span>
                                 </div>
                                 <div class="map-legend__item">
@@ -1047,7 +1042,7 @@
             const isCollaborative = trail.is_collaborative || (trail.view_type && trail.view_type.includes('collaborative'));
             const collaborativeIcon = isCollaborative ? 
                 `<div class="collaborative-icon-wrapper">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; display: inline-block; vertical-align: middle; width: 20px; height: 20px; cursor: help;">
+                    <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
                         <path d="M10 4.5L11.8 8.2L15.9 9.1L13.1 11.8L13.6 15.9L10 14.2L6.4 15.9L6.9 11.8L4.1 9.1L8.2 8.2L10 4.5Z" fill="#fff"/>
                     </svg>
@@ -1055,9 +1050,7 @@
                 </div>` : '';
             
             const collaborativeBadge = type === 'collaborative' && trail.collaborative_avg_rating ? 
-                `<span style="background: #f71e50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-left: var(--space-xs);">
-                    ⭐ ${trail.collaborative_avg_rating.toFixed(1)}/5 (${trail.collaborative_user_count || 0} users)
-                </span>` : '';
+                `<span class="badge badge--collaborative">⭐ ${trail.collaborative_avg_rating.toFixed(1)}/5 (${trail.collaborative_user_count || 0} users)</span>` : '';
             
             // Truncate description if too long
             let description = trail.description || '';
@@ -1096,28 +1089,22 @@
                                 </svg>
                             </button>
                         </div>
-                        <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                        <div class="card-heading__meta">
                             ${collaborativeIcon}
                             <span class="trail-item__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
                         </div>
                     </div>
-                    <div class="trail-explanation-content" id="trail-explanation-${trail.trail_id || ''}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-                        <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
-                            <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
-                        </div>
-                        <div class="trail-explanation-loaded" style="display: none;">
-                            <p class="trail-explanation-text" style="margin-bottom: var(--space-sm);"></p>
-                            <ul class="trail-explanation-factors" style="list-style: none; padding: 0; margin: 0;"></ul>
+                    <div class="trail-explanation-content" id="trail-explanation-${trail.trail_id || ''}">
+                        <div class="trail-explanation-loading"><span class="spinner">⏳</span> Generating...</div>
+                        <div class="trail-explanation-loaded">
+                            <p class="trail-explanation-text"></p>
+                            <ul class="trail-explanation-factors"></ul>
                         </div>
                     </div>
                     ${description ? `<p class="trail-item__description">${description}</p>` : ''}
                     ${landscapesHTML}
                     ${type === 'collaborative' && trail.recommendation_reason ? `
-                    <div style="margin-top: var(--space-md); padding: var(--space-md); background: #ffeef0; border-radius: var(--radius-md); border-left: 3px solid #f71e50;">
-                        <small style="color: #a00d2f; font-weight: var(--font-weight-medium); display: block;">
-                            💡 ${trail.recommendation_reason}
-                        </small>
-                    </div>
+                    <div class="alert--collaborative"><small class="alert-title">💡 ${trail.recommendation_reason}</small></div>
                     ` : ''}
                     <div class="trail-item__stats">
                         <div class="trail-item__stat">
@@ -1168,7 +1155,7 @@
             const isCollaborative = trail.is_collaborative || (trail.view_type && trail.view_type.includes('collaborative'));
             const collaborativeIcon = isCollaborative ? 
                 `<div class="collaborative-icon-wrapper">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; display: inline-block; vertical-align: middle; width: 20px; height: 20px; cursor: help;">
+                    <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
                         <path d="M10 4.5L11.8 8.2L15.9 9.1L13.1 11.8L13.6 15.9L10 14.2L6.4 15.9L6.9 11.8L4.1 9.1L8.2 8.2L10 4.5Z" fill="#fff"/>
                     </svg>
@@ -1176,9 +1163,7 @@
                 </div>` : '';
             
             const collaborativeBadge = type === 'collaborative' && trail.collaborative_avg_rating ? 
-                `<span style="background: #f71e50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-left: var(--space-xs);">
-                    ⭐ ${trail.collaborative_avg_rating.toFixed(1)}/5 (${trail.collaborative_user_count || 0} users)
-                </span>` : '';
+                `<span class="badge badge--collaborative">⭐ ${trail.collaborative_avg_rating.toFixed(1)}/5 (${trail.collaborative_user_count || 0} users)</span>` : '';
 
             // Truncate description if too long
             let description = trail.description || 'No description available';
@@ -1218,7 +1203,7 @@
                     <div class="trail-card__content">
                         <div class="trail-card__header">
                             <h3 class="trail-card__title">${trail.name || 'Unknown'}</h3>
-                            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                            <div class="card-heading__meta">
                                 ${collaborativeIcon}
                                 ${collaborativeBadge}
                                 <span class="trail-card__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
@@ -1233,11 +1218,7 @@
                         <p class="trail-card__description">${description}</p>
                         ${landscapesHTML}
                         ${type === 'collaborative' && trail.recommendation_reason ? `
-                        <div style="margin-top: var(--space-md); padding: var(--space-md); background: #ffeef0; border-radius: var(--radius-md); border-left: 3px solid #f71e50;">
-                            <small style="color: #a00d2f; font-weight: var(--font-weight-medium); display: block;">
-                                💡 ${trail.recommendation_reason}
-                            </small>
-                        </div>
+                        <div class="alert--collaborative"><small class="alert-title">💡 ${trail.recommendation_reason}</small></div>
                         ` : ''}
                         <div class="trail-card__stats">
                             <div class="trail-card__stat">
@@ -1271,13 +1252,11 @@
                             </div>
                             ` : ''}
                         </div>
-                        <div class="trail-explanation-content" id="trail-explanation-${trail.trail_id || ''}" style="display: none; margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-                            <div class="trail-explanation-loading" style="text-align: center; color: var(--color-text-secondary);">
-                                <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating...
-                            </div>
-                            <div class="trail-explanation-loaded" style="display: none;">
-                                <p class="trail-explanation-text" style="margin-bottom: var(--space-sm);"></p>
-                                <ul class="trail-explanation-factors" style="list-style: none; padding: 0; margin: 0;"></ul>
+                        <div class="trail-explanation-content" id="trail-explanation-${trail.trail_id || ''}">
+                            <div class="trail-explanation-loading"><span class="spinner">⏳</span> Generating...</div>
+                            <div class="trail-explanation-loaded">
+                                <p class="trail-explanation-text"></p>
+                                <ul class="trail-explanation-factors"></ul>
                             </div>
                         </div>
                     </div>
