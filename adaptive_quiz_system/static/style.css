@@ -686,6 +686,7 @@ body {
 
 /* Leaflet Map Container Overrides (komoot-map-container) */
 /* Ensure Leaflet map containers scroll properly */
+/* Prevent Leaflet from using fixed positioning on container/pane */
 .komoot-map-container .leaflet-container {
     position: relative !important;
     width: 100% !important;
@@ -704,13 +705,6 @@ body {
 .komoot-map-container .leaflet-tile-pane {
     /* DO NOT override position - Leaflet needs absolute positioning */
     /* Only ensure no transforms that could pin tiles */
-    transform: none !important;
-}
-
-/* Prevent Leaflet from using fixed positioning on container/pane */
-.komoot-map-container .leaflet-container,
-.komoot-map-container .leaflet-map-pane {
-    position: relative !important;
     transform: none !important;
 }
 
@@ -3478,15 +3472,12 @@ section.trail-detail-section h3 {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 .trail-detail-nav-bar::-webkit-scrollbar {
     display: none;
-}
-
-.trail-detail-nav-bar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
 }
 
 .trail-nav-tab {
@@ -3560,11 +3551,6 @@ section.trail-detail-section h3 {
 }
 
 /* Form Controls - Consistent Styling */
-.completion-selector,
-.performance-chart-controls {
-    margin-bottom: var(--space-lg);
-}
-
 .completion-selector.hidden,
 .trail-detail-section.hidden,
 .chart-container.hidden,
@@ -3607,12 +3593,13 @@ section.trail-detail-section h3 {
 }
 
 /* Performance Chart Controls */
+.completion-selector,
 .performance-chart-controls {
     display: flex;
     gap: var(--space-md);
     align-items: flex-start;
     flex-wrap: wrap;
-    margin: var(--space-xl) 0;
+    margin: var(--space-xl) 0 var(--space-lg) 0;
 }
 
 .performance-chart-controls .form-group {
