@@ -971,8 +971,10 @@
                                     <span class="map-legend__label">Collaborative</span>
                                 </div>
                                 <div class="map-legend__item">
-                                    <span class="map-legend__marker" style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;">
-                                        <span style="width: 18px; height: 18px; border: 2px dashed #f71e50; border-radius: 50%; background: transparent; pointer-events: none;"></span>
+                                    <span class="map-legend__marker map-legend__marker--with-ring">
+                                        <svg width="18" height="18" viewBox="0 0 18 18">
+                                            <circle cx="9" cy="9" r="8" fill="none" stroke="#f71e50" stroke-width="2" stroke-dasharray="2 2" stroke-linecap="round"/>
+                                        </svg>
                                     </span>
                                     <span class="map-legend__label">Collaborative (with ring)</span>
                                 </div>

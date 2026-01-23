@@ -590,7 +590,6 @@ def index():
     return redirect(url_for("demo"))
 
 
-<<<<<<< HEAD
 @app.route("/recommendations/<int:user_id>")
 def recommendations(user_id):
     """Adaptive trail recommendations page"""
