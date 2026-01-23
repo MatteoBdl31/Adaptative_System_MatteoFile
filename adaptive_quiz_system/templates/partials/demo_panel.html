@@ -425,11 +425,7 @@
                             {% set is_collab_from_view = 'collaborative' in view_type_str if view_type_str else False %}
                             {% set show_collab_icon = is_collab or is_collab_from_view %}
                             {% if show_collab_icon and trail.recommendation_reason %}
-                            <div style="margin-top: var(--space-md); padding: var(--space-md); background: #ffeef0; border-radius: var(--radius-md); border-left: 3px solid #f71e50;">
-                                <small style="color: #a00d2f; font-weight: var(--font-weight-medium); display: block;">
-                                    💡 {{ trail.recommendation_reason }}
-                                </small>
-                            </div>
+                            <div class="alert--collaborative"><small class="alert-title">💡 {{ trail.recommendation_reason }}</small></div>
                             {% endif %}
                             {% if trail.unmatched_criteria %}
                             <div class="unmatched-criteria">
