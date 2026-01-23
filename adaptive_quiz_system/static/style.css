@@ -6,7 +6,7 @@
 /* Collaborative Trail Styling */
 .trail-item.collaborative,
 .trail-card.collaborative {
-    border-left: 3px solid #f71e50;
+    border-left: 3px solid var(--color-collaborative);
 }
 
 /* Collaborative Icon Tooltip */
@@ -74,6 +74,44 @@
 
     --color-border: #e2e8f0;
     --color-border-light: #f1f5f9;
+
+    /* Semantic Colors - Status & Actions */
+    --color-collaborative: #f71e50;
+    --color-recommended: #5b8df9;
+    --color-link: #667eea;
+    --color-gradient-start: #667eea;
+    --color-gradient-end: #764ba2;
+    --color-accent-blue: #00A8FF;
+    --color-accent-yellow: #fbbf24;
+    
+    /* Status Colors - Success */
+    --color-success-bg: #d1fae5;
+    --color-success-text: #065f46;
+    
+    /* Status Colors - Warning */
+    --color-warning-bg: #fef3c7;
+    --color-warning-text: #92400e;
+    
+    /* Status Colors - Error/Danger */
+    --color-error-bg: #fee2e2;
+    --color-error-text: #991b1b;
+    --color-error: #dc2626;
+    
+    /* Neutral Colors */
+    --color-neutral-bg: #f0f0f0;
+    --color-text-muted-dark: #475569;
+    --color-white: #ffffff;
+
+    /* Overlays & Backdrops */
+    --overlay-light: rgba(0, 0, 0, 0.05);
+    --overlay-medium: rgba(0, 0, 0, 0.1);
+    --overlay-dark: rgba(0, 0, 0, 0.5);
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, var(--color-gradient-start) 0%, var(--color-gradient-end) 100%);
+    
+    /* Borders - Common Patterns */
+    --border-white: 2px solid var(--color-white);
 
     /* Spacing Scale */
     --space-xs: 0.25rem;
@@ -371,13 +409,13 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     color: white;
     box-shadow: var(--shadow-md);
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: linear-gradient(135deg, var(--color-gradient-end) 0%, var(--color-gradient-start) 100%);
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
 }
@@ -588,6 +626,75 @@ body {
     color: var(--color-text-muted);
 }
 
+/* ============================================
+   LEAFLET OVERRIDES
+   ============================================
+   ⚠️ ZONE SENSIBLE - NE PAS MODIFIER SANS VALIDATION
+   
+   Cette section contient toutes les surcharges CSS pour Leaflet.
+   Leaflet génère dynamiquement des classes (.leaflet-*) et des éléments
+   qui nécessitent des overrides spécifiques pour l'intégration.
+   
+   RÈGLES CRITIQUES:
+   - Ne jamais supprimer les !important sans test approfondi
+   - Ne jamais modifier position/transform des tiles (Leaflet en dépend)
+   - Toujours tester: cartes, popups, contrôles zoom, responsive mobile
+   - Vérifier z-index (modales vs carte)
+   
+   Classes Leaflet natives (NE PAS RENOMMER):
+   - .leaflet-container, .leaflet-map-pane, .leaflet-tile-pane
+   - .leaflet-popup-content-wrapper, .leaflet-popup-content
+   ============================================ */
+
+/* Leaflet Map Container Overrides (komoot-map-container) */
+/* Ensure Leaflet map containers scroll properly */
+.komoot-map-container .leaflet-container {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    /* Ensure map scrolls with container, not fixed to viewport */
+    transform: none !important;
+}
+
+.komoot-map-container .leaflet-map-pane {
+    position: relative !important;
+    transform: none !important;
+}
+
+/* CRITICAL: Leaflet tiles MUST be absolutely positioned within map-pane
+   Don't override this - tiles are positioned by Leaflet based on viewport calculations */
+.komoot-map-container .leaflet-tile-pane {
+    /* DO NOT override position - Leaflet needs absolute positioning */
+    /* Only ensure no transforms that could pin tiles */
+    transform: none !important;
+}
+
+/* Prevent Leaflet from using fixed positioning on container/pane */
+.komoot-map-container .leaflet-container,
+.komoot-map-container .leaflet-map-pane {
+    position: relative !important;
+    transform: none !important;
+}
+
+/* Ensure individual tiles can be positioned by Leaflet */
+.komoot-map-container .leaflet-tile {
+    /* Leaflet positions tiles absolutely - don't override */
+    transform: none !important;
+}
+
+/* Leaflet Popup Overrides (trail-popup-wrapper) */
+.trail-popup-wrapper .leaflet-popup-content-wrapper {
+    padding: 0;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+.trail-popup-wrapper .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+    min-width: 250px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   :root {
@@ -608,7 +715,7 @@ body {
 
 /* Demo Page Specific Styles */
 .demo-page {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     min-height: 100vh;
 }
 
@@ -681,8 +788,8 @@ body {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    border: var(--border-white);
+    box-shadow: 0 1px 3px var(--overlay-medium);
     flex-shrink: 0;
 }
 
@@ -718,8 +825,8 @@ body {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    border: var(--border-white);
+    box-shadow: 0 1px 3px var(--overlay-medium);
     flex-shrink: 0;
 }
 
@@ -738,14 +845,14 @@ body {
     flex-shrink: 0;
 }
 
-.legend-marker.exact-marker { background-color: #5b8df9; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.legend-marker.suggestion-marker { background-color: #f59e0b; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.legend-marker--collaborative { background: #f71e50; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.legend-marker.exact-marker { background-color: var(--color-recommended); border: var(--border-white); box-shadow: 0 1px 3px var(--overlay-medium); }
+.legend-marker.suggestion-marker { background-color: var(--color-accent); border: var(--border-white); box-shadow: 0 1px 3px var(--overlay-medium); }
+.legend-marker--collaborative { background: var(--color-collaborative); border: var(--border-white); box-shadow: 0 1px 3px var(--overlay-medium); }
 
 /* Map legend marker variants (demo.js) */
-.map-legend__marker--recommended { background-color: #5b8df9; }
-.map-legend__marker--suggestion { background-color: #f59e0b; }
-.map-legend__marker--collaborative { background-color: #f71e50; }
+.map-legend__marker--recommended { background-color: var(--color-recommended); }
+.map-legend__marker--suggestion { background-color: var(--color-accent); }
+.map-legend__marker--collaborative { background-color: var(--color-collaborative); }
 
 /* Trail explanation blocks */
 .trail-explanation-content,
@@ -802,13 +909,13 @@ body {
 .alert--collaborative {
     margin-top: var(--space-md);
     padding: var(--space-md);
-    background: #ffeef0;
+    background: rgba(247, 30, 80, 0.05);
     border-radius: var(--radius-md);
-    border-left: 3px solid #f71e50;
+    border-left: 3px solid var(--color-collaborative);
 }
 .alert--collaborative .alert-title,
 .alert--collaborative small {
-    color: #a00d2f;
+    color: rgba(160, 13, 47, 1);
     font-weight: var(--font-weight-medium);
     display: block;
 }
@@ -827,7 +934,7 @@ body {
 .user-profile-badge {
     margin-top: 8px;
     padding: 8px 12px;
-    background-color: #f0f0f0;
+    background-color: var(--color-neutral-bg);
     border-radius: 6px;
 }
 .user-profile-badge__name { color: #667eea; font-weight: 600; }
@@ -974,7 +1081,7 @@ body {
 
 /* Page Background */
 .all-trails-page {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     min-height: 100vh;
 }
 
@@ -1085,7 +1192,7 @@ body {
 }
 
 .filter-section .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     color: white;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1156,7 +1263,7 @@ body {
 }
 
 .view-toggle button.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     color: white;
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
@@ -1208,7 +1315,7 @@ body {
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    background: #f0f0f0;
+    background: var(--color-neutral-bg);
 }
 
 /* Trail Cards - List View */
@@ -1224,7 +1331,7 @@ body {
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     transition: all var(--transition-base);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px var(--overlay-light);
     display: flex;
     gap: var(--space-lg);
 }
@@ -1356,7 +1463,7 @@ body {
     border-radius: var(--radius-lg);
     overflow: hidden;
     transition: all var(--transition-base);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px var(--overlay-light);
     display: flex;
     flex-direction: column;
 }
@@ -1539,7 +1646,7 @@ body {
     right: var(--space-xl);
     width: 50px;
     height: 50px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
     color: white;
     border: none;
     border-radius: 50%;
@@ -1971,7 +2078,7 @@ select:focus-visible {
 }
 
 .btn-unsave:hover {
-    background: #dc2626;
+    background: var(--color-error);
 }
 
 .empty-state {
@@ -2018,12 +2125,12 @@ select:focus-visible {
 
 .upload-status.success {
     background: #d1fae5;
-    color: #065f46;
+    color: var(--color-success-text);
 }
 
 .upload-status.error {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
 }
 
 .upload-status.info {
@@ -2056,7 +2163,7 @@ select:focus-visible {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: var(--overlay-dark);
 }
 
 .modal-content {
@@ -2233,20 +2340,20 @@ section.trail-detail-section h3 {
 }
 
 .trail-stat-badge.difficulty-hard {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
     border-color: #ef4444;
 }
 
 .trail-stat-badge.difficulty-medium {
-    background: #fef3c7;
+    background: var(--color-warning-bg);
     color: #92400e;
     border-color: #f59e0b;
 }
 
 .trail-stat-badge.difficulty-easy {
     background: #d1fae5;
-    color: #065f46;
+    color: var(--color-success-text);
     border-color: #10b981;
 }
 
@@ -2309,7 +2416,7 @@ section.trail-detail-section h3 {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay-dark);
     color: white;
     border: none;
     width: 40px;
@@ -2452,7 +2559,7 @@ section.trail-detail-section h3 {
 
 .trail-nav-tab.active {
     color: #1e293b;
-    border-bottom-color: #00A8FF;
+    border-bottom-color: var(--color-accent-blue);
     font-weight: 600;
 }
 
@@ -2717,9 +2824,9 @@ section.trail-detail-section h4 {
 .recommendation-safety-section {
     margin-top: var(--space-lg);
     padding: var(--space-lg);
-    background: #fef3c7;
+    background: var(--color-warning-bg);
     border-radius: var(--radius-lg);
-    border: 1px solid #fbbf24;
+    border: 1px solid var(--color-accent-yellow);
 }
 
 .recommendation-safety-section h5 {
@@ -3905,11 +4012,11 @@ section.trail-detail-section h4 {
 }
 
 .star-full {
-    color: #fbbf24;
+    color: var(--color-accent-yellow);
 }
 
 .star-half {
-    color: #fbbf24;
+    color: var(--color-accent-yellow);
     opacity: 0.5;
 }
 
@@ -4134,12 +4241,12 @@ section.trail-detail-section h4 {
 }
 
 .rating-input-interactive label.star-selected {
-    color: #fbbf24;
+    color: var(--color-accent-yellow);
     filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
 }
 
 .rating-input-interactive input[type="radio"]:checked + label {
-    color: #fbbf24;
+    color: var(--color-accent-yellow);
     filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
 }
 
@@ -4172,7 +4279,7 @@ section.trail-detail-section h4 {
 .rating-input input[type="radio"]:checked ~ label,
 .rating-input label:hover,
 .rating-input label:hover ~ label {
-    color: #fbbf24;
+    color: var(--color-accent-yellow);
 }
 
 .difficulty-input {
@@ -4296,7 +4403,7 @@ body.komoot-style.trail-detail-page {
     width: 100%;
     height: 400px;
     overflow: hidden;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
 }
 
 .komoot-hero-map {
@@ -4311,7 +4418,7 @@ body.komoot-style.trail-detail-page {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
 }
 
 .komoot-hero-icon {
@@ -4441,17 +4548,17 @@ body.komoot-style.trail-detail-page {
 
 .komoot-difficulty-easy {
     background: #d1fae5;
-    color: #065f46;
+    color: var(--color-success-text);
 }
 
 .komoot-difficulty-medium {
-    background: #fef3c7;
+    background: var(--color-warning-bg);
     color: #92400e;
 }
 
 .komoot-difficulty-hard {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
 }
 
 /* Main Layout - Two Column */
@@ -4578,7 +4685,7 @@ body:has(.app-header) .komoot-tabs-frozen {
 
 .komoot-tab.active {
     color: #1e293b;
-    border-bottom-color: #00A8FF;
+    border-bottom-color: var(--color-accent-blue);
     font-weight: 600;
 }
 
@@ -4623,9 +4730,9 @@ body:has(.app-header) .komoot-tabs-frozen {
 }
 
 .komoot-action-primary {
-    background: #00A8FF;
+    background: var(--color-accent-blue);
     color: #ffffff;
-    border-color: #00A8FF;
+    border-color: var(--color-accent-blue);
 }
 
 .komoot-action-primary:hover {
@@ -4649,7 +4756,7 @@ body:has(.app-header) .komoot-tabs-frozen {
 .komoot-description {
     font-size: 1rem;
     line-height: 1.75;
-    color: #475569;
+    color: var(--color-text-muted-dark);
     margin: 0;
 }
 
@@ -4676,41 +4783,6 @@ body:has(.app-header) .komoot-tabs-frozen {
     border: 1px solid #e2e8f0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative !important;
-}
-
-/* Ensure Leaflet map containers scroll properly */
-.komoot-map-container .leaflet-container {
-    position: relative !important;
-    width: 100% !important;
-    height: 100% !important;
-    /* Ensure map scrolls with container, not fixed to viewport */
-    transform: none !important;
-}
-
-.komoot-map-container .leaflet-map-pane {
-    position: relative !important;
-    transform: none !important;
-}
-
-/* CRITICAL: Leaflet tiles MUST be absolutely positioned within map-pane
-   Don't override this - tiles are positioned by Leaflet based on viewport calculations */
-.komoot-map-container .leaflet-tile-pane {
-    /* DO NOT override position - Leaflet needs absolute positioning */
-    /* Only ensure no transforms that could pin tiles */
-    transform: none !important;
-}
-
-/* Prevent Leaflet from using fixed positioning on container/pane */
-.komoot-map-container .leaflet-container,
-.komoot-map-container .leaflet-map-pane {
-    position: relative !important;
-    transform: none !important;
-}
-
-/* Ensure individual tiles can be positioned by Leaflet */
-.komoot-map-container .leaflet-tile {
-    /* Leaflet positions tiles absolutely - don't override */
-    transform: none !important;
 }
 
 .komoot-elevation-chart-container {
@@ -4753,7 +4825,7 @@ body:has(.app-header) .komoot-tabs-frozen {
     display: inline-block;
     padding: 0.5rem 1rem;
     background: #f1f5f9;
-    color: #475569;
+    color: var(--color-text-muted-dark);
     border-radius: 0.5rem;
     font-size: 0.875rem;
     font-weight: 500;
@@ -4797,8 +4869,8 @@ body:has(.app-header) .komoot-tabs-frozen {
     align-items: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: #fef3c7;
-    border: 1px solid #fbbf24;
+    background: var(--color-warning-bg);
+    border: 1px solid var(--color-accent-yellow);
     border-radius: 0.5rem;
     color: #92400e;
     margin-top: 1rem;
@@ -4869,7 +4941,7 @@ body:has(.app-header) .komoot-tabs-frozen {
 .komoot-form-label {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #475569;
+    color: var(--color-text-muted-dark);
 }
 
 .komoot-form-input {
@@ -4884,7 +4956,7 @@ body:has(.app-header) .komoot-tabs-frozen {
 
 .komoot-form-input:focus {
     outline: none;
-    border-color: #00A8FF;
+    border-color: var(--color-accent-blue);
     box-shadow: 0 0 0 3px rgba(0, 168, 255, 0.1);
 }
 
@@ -4902,7 +4974,7 @@ body:has(.app-header) .komoot-tabs-frozen {
     background: #d1fae5;
     border: 1px solid #10b981;
     border-radius: 0.5rem;
-    color: #065f46;
+    color: var(--color-success-text);
     font-weight: 500;
 }
 
@@ -4943,7 +5015,7 @@ body:has(.app-header) .komoot-tabs-frozen {
     gap: 1rem;
     padding: 1rem 1.25rem;
     background: #f8fafc;
-    border-left: 4px solid #00A8FF;
+    border-left: 4px solid var(--color-accent-blue);
     border-radius: 0.5rem;
     margin-bottom: 1rem;
     transition: all 0.2s ease;
@@ -4987,7 +5059,7 @@ body:has(.app-header) .komoot-tabs-frozen {
 }
 
 .komoot-explanation-text {
-    color: #475569;
+    color: var(--color-text-muted-dark);
     font-size: 0.9375rem;
     line-height: 1.7;
     margin: 0;
@@ -5101,7 +5173,7 @@ body:has(.app-header) .komoot-tabs-frozen {
 /* ========== Demo page (from demo.html) ========== */
         /* Demo-specific styles */
   .demo-page {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-primary);
             min-height: 100vh;
         }
 
@@ -5330,7 +5402,7 @@ body:has(.app-header) .komoot-tabs-frozen {
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: var(--overlay-dark);
             backdrop-filter: blur(4px);
         }
 
@@ -5519,7 +5591,7 @@ body:has(.app-header) .komoot-tabs-frozen {
             border-radius: var(--radius-lg);
             overflow: hidden;
             transition: all var(--transition-base);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 3px var(--overlay-light);
             display: flex;
             flex-direction: column;
         }
@@ -5684,7 +5756,7 @@ body:has(.app-header) .komoot-tabs-frozen {
             border-radius: var(--radius-lg);
             padding: var(--space-lg);
             transition: all var(--transition-base);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 3px var(--overlay-light);
         }
 
   .trail-item:hover {
@@ -5745,18 +5817,18 @@ body:has(.app-header) .komoot-tabs-frozen {
         }
 
   .trail-item__difficulty.difficulty-easy {
-            background-color: #d1fae5;
-            color: #065f46;
+            background-color: var(--color-success-bg);
+            color: var(--color-success-text);
         }
 
   .trail-item__difficulty.difficulty-medium {
-            background-color: #fef3c7;
+            background-color: var(--color-warning-bg);
             color: #92400e;
         }
 
   .trail-item__difficulty.difficulty-hard {
-            background-color: #fee2e2;
-            color: #991b1b;
+            background-color: var(--color-error-bg);
+            color: var(--color-error-text);
         }
 
   .trail-item__description {
@@ -5838,26 +5910,13 @@ body:has(.app-header) .komoot-tabs-frozen {
             overflow: hidden;
             margin-bottom: var(--space-lg);
             position: relative;
-            background: #f0f0f0;
+            background: var(--color-neutral-bg);
         }
 
   .map-canvas {
             width: 100%;
             height: 500px;
             display: block;
-        }
-
-        /* Trail Popup Styling */
-  .trail-popup-wrapper .leaflet-popup-content-wrapper {
-            padding: 0;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xl);
-        }
-
-  .trail-popup-wrapper .leaflet-popup-content {
-            margin: 0;
-            padding: 0;
-            min-width: 250px;
         }
 
   .trail-popup {
@@ -5893,18 +5952,18 @@ body:has(.app-header) .komoot-tabs-frozen {
         }
 
   .trail-popup__difficulty.difficulty-easy {
-            background-color: #d1fae5;
-            color: #065f46;
+            background-color: var(--color-success-bg);
+            color: var(--color-success-text);
         }
 
   .trail-popup__difficulty.difficulty-medium {
-            background-color: #fef3c7;
+            background-color: var(--color-warning-bg);
             color: #92400e;
         }
 
   .trail-popup__difficulty.difficulty-hard {
-            background-color: #fee2e2;
-            color: #991b1b;
+            background-color: var(--color-error-bg);
+            color: var(--color-error-text);
         }
 
   .trail-popup__description {
@@ -6071,7 +6130,7 @@ body:has(.app-header) .komoot-tabs-frozen {
         /* Date formatter styling */
   .date-formatter {
             margin-left: 8px;
-            color: #667eea;
+            color: var(--color-link);
             font-size: 0.9em;
             font-weight: 500;
             display: inline-block;
