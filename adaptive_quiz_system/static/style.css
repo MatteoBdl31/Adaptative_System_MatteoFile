@@ -178,6 +178,25 @@
     --container-padding: var(--space-lg);
 }
 
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================
+   Breakpoints standardisés utilisés dans le projet.
+   Les media queries sont regroupées près de leurs composants respectifs.
+   
+   Breakpoints:
+   - 480px  : Mobile small (view-toggle, trail-stats)
+   - 767px  : Mobile (trail-grid-view)
+   - 768px  : Mobile/Tablet (standard mobile breakpoint)
+   - 1024px : Tablet (komoot-main-layout, demo-results)
+   - 1199px : Desktop small (trail-grid-view)
+   
+   Stratégie:
+   - Mobile-first: styles de base pour mobile, media queries pour desktop
+   - Regroupement: chaque media query est placée près de son composant
+   - Cohérence: utilisation des mêmes breakpoints partout
+   ============================================ */
+
 /* Dark Theme */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -300,6 +319,24 @@ body {
 .app-header__nav-link:focus {
     color: var(--color-primary);
     background-color: var(--color-bg-secondary);
+}
+
+/* Responsive: App Header */
+@media (max-width: 768px) {
+    :root {
+        --container-padding: var(--space-md);
+        --font-size-4xl: 2rem;
+    }
+
+    .app-header__container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .app-header__nav {
+        width: 100%;
+        flex-wrap: wrap;
+    }
 }
 
 /* Main Content */
@@ -530,10 +567,11 @@ body {
 .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
 
+/* Responsive: Grid Utilities */
 @media (max-width: 768px) {
     .grid-cols-2,
     .grid-cols-3,
-  .grid-cols-4 {
+    .grid-cols-4 {
         grid-template-columns: 1fr;
     }
 }
@@ -695,22 +733,936 @@ body {
     min-width: 250px;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  :root {
-        --container-padding: var(--space-md);
-        --font-size-4xl: 2rem;
-    }
+/* ============================================
+   COMPONENTS (BEM Convention - .c-*)
+   ============================================
+   Nouveaux composants créés selon convention BEM avec préfixe .c-*
+   Disponibles pour migration progressive.
+   
+   Les classes existantes (.btn, .card, .badge, .form-*) restent intactes
+   et fonctionnelles. Ces nouveaux composants peuvent être utilisés
+   progressivement dans les templates si autorisé.
+   
+   Convention:
+   - Composant: .c-Button, .c-Card, .c-Badge, .c-Form
+   - Variantes: .c-Button--primary, .c-Card--elevated
+   - États: .is-active, .is-disabled, .is-loading
+   ============================================ */
 
-  .app-header__container {
-        flex-direction: column;
-        align-items: flex-start;
-    }
+/* Component: Button */
+.c-Button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-lg);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-decoration: none;
+    white-space: nowrap;
+}
 
-  .app-header__nav {
-        width: 100%;
-        flex-wrap: wrap;
-    }
+.c-Button:disabled,
+.c-Button.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.c-Button--primary {
+    background: var(--gradient-primary);
+    color: var(--color-white);
+    box-shadow: var(--shadow-md);
+}
+
+.c-Button--primary:hover:not(:disabled):not(.is-disabled) {
+    background: linear-gradient(135deg, var(--color-gradient-end) 0%, var(--color-gradient-start) 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.c-Button--secondary {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.c-Button--secondary:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-light);
+}
+
+.c-Button--ghost {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+}
+
+.c-Button--ghost:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text);
+}
+
+.c-Button--sm {
+    font-size: var(--font-size-sm);
+    padding: var(--space-xs) var(--space-md);
+}
+
+.c-Button.is-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+/* Component: Card */
+.c-Card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+
+.c-Card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.c-Card--elevated {
+    box-shadow: var(--shadow-md);
+}
+
+.c-Card--elevated:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.c-Card__header {
+    margin-bottom: var(--space-lg);
+}
+
+.c-Card__title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    margin-bottom: var(--space-sm);
+}
+
+.c-Card__description {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-base);
+}
+
+.c-Card__body {
+    /* Body content area */
+}
+
+.c-Card__footer {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+}
+
+/* Component: Badge */
+.c-Badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-full);
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text);
+}
+
+.c-Badge--primary {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+}
+
+.c-Badge--success {
+    background-color: var(--color-secondary);
+    color: var(--color-white);
+}
+
+.c-Badge--warning {
+    background-color: var(--color-accent);
+    color: var(--color-white);
+}
+
+.c-Badge--error {
+    background-color: var(--color-danger);
+    color: var(--color-white);
+}
+
+.c-Badge--collaborative {
+    background: var(--color-collaborative);
+    color: var(--color-white);
+}
+
+.c-Badge--recommended {
+    background-color: var(--color-recommended);
+    color: var(--color-white);
+}
+
+.c-Badge--sm {
+    font-size: 10px;
+    padding: 2px var(--space-xs);
+}
+
+/* Component: Form */
+.c-Form {
+    /* Form container */
+}
+
+.c-Form__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.c-Form__label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+}
+
+.c-Form__input,
+.c-Form__select,
+.c-Form__textarea {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-base);
+    font-family: inherit;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+}
+
+.c-Form__input:focus,
+.c-Form__select:focus,
+.c-Form__textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.c-Form__input:disabled,
+.c-Form__select:disabled,
+.c-Form__textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.c-Form__help {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-xs);
+}
+
+.c-Form__error {
+    font-size: var(--font-size-sm);
+    color: var(--color-error);
+    margin-top: var(--space-xs);
+}
+
+/* ============================================
+   LAYOUT (Convention - .l-*)
+   ============================================
+   Classes de layout pour wrappers, grids, containers, page shells.
+   Disponibles pour migration progressive.
+   
+   Les classes existantes (.container, .grid, .app-header, etc.) restent intactes
+   et fonctionnelles. Ces nouvelles classes peuvent être utilisées
+   progressivement dans les templates si autorisé.
+   
+   Convention:
+   - Layout: .l-Container, .l-Grid, .l-PageShell, .l-Header, .l-Footer
+   - Variantes: .l-Container--wide, .l-Grid--cols-2
+   ============================================ */
+
+/* Layout: Container */
+.l-Container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+}
+
+.l-Container--wide {
+    max-width: 1400px;
+}
+
+.l-Container--narrow {
+    max-width: 960px;
+}
+
+.l-Container--full {
+    max-width: 100%;
+    padding: 0;
+}
+
+/* Layout: Page Shell */
+.l-PageShell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.l-PageShell__header {
+    /* Header section */
+}
+
+.l-PageShell__main {
+    flex: 1;
+    width: 100%;
+}
+
+.l-PageShell__footer {
+    margin-top: auto;
+}
+
+/* Layout: Header */
+.l-Header {
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.l-Header__container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: var(--space-md) var(--container-padding);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+}
+
+.l-Header__brand {
+    display: flex;
+    align-items: center;
+}
+
+.l-Header__nav {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+}
+
+/* Layout: Footer */
+.l-Footer {
+    background-color: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border);
+    margin-top: auto;
+    padding: var(--space-xl) 0;
+}
+
+.l-Footer__container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+    text-align: center;
+}
+
+/* Layout: Grid */
+.l-Grid {
+    display: grid;
+    gap: var(--space-lg);
+}
+
+.l-Grid--cols-1 {
+    grid-template-columns: repeat(1, 1fr);
+}
+
+.l-Grid--cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.l-Grid--cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.l-Grid--cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.l-Grid--auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.l-Grid--auto-fill {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.l-Grid--gap-sm {
+    gap: var(--space-sm);
+}
+
+.l-Grid--gap-md {
+    gap: var(--space-md);
+}
+
+.l-Grid--gap-lg {
+    gap: var(--space-lg);
+}
+
+.l-Grid--gap-xl {
+    gap: var(--space-xl);
+}
+
+/* Layout: Page Header */
+.l-PageHeader {
+    padding: var(--space-2xl) 0 var(--space-xl);
+}
+
+.l-PageHeader--centered {
+    text-align: center;
+}
+
+.l-PageHeader__title {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    color: var(--color-text);
+    margin-bottom: var(--space-md);
+}
+
+.l-PageHeader__subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed);
+    max-width: 65ch;
+}
+
+/* Layout: Section */
+.l-Section {
+    padding: var(--space-xl) 0;
+}
+
+.l-Section--sm {
+    padding: var(--space-md) 0;
+}
+
+.l-Section--lg {
+    padding: var(--space-2xl) 0;
+}
+
+.l-Section--xl {
+    padding: var(--space-3xl) 0;
+}
+
+/* Layout: Wrapper */
+.l-Wrapper {
+    width: 100%;
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+}
+
+.l-Wrapper--wide {
+    max-width: 1400px;
+}
+
+.l-Wrapper--narrow {
+    max-width: 960px;
+}
+
+/* ============================================
+   UTILITIES (Convention - .u-*)
+   ============================================
+   Classes utilitaires réutilisables pour des modifications ponctuelles.
+   Disponibles pour migration progressive.
+   
+   Les classes existantes (.flex, .hidden, .text-center, etc.) restent intactes
+   et fonctionnelles. Ces nouvelles classes peuvent être utilisées
+   progressivement dans les templates si autorisé.
+   
+   Convention:
+   - Utilitaires: .u-hidden, .u-flex, .u-text-center, .u-gap-*, etc.
+   - Très petites, réutilisables, une responsabilité unique
+   ============================================ */
+
+/* Display Utilities */
+.u-hidden {
+    display: none !important;
+}
+
+.u-block {
+    display: block;
+}
+
+.u-inline {
+    display: inline;
+}
+
+.u-inline-block {
+    display: inline-block;
+}
+
+.u-flex {
+    display: flex;
+}
+
+.u-grid {
+    display: grid;
+}
+
+/* Flexbox Utilities */
+.u-flex-col {
+    flex-direction: column;
+}
+
+.u-flex-row {
+    flex-direction: row;
+}
+
+.u-items-center {
+    align-items: center;
+}
+
+.u-items-start {
+    align-items: flex-start;
+}
+
+.u-items-end {
+    align-items: flex-end;
+}
+
+.u-items-stretch {
+    align-items: stretch;
+}
+
+.u-justify-center {
+    justify-content: center;
+}
+
+.u-justify-between {
+    justify-content: space-between;
+}
+
+.u-justify-start {
+    justify-content: flex-start;
+}
+
+.u-justify-end {
+    justify-content: flex-end;
+}
+
+.u-justify-around {
+    justify-content: space-around;
+}
+
+.u-justify-evenly {
+    justify-content: space-evenly;
+}
+
+.u-flex-wrap {
+    flex-wrap: wrap;
+}
+
+.u-flex-nowrap {
+    flex-wrap: nowrap;
+}
+
+.u-flex-1 {
+    flex: 1;
+}
+
+.u-flex-shrink-0 {
+    flex-shrink: 0;
+}
+
+/* Gap Utilities */
+.u-gap-xs {
+    gap: var(--space-xs);
+}
+
+.u-gap-sm {
+    gap: var(--space-sm);
+}
+
+.u-gap-md {
+    gap: var(--space-md);
+}
+
+.u-gap-lg {
+    gap: var(--space-lg);
+}
+
+.u-gap-xl {
+    gap: var(--space-xl);
+}
+
+/* Margin Utilities */
+.u-m-0 {
+    margin: 0;
+}
+
+.u-mt-0 {
+    margin-top: 0;
+}
+
+.u-mt-xs {
+    margin-top: var(--space-xs);
+}
+
+.u-mt-sm {
+    margin-top: var(--space-sm);
+}
+
+.u-mt-md {
+    margin-top: var(--space-md);
+}
+
+.u-mt-lg {
+    margin-top: var(--space-lg);
+}
+
+.u-mt-xl {
+    margin-top: var(--space-xl);
+}
+
+.u-mb-0 {
+    margin-bottom: 0;
+}
+
+.u-mb-xs {
+    margin-bottom: var(--space-xs);
+}
+
+.u-mb-sm {
+    margin-bottom: var(--space-sm);
+}
+
+.u-mb-md {
+    margin-bottom: var(--space-md);
+}
+
+.u-mb-lg {
+    margin-bottom: var(--space-lg);
+}
+
+.u-mb-xl {
+    margin-bottom: var(--space-xl);
+}
+
+.u-ml-auto {
+    margin-left: auto;
+}
+
+.u-mr-auto {
+    margin-right: auto;
+}
+
+.u-mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Padding Utilities */
+.u-p-0 {
+    padding: 0;
+}
+
+.u-p-xs {
+    padding: var(--space-xs);
+}
+
+.u-p-sm {
+    padding: var(--space-sm);
+}
+
+.u-p-md {
+    padding: var(--space-md);
+}
+
+.u-p-lg {
+    padding: var(--space-lg);
+}
+
+.u-p-xl {
+    padding: var(--space-xl);
+}
+
+.u-px-xs {
+    padding-left: var(--space-xs);
+    padding-right: var(--space-xs);
+}
+
+.u-px-sm {
+    padding-left: var(--space-sm);
+    padding-right: var(--space-sm);
+}
+
+.u-px-md {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+}
+
+.u-px-lg {
+    padding-left: var(--space-lg);
+    padding-right: var(--space-lg);
+}
+
+.u-py-xs {
+    padding-top: var(--space-xs);
+    padding-bottom: var(--space-xs);
+}
+
+.u-py-sm {
+    padding-top: var(--space-sm);
+    padding-bottom: var(--space-sm);
+}
+
+.u-py-md {
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-md);
+}
+
+.u-py-lg {
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
+}
+
+/* Text Utilities */
+.u-text-center {
+    text-align: center;
+}
+
+.u-text-left {
+    text-align: left;
+}
+
+.u-text-right {
+    text-align: right;
+}
+
+.u-text-muted {
+    color: var(--color-text-muted);
+}
+
+.u-text-secondary {
+    color: var(--color-text-secondary);
+}
+
+.u-text-primary {
+    color: var(--color-primary);
+}
+
+.u-text-bold {
+    font-weight: var(--font-weight-bold);
+}
+
+.u-text-semibold {
+    font-weight: var(--font-weight-semibold);
+}
+
+.u-text-medium {
+    font-weight: var(--font-weight-medium);
+}
+
+.u-text-normal {
+    font-weight: var(--font-weight-normal);
+}
+
+.u-text-xs {
+    font-size: var(--font-size-xs);
+}
+
+.u-text-sm {
+    font-size: var(--font-size-sm);
+}
+
+.u-text-base {
+    font-size: var(--font-size-base);
+}
+
+.u-text-lg {
+    font-size: var(--font-size-lg);
+}
+
+.u-text-xl {
+    font-size: var(--font-size-xl);
+}
+
+.u-text-2xl {
+    font-size: var(--font-size-2xl);
+}
+
+.u-text-3xl {
+    font-size: var(--font-size-3xl);
+}
+
+.u-text-4xl {
+    font-size: var(--font-size-4xl);
+}
+
+.u-text-uppercase {
+    text-transform: uppercase;
+}
+
+.u-text-lowercase {
+    text-transform: lowercase;
+}
+
+.u-text-capitalize {
+    text-transform: capitalize;
+}
+
+.u-text-nowrap {
+    white-space: nowrap;
+}
+
+.u-text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Width & Height Utilities */
+.u-w-full {
+    width: 100%;
+}
+
+.u-w-auto {
+    width: auto;
+}
+
+.u-h-full {
+    height: 100%;
+}
+
+.u-h-auto {
+    height: auto;
+}
+
+/* Position Utilities */
+.u-relative {
+    position: relative;
+}
+
+.u-absolute {
+    position: absolute;
+}
+
+.u-fixed {
+    position: fixed;
+}
+
+.u-sticky {
+    position: sticky;
+}
+
+/* Overflow Utilities */
+.u-overflow-hidden {
+    overflow: hidden;
+}
+
+.u-overflow-auto {
+    overflow: auto;
+}
+
+.u-overflow-scroll {
+    overflow: scroll;
+}
+
+.u-overflow-x-auto {
+    overflow-x: auto;
+}
+
+.u-overflow-y-auto {
+    overflow-y: auto;
+}
+
+/* Visibility Utilities */
+.u-visible {
+    visibility: visible;
+}
+
+.u-invisible {
+    visibility: hidden;
+}
+
+/* Screen Reader Only */
+.u-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Pointer Events */
+.u-pointer-events-none {
+    pointer-events: none;
+}
+
+.u-pointer-events-auto {
+    pointer-events: auto;
+}
+
+/* Cursor */
+.u-cursor-pointer {
+    cursor: pointer;
+}
+
+.u-cursor-not-allowed {
+    cursor: not-allowed;
+}
+
+.u-cursor-default {
+    cursor: default;
+}
+
+/* Opacity */
+.u-opacity-0 {
+    opacity: 0;
+}
+
+.u-opacity-50 {
+    opacity: 0.5;
+}
+
+.u-opacity-100 {
+    opacity: 1;
+}
+
+/* Z-index */
+.u-z-0 {
+    z-index: 0;
+}
+
+.u-z-10 {
+    z-index: 10;
+}
+
+.u-z-20 {
+    z-index: 20;
+}
+
+.u-z-30 {
+    z-index: 30;
+}
+
+.u-z-40 {
+    z-index: 40;
+}
+
+.u-z-50 {
+    z-index: 50;
 }
 
 /* Demo Page Specific Styles */
@@ -1576,7 +2528,7 @@ body {
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* Responsive Design for All Trails Page */
+/* Responsive: All Trails Page */
 @media (max-width: 768px) {
   .all-trails-header__title {
         font-size: var(--font-size-2xl);
@@ -2901,7 +3853,7 @@ section.trail-detail-section h4 {
     line-height: 1.7;
 }
 
-/* Responsive improvements */
+/* Responsive: Trail Detail Page */
 @media (max-width: 768px) {
   .trail-detail-page-container {
         padding: var(--space-md);
@@ -3695,14 +4647,15 @@ section.trail-detail-section h4 {
     animation: fadeIn 0.3s ease-in;
 }
 
+/* Responsive: Trail Grid View */
 @media (max-width: 1199px) {
-  .trail-grid-view {
+    .trail-grid-view {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (max-width: 767px) {
-  .trail-grid-view {
+    .trail-grid-view {
         grid-template-columns: 1fr;
     }
 }
@@ -4064,9 +5017,9 @@ section.trail-detail-section h4 {
     margin-top: var(--space-md);
 }
 
-/* Responsive Design */
+/* Responsive: Profile Page */
 @media (max-width: 768px) {
-  .profile-header {
+    .profile-header {
         flex-direction: column;
         align-items: flex-start;
     }
@@ -5073,9 +6026,9 @@ body:has(.app-header) .komoot-tabs-frozen {
     margin: 0 0 1rem 0;
 }
 
-/* Responsive Design */
+/* Responsive: Komoot Styles */
 @media (max-width: 1024px) {
-  .komoot-main-layout {
+    .komoot-main-layout {
         grid-template-columns: 1fr;
     }
 
@@ -5100,7 +6053,7 @@ body:has(.app-header) .komoot-tabs-frozen {
 }
 
 @media (max-width: 768px) {
-  .komoot-hero-section {
+    .komoot-hero-section {
         height: 300px;
     }
 
@@ -5531,8 +6484,9 @@ body:has(.app-header) .komoot-tabs-frozen {
             text-align: right;
         }
 
+        /* Responsive: Context Modal */
         @media (max-width: 768px) {
-  .context-modal__content {
+            .context-modal__content {
                 width: 95%;
                 max-height: 85vh;
             }
@@ -5744,8 +6698,9 @@ body:has(.app-header) .komoot-tabs-frozen {
             z-index: 10;
         }
 
+        /* Responsive: Trail Card Stats */
         @media (max-width: 768px) {
-  .trail-card__stats {
+            .trail-card__stats {
                 grid-template-columns: 1fr;
             }
         }
@@ -6116,8 +7071,9 @@ body:has(.app-header) .komoot-tabs-frozen {
             font-size: var(--font-size-base);
         }
 
+        /* Responsive: Explanation Text */
         @media (max-width: 768px) {
-  .explanation-text {
+            .explanation-text {
                 font-size: var(--font-size-sm);
                 padding: var(--space-sm);
             }
