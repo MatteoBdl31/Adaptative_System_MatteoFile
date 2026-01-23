@@ -849,9 +849,6 @@ body {
     font-size: var(--font-size-base);
 }
 
-.c-Card__body {
-    /* Body content area */
-}
 
 .c-Card__footer {
     margin-top: var(--space-lg);
@@ -908,9 +905,6 @@ body {
 }
 
 /* Component: Form */
-.c-Form {
-    /* Form container */
-}
 
 .c-Form__group {
     display: flex;
@@ -1007,9 +1001,6 @@ body {
     min-height: 100vh;
 }
 
-.l-PageShell__header {
-    /* Header section */
-}
 
 .l-PageShell__main {
     flex: 1;
@@ -3919,11 +3910,6 @@ section.trail-detail-section h4 {
     color: var(--color-text);
 }
 
-/* Performance metrics grid - consolidated (duplicate removed, using definition at line 2362) */
-    margin-bottom: var(--space-xs);
-    font-weight: var(--font-weight-normal);
-}
-
 .weather-day {
     padding: var(--space-md);
     margin-bottom: var(--space-sm);
@@ -5599,10 +5585,7 @@ body.komoot-style.trail-detail-page {
 }
 
 /* Account for sticky header - tabs should stick below header */
-body:has(.app-header[style*="position: sticky"]) .komoot-tabs-frozen,
-body:has(.app-header) .komoot-tabs-frozen {
-    /* Will be set dynamically by JS to account for header height */
-}
+/* Note: Styles for .komoot-tabs-frozen are set dynamically by JS */
 
 .komoot-tab {
     padding: 1rem 1.5rem;
@@ -6595,6 +6578,7 @@ body:has(.app-header) .komoot-tabs-frozen {
             margin: 0;
             display: -webkit-box;
             -webkit-line-clamp: 3;
+            line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -6915,6 +6899,7 @@ body:has(.app-header) .komoot-tabs-frozen {
             line-height: 1.5;
             display: -webkit-box;
             -webkit-line-clamp: 3;
+            line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
