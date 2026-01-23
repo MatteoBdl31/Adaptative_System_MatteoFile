@@ -691,8 +691,8 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
 }
 
 .map-legend__marker--with-ring svg {
@@ -727,8 +727,8 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
 }
 
 .legend-marker--with-ring svg {
@@ -737,6 +737,103 @@ body {
     height: 100%;
     flex-shrink: 0;
 }
+
+.legend-marker.exact-marker { background-color: #5b8df9; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.legend-marker.suggestion-marker { background-color: #f59e0b; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.legend-marker--collaborative { background: #f71e50; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+
+/* Map legend marker variants (demo.js) */
+.map-legend__marker--recommended { background-color: #5b8df9; }
+.map-legend__marker--suggestion { background-color: #f59e0b; }
+.map-legend__marker--collaborative { background-color: #f71e50; }
+
+/* Trail explanation blocks */
+.trail-explanation-content,
+.explanation-content .explanation-loaded,
+.explanation-content .explanation-error {
+    display: none;
+}
+.trail-explanation-content {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+}
+.trail-explanation-loading { text-align: center; color: var(--color-text-secondary); }
+.explanation-loading p,
+.explanation-error p {
+    text-align: center;
+    color: var(--color-text-secondary);
+    padding: var(--space-xl);
+}
+.spinner {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+.trail-explanation-text { margin-bottom: var(--space-sm); }
+.trail-explanation-factors,
+.explanation-details__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Card heading meta (badges + icon + btn) */
+.card-heading__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+}
+
+/* Collaborative icon SVG (star in circle) */
+.collaborative-icon {
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+    cursor: help;
+}
+
+/* Badge & alert variants */
+.badge--collaborative { background: #f71e50; color: white; }
+.badge--collaborative.badge--sm { font-size: 10px; }
+.alert--collaborative {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background: #ffeef0;
+    border-radius: var(--radius-md);
+    border-left: 3px solid #f71e50;
+}
+.alert--collaborative .alert-title,
+.alert--collaborative small {
+    color: #a00d2f;
+    font-weight: var(--font-weight-medium);
+    display: block;
+}
+
+/* Connection indicator */
+.connection-indicator {
+    margin-top: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-lg);
+    display: inline-block;
+    font-size: var(--font-size-sm);
+}
+
+/* User profile badge */
+.user-profile-badge {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border-radius: 6px;
+}
+.user-profile-badge__name { color: #667eea; font-weight: 600; }
+
+.user-scenario__header-actions { display: flex; gap: var(--space-sm); align-items: center; }
+.btn--sm { font-size: var(--font-size-sm); padding: var(--space-xs) var(--space-md); }
 
 /* Trail Cards */
 .trail-card {
@@ -765,11 +862,7 @@ body {
     flex-wrap: wrap;
 }
 
-.card-heading > div[style*="display: flex"] {
-    display: flex !important;
-    align-items: center;
-    gap: var(--space-xs);
-    flex-shrink: 0;
+.card-heading > .card-heading__meta {
     min-width: 0;
 }
 

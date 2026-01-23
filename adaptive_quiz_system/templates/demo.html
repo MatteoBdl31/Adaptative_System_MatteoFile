@@ -997,7 +997,7 @@
         <header class="demo-header">
             <h1 class="demo-header__title">Contextual Trail Recommendations</h1>
             <p class="demo-header__subtitle">Switch personas, craft bespoke contexts, and showcase how the engine adapts.</p>
-            <div class="connection-indicator" id="connection-indicator" style="margin-top: var(--space-md); padding: var(--space-sm) var(--space-md); background: rgba(255, 255, 255, 0.15); border-radius: var(--radius-lg); display: inline-block; font-size: var(--font-size-sm);">
+            <div class="connection-indicator" id="connection-indicator">
                 <span id="connection-icon">📶</span>
                 <span id="connection-text">Detecting connection...</span>
             </div>
@@ -1010,14 +1010,9 @@
                     <div class="user-scenario" data-user-index="a">
                         <div class="user-scenario__header">
                             <h3 class="user-scenario__title">User A</h3>
-                            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                            <div class="user-scenario__header-actions">
                                 {% if selected_user_a %}
-                                <a href="{{ url_for('profile', user_id=selected_user_a.id) }}" 
-                                   class="btn btn-secondary" 
-                                   style="font-size: var(--font-size-sm); padding: var(--space-xs) var(--space-md);"
-                                   title="View Profile Dashboard">
-                                    👤 Profile
-                                </a>
+                                <a href="{{ url_for('profile', user_id=selected_user_a.id) }}" class="btn btn-secondary btn--sm" title="View Profile Dashboard">👤 Profile</a>
                                 {% endif %}
                                 <button type="button" class="btn btn-ghost btn-remove-user" data-user="a" aria-label="Remove user A" style="display: none;">×</button>
                             </div>
@@ -1034,9 +1029,9 @@
                                     </option>
                                 {% endfor %}
                             </select>
-                            <div class="user-profile-badge" id="profile-badge-a" style="margin-top: 8px; padding: 8px 12px; background-color: #f0f0f0; border-radius: 6px; display: {% if selected_user_a and selected_user_a.detected_profile %}inline-block{% else %}none{% endif %};">
+                            <div class="user-profile-badge" id="profile-badge-a" style="display: {% if selected_user_a and selected_user_a.detected_profile %}inline-block{% else %}none{% endif %};">
                                 <strong>Detected Profile:</strong> 
-                                <span style="color: #667eea; font-weight: 600;" id="profile-name-a">
+                                <span class="user-profile-badge__name" id="profile-name-a">
                                     {% if selected_user_a and selected_user_a.detected_profile %}
                                         {{ selected_user_a.detected_profile|profile_name_en }}
                                     {% endif %}
@@ -1071,14 +1066,9 @@
                     <div class="user-scenario hidden" data-user-index="b" id="user-scenario-b">
                         <div class="user-scenario__header">
                             <h3 class="user-scenario__title">User B</h3>
-                            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                            <div class="user-scenario__header-actions">
                                 {% if selected_user_b %}
-                                <a href="{{ url_for('profile', user_id=selected_user_b.id) }}" 
-                                   class="btn btn-secondary" 
-                                   style="font-size: var(--font-size-sm); padding: var(--space-xs) var(--space-md);"
-                                   title="View Profile Dashboard">
-                                    👤 Profile
-                                </a>
+                                <a href="{{ url_for('profile', user_id=selected_user_b.id) }}" class="btn btn-secondary btn--sm" title="View Profile Dashboard">👤 Profile</a>
                                 {% endif %}
                                 <button type="button" class="btn btn-ghost btn-remove-user" data-user="b" aria-label="Remove user B">×</button>
                             </div>
@@ -1095,9 +1085,9 @@
                                     </option>
                                 {% endfor %}
                             </select>
-                            <div class="user-profile-badge" id="profile-badge-b" style="margin-top: 8px; padding: 8px 12px; background-color: #f0f0f0; border-radius: 6px; display: {% if selected_user_b and selected_user_b.detected_profile %}inline-block{% else %}none{% endif %};">
+                            <div class="user-profile-badge" id="profile-badge-b" style="display: {% if selected_user_b and selected_user_b.detected_profile %}inline-block{% else %}none{% endif %};">
                                 <strong>Detected Profile:</strong> 
-                                <span style="color: #667eea; font-weight: 600;" id="profile-name-b">
+                                <span class="user-profile-badge__name" id="profile-name-b">
                                     {% if selected_user_b and selected_user_b.detected_profile %}
                                         {{ selected_user_b.detected_profile|profile_name_en }}
                                     {% endif %}
