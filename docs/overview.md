@@ -5,12 +5,13 @@
  user profile, context (time, device, weather, season, connection), and a rules engine. It uses real
  French hiking trail data (from a shapefile) and enriches results with weather and AI explanations.
  
- ## Key capabilities
- - Context-aware trail recommendations with progressive fallback.
- - Profile detection from user trail history.
- - Trail detail views with map, elevation profile, and performance analytics.
- - Demo mode with side-by-side comparisons.
- - Upload and ingestion of smartwatch performance data.
+## Key capabilities
+- Context-aware trail recommendations with progressive fallback.
+- Profile detection from user trail history.
+- Collaborative recommendations based on similar users' preferences and ratings.
+- Trail detail views with map, elevation profile, and performance analytics.
+- Demo mode with side-by-side comparisons.
+- Upload and ingestion of smartwatch performance data.
  
  ## Entry points
  - App runtime: `adaptive_quiz_system/run.py`
@@ -47,11 +48,12 @@
  - `adaptive_quiz_system/templates/` Jinja pages.
  - `adaptive_quiz_system/static/` JS and CSS for UI.
  
- ## Glossary
- - **Exact match**: a trail above a configured relevance threshold and passing hard filters.
- - **Suggestion**: a relevant trail below the exact-match threshold or failing strict criteria.
- - **Context**: request-driven inputs (time available, device, weather, season, connection).
- - **Profile**: a behavioral label inferred from past completions.
+## Glossary
+- **Exact match**: a trail above a configured relevance threshold and passing hard filters.
+- **Suggestion**: a relevant trail below the exact-match threshold or failing strict criteria.
+- **Collaborative recommendation**: a trail recommended based on what similar users (same profile) have completed and rated highly.
+- **Context**: request-driven inputs (time available, device, weather, season, connection).
+- **Profile**: a behavioral label inferred from past completions.
  
 ## See also
 - Architecture: `docs/architecture.md`

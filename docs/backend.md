@@ -9,13 +9,14 @@
 | --- | --- | --- | --- |
 | GET/POST | `/` | Redirects to demo | (redirect only) |
 | GET | `/demo` | Demo mode with multi-user comparison and trail recommendations | `demo.html` |
+| GET | `/recommendations/<user_id>` | Dedicated recommendations page with collaborative section | `recommendations.html` |
 | GET | `/trail/<user_id>/<trail_id>` | Trail detail view | `trail_detail.html` |
- | POST | `/trail/<user_id>/<trail_id>/complete` | Record completion | (redirect) |
- | GET | `/profile/<user_id>` | Profile dashboard | `profile.html` |
- | GET | `/profile/<user_id>/trail/<trail_id>` | Profile trail detail | `profile_trail_detail.html` |
- | GET | `/dashboard/<user_id>` | Legacy dashboard view | `dashboard.html` |
- | GET | `/admin/rules` | Rules inspection | `admin_rules.html` |
- | GET | `/trails` | All trails map/list | `all_trails.html` |
+| POST | `/trail/<user_id>/<trail_id>/complete` | Record completion | (redirect) |
+| GET | `/profile/<user_id>` | Profile dashboard | `profile.html` |
+| GET | `/profile/<user_id>/trail/<trail_id>` | Profile trail detail | `profile_trail_detail.html` |
+| GET | `/dashboard/<user_id>` | Legacy dashboard view | `dashboard.html` |
+| GET | `/admin/rules` | Rules inspection | `admin_rules.html` |
+| GET | `/trails` | All trails map/list | `all_trails.html` |
  
  ## API routes
  | Method | Route | Purpose |
@@ -48,16 +49,17 @@
  | GET | `/api/dashboard/<user_id>/gps-aggregates` | Legacy dashboard data |
  | GET | `/api/dashboard/<user_id>/performance-improvements` | Legacy dashboard data |
  
- ## Service modules and responsibilities
- - `backend/db.py`: SQLite access, rule retrieval, trail/user reads, profile updates.
- - `backend/trail_management.py`: save/start/complete trails and progress tracking.
- - `backend/upload_service.py`: parse/validate/match uploads and store time-series data.
- - `backend/trail_analytics.py`: analyze performance and predict metrics.
- - `backend/dashboard_service.py`: compute profile dashboards (fitness, elevation, etc).
- - `backend/weather_service.py`: Open-Meteo forecasts and weather matching.
- - `backend/trail_recommendation_service.py`: AI recommendations for trail detail page with similar-profile hiker context.
- - `backend/explanation_service.py`: OpenAI/OpenRouter explanation generation.
- - `backend/user_profiling.py`: profile detection based on completed trails.
+## Service modules and responsibilities
+- `backend/db.py`: SQLite access, rule retrieval, trail/user reads, profile updates.
+- `backend/trail_management.py`: save/start/complete trails and progress tracking.
+- `backend/upload_service.py`: parse/validate/match uploads and store time-series data.
+- `backend/trail_analytics.py`: analyze performance and predict metrics.
+- `backend/dashboard_service.py`: compute profile dashboards (fitness, elevation, etc).
+- `backend/weather_service.py`: Open-Meteo forecasts and weather matching.
+- `backend/trail_recommendation_service.py`: AI recommendations for trail detail page with similar-profile hiker context.
+- `backend/collaborative_recommendation_service.py`: collaborative filtering - recommends trails based on similar users' completions and ratings.
+- `backend/explanation_service.py`: OpenAI/OpenRouter explanation generation.
+- `backend/user_profiling.py`: profile detection based on completed trails.
  
  ## Data model (high level)
  SQLite databases are created by `backend/init_db.py`. Key tables include:

@@ -65,7 +65,6 @@
             </div>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); margin-top: var(--space-lg);">
-                <button onclick="updateWeather()" class="btn-secondary">🌦️ Update Weather</button>
                 <button onclick="applyFilters()" class="btn-primary">🔍 Apply Filters</button>
                 <button onclick="clearFilters()" class="btn-secondary">✖️ Clear Filters</button>
             </div>
@@ -457,77 +456,10 @@
             });
         }
         
-        // Auto-load weather in background (non-blocking)
-        function autoLoadWeather() {
-            var startDate = document.getElementById('hike-start-date').value;
-            
-            if (!startDate) {
-                return; // Skip if no date
-            }
-            
-            // Show loading indicator in connection status
-            var statusEl = document.getElementById('connection-status');
-            if (statusEl) {
-                statusEl.style.display = 'block';
-                statusEl.innerHTML = '<span id="connection-indicator">⏳</span><span id="connection-text">Loading weather forecasts...</span>';
-            }
-            
-            // Collect all trail IDs
-            var trailIds = [];
-            var trailCards = document.querySelectorAll('[data-trail-id]');
-            trailCards.forEach(function(card) {
-                var trailId = card.getAttribute('data-trail-id');
-                if (trailId) {
-                    trailIds.push(trailId);
-                }
-            });
-            
-            if (trailIds.length === 0) {
-                return;
-            }
-            
-            // Fetch weather data in background
-            var apiUrl = '/api/weather/batch?trail_ids=' + trailIds.join(',') + '&date=' + encodeURIComponent(startDate);
-            
-            fetch(apiUrl)
-                .then(function(response) {
-                    if (!response.ok) {
-                        throw new Error('Weather API request failed');
-                    }
-                    return response.json();
-                })
-                .then(function(data) {
-                    var weather = data.weather || {};
-                    console.log('Auto-loaded weather for ' + Object.keys(weather).length + ' trails in ' + data.elapsed_seconds + 's');
-                    
-                    // Update weather badges
-                    updateWeatherBadges(weather);
-                    updateMapWeather(weather);
-                    
-                    // Hide loading indicator
-                    if (statusEl) {
-                        setTimeout(function() {
-                            statusEl.style.display = 'none';
-                        }, 1000);
-                    }
-                })
-                .catch(function(error) {
-                    console.error('Error auto-loading weather:', error);
-                    // Silently fail - user can manually refresh
-                    if (statusEl) {
-                        statusEl.style.display = 'none';
-                    }
-                });
-        }
-        
         // Wait for DOM and Leaflet to be ready before initializing map
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize connection detection first
             initializeConnection();
-            
-            // Auto-load weather in background after page loads
-            // This doesn't block the page render
-            setTimeout(autoLoadWeather, 500);
             
             // Check if Leaflet is loaded
             if (typeof L === 'undefined') {
@@ -845,123 +777,6 @@
             document.querySelectorAll('.trail-card').forEach(function(card) {
                 card.style.display = 'block';
             });
-        }
-        
-        // Fetch weather data asynchronously via AJAX (much faster!)
-        function updateWeather() {
-            var startDate = document.getElementById('hike-start-date').value;
-            var endDate = document.getElementById('hike-end-date').value;
-            
-            if (!startDate) {
-                alert('⚠️ Please select a start date');
-                return;
-            }
-            
-            // Show loading state
-            var btn = event.target;
-            var originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ Loading Weather...';
-            btn.disabled = true;
-            
-            // Collect all trail IDs
-            var trailIds = [];
-            var trailCards = document.querySelectorAll('[data-trail-id]');
-            trailCards.forEach(function(card) {
-                var trailId = card.getAttribute('data-trail-id');
-                if (trailId) {
-                    trailIds.push(trailId);
-                }
-            });
-            
-            if (trailIds.length === 0) {
-                alert('No trails found to update weather');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                return;
-            }
-            
-            // Fetch weather data in parallel via API
-            var apiUrl = '/api/weather/batch?trail_ids=' + trailIds.join(',') + '&date=' + encodeURIComponent(startDate);
-            
-            fetch(apiUrl)
-                .then(function(response) {
-                    if (!response.ok) {
-                        throw new Error('Weather API request failed');
-                    }
-                    return response.json();
-                })
-                .then(function(data) {
-                    var weather = data.weather || {};
-                    console.log('Fetched weather for ' + Object.keys(weather).length + ' trails in ' + data.elapsed_seconds + 's');
-                    
-                    // Update weather badges in all views
-                    updateWeatherBadges(weather);
-                    
-                    // Update map popup content
-                    updateMapWeather(weather);
-                    
-                    // Show success message
-                    btn.innerHTML = '✅ Weather Updated!';
-                    setTimeout(function() {
-                        btn.innerHTML = originalText;
-                        btn.disabled = false;
-                    }, 2000);
-                })
-                .catch(function(error) {
-                    console.error('Error fetching weather:', error);
-                    alert('❌ Failed to fetch weather data. Please try again.');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                });
-        }
-        
-        // Update weather badges in trail cards
-        function updateWeatherBadges(weatherData) {
-            // Update all trail cards (both list and card views)
-            var trailCards = document.querySelectorAll('[data-trail-id]');
-            
-            trailCards.forEach(function(card) {
-                var trailId = card.getAttribute('data-trail-id');
-                var weather = weatherData[trailId];
-                
-                // Find weather badge in this card
-                var weatherBadges = card.querySelectorAll('.trail-stats .badge');
-                
-                weatherBadges.forEach(function(badge) {
-                    // Check if this is a weather badge (contains weather emoji)
-                    var text = badge.textContent;
-                    if (text.includes('☀️') || text.includes('☁️') || text.includes('🌧️') || 
-                        text.includes('❄️') || text.includes('⛈️') || text.includes('🌤️') || text.includes('N/A')) {
-                        
-                        if (weather) {
-                            var icon = '🌤️';
-                            var label = weather;
-                            
-                            if (weather === 'sunny') icon = '☀️';
-                            else if (weather === 'cloudy') icon = '☁️';
-                            else if (weather === 'rainy') icon = '🌧️';
-                            else if (weather === 'snowy') icon = '❄️';
-                            else if (weather === 'storm_risk') icon = '⛈️';
-                            
-                            badge.innerHTML = icon + ' ' + label.charAt(0).toUpperCase() + label.slice(1);
-                            badge.style.opacity = '1';
-                            badge.title = 'Weather forecast';
-                        } else {
-                            badge.innerHTML = '🌤️ N/A';
-                            badge.style.opacity = '0.5';
-                            badge.title = 'Weather data unavailable';
-                        }
-                    }
-                });
-            });
-        }
-        
-        // Update weather in map popups
-        function updateMapWeather(weatherData) {
-            // Note: Map popups are generated dynamically
-            // We'll update them when markers are clicked
-            // Store weather data globally for map access
-            window.currentWeatherData = weatherData;
         }
         
         // Scroll to top functionality

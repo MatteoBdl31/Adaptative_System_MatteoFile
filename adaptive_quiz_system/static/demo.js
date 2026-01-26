@@ -36,12 +36,6 @@
             this.initializeResults();
             this.setupDateInputs();
 
-            // #region agent log
-            // Check collaborative icons on initial page load
-            setTimeout(() => {
-                this.checkCollaborativeIcons('on-init');
-            }, 1000);
-            // #endregion
         }
 
         setupDateInputs() {
@@ -1287,12 +1281,6 @@
                 setTimeout(() => this.initializeCardMinimaps(section), 100);
             });
 
-            // #region agent log
-            // Check collaborative icons in DOM after initialization
-            setTimeout(() => {
-                this.checkCollaborativeIcons('after-init');
-            }, 500);
-            // #endregion
         }
 
         switchView(panel, view) {
@@ -1336,12 +1324,6 @@
                 }
             });
 
-            // #region agent log
-            // Check collaborative icons after view switch
-            setTimeout(() => {
-                this.checkCollaborativeIcons(`after-switch-${view}`);
-            }, 200);
-            // #endregion
         }
 
         initializeMap(mapId, userId) {
@@ -1371,8 +1353,15 @@
             try {
                 const trailData = JSON.parse(dataScript.textContent);
                 const allTrails = [
-                    ...(trailData.exact || []).map(t => ({ ...t, view_type: 'recommended' })),
-                    ...(trailData.suggestions || []).map(t => ({ ...t, view_type: 'suggested' })),
+                    ...(trailData.exact || []).map(t => ({ 
+                        ...t, 
+                        view_type: t.view_type && t.view_type.includes('collaborative') ? t.view_type : 'recommended'
+                    })),
+                    ...(trailData.suggestions || []).map(t => ({ 
+                        ...t, 
+                        // Preserve view_type if it includes 'collaborative', otherwise set to 'suggested'
+                        view_type: t.view_type && t.view_type.includes('collaborative') ? t.view_type : 'suggested'
+                    })),
                     ...(trailData.collaborative || []).map(t => ({ ...t, view_type: 'collaborative', is_collaborative: true }))
                 ];
 
@@ -1689,211 +1678,5 @@
             indicator.style.background = settings.color;
         }
 
-        // #region agent log
-        checkCollaborativeIcons(context) {
-            const logData = {
-                location: 'demo.js:checkCollaborativeIcons',
-                message: 'Checking collaborative icons in DOM',
-                data: {
-                    context: context,
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    runId: 'run1',
-                    hypothesisId: 'A'
-                }
-            };
-
-            // Find all trail cards with collaborative data
-            const trailCards = document.querySelectorAll('.trail-card[data-is-collab="true"], .trail-card[data-is-collaborative="true"]');
-            const suggestions = Array.from(document.querySelectorAll('.result-section')).flatMap(section => 
-                section.querySelector('.trail-list') ? Array.from(section.querySelectorAll('.trail-card.suggested')) : []
-            );
-            const recommended = Array.from(document.querySelectorAll('.result-section')).flatMap(section => 
-                section.querySelector('.trail-list') ? Array.from(section.querySelectorAll('.trail-card.recommended')) : []
-            );
-
-            const results = {
-                total_collab_cards: trailCards.length,
-                suggestions_count: suggestions.length,
-                recommended_count: recommended.length,
-                icons_found: [],
-                icons_missing: []
-            };
-
-            // Check suggestions section
-            suggestions.forEach((card, idx) => {
-                const trailId = card.dataset.trailId || 'unknown';
-                const isCollab = card.dataset.isCollab === 'true' || card.dataset.isCollaborative === 'true';
-                const viewType = card.dataset.viewType || '';
-                
-                if (isCollab || viewType.includes('collaborative')) {
-                    const cardHeading = card.querySelector('.card-heading');
-                    if (cardHeading) {
-                        const iconContainer = cardHeading.querySelector('div[style*="display: flex"]');
-                        if (iconContainer) {
-                            // Check all SVGs in container to debug
-                            const allSvgs = iconContainer.querySelectorAll('svg');
-                            const svgIcon = iconContainer.querySelector('svg[title="Similar profiles likes it"]');
-                            if (svgIcon) {
-                                const computedStyle = window.getComputedStyle(svgIcon);
-                                const rect = svgIcon.getBoundingClientRect();
-                                const containerStyle = window.getComputedStyle(iconContainer);
-                                const containerRect = iconContainer.getBoundingClientRect();
-                                results.icons_found.push({
-                                    trail_id: trailId,
-                                    section: 'suggestions',
-                                    index: idx,
-                                    visible: computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden' && computedStyle.opacity !== '0',
-                                    display: computedStyle.display,
-                                    visibility: computedStyle.visibility,
-                                    opacity: computedStyle.opacity,
-                                    width: rect.width,
-                                    height: rect.height,
-                                    position: { top: rect.top, left: rect.left },
-                                    svg_attributes: {
-                                        width_attr: svgIcon.getAttribute('width'),
-                                        height_attr: svgIcon.getAttribute('height'),
-                                        style_attr: svgIcon.getAttribute('style'),
-                                        computed_width: computedStyle.width,
-                                        computed_height: computedStyle.height,
-                                        computed_max_width: computedStyle.maxWidth,
-                                        computed_max_height: computedStyle.maxHeight
-                                    },
-                                    container: {
-                                        width: containerRect.width,
-                                        height: containerRect.height,
-                                        display: containerStyle.display,
-                                        flex_direction: containerStyle.flexDirection,
-                                        gap: containerStyle.gap
-                                    },
-                                    all_svgs_in_container: Array.from(allSvgs).map(svg => ({
-                                        title: svg.getAttribute('title'),
-                                        width: svg.getAttribute('width'),
-                                        height: svg.getAttribute('height'),
-                                        viewBox: svg.getAttribute('viewBox'),
-                                        parent_tag: svg.parentElement.tagName,
-                                        parent_class: svg.parentElement.className
-                                    }))
-                                });
-                            } else {
-                                results.icons_missing.push({
-                                    trail_id: trailId,
-                                    section: 'suggestions',
-                                    index: idx,
-                                    reason: 'SVG icon not found in DOM',
-                                    has_container: !!iconContainer,
-                                    container_html: iconContainer.innerHTML.substring(0, 200),
-                                    all_svgs_found: Array.from(allSvgs).map(svg => ({
-                                        title: svg.getAttribute('title'),
-                                        width: svg.getAttribute('width'),
-                                        height: svg.getAttribute('height'),
-                                        parent_tag: svg.parentElement.tagName
-                                    }))
-                                });
-                            }
-                        } else {
-                            results.icons_missing.push({
-                                trail_id: trailId,
-                                section: 'suggestions',
-                                index: idx,
-                                reason: 'Icon container not found'
-                            });
-                        }
-                    }
-                }
-            });
-
-            // Check recommended section
-            recommended.forEach((card, idx) => {
-                const trailId = card.dataset.trailId || 'unknown';
-                const isCollab = card.dataset.isCollab === 'true' || card.dataset.isCollaborative === 'true';
-                const viewType = card.dataset.viewType || '';
-                
-                if (isCollab || viewType.includes('collaborative')) {
-                    const cardHeading = card.querySelector('.card-heading');
-                    if (cardHeading) {
-                        const iconContainer = cardHeading.querySelector('div[style*="display: flex"]');
-                        if (iconContainer) {
-                            // Check all SVGs in container to debug
-                            const allSvgs = iconContainer.querySelectorAll('svg');
-                            const svgIcon = iconContainer.querySelector('svg[title="Similar profiles likes it"]');
-                            if (svgIcon) {
-                                const computedStyle = window.getComputedStyle(svgIcon);
-                                const rect = svgIcon.getBoundingClientRect();
-                                const containerStyle = window.getComputedStyle(iconContainer);
-                                const containerRect = iconContainer.getBoundingClientRect();
-                                results.icons_found.push({
-                                    trail_id: trailId,
-                                    section: 'recommended',
-                                    index: idx,
-                                    visible: computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden' && computedStyle.opacity !== '0',
-                                    display: computedStyle.display,
-                                    visibility: computedStyle.visibility,
-                                    opacity: computedStyle.opacity,
-                                    width: rect.width,
-                                    height: rect.height,
-                                    position: { top: rect.top, left: rect.left },
-                                    svg_attributes: {
-                                        width_attr: svgIcon.getAttribute('width'),
-                                        height_attr: svgIcon.getAttribute('height'),
-                                        style_attr: svgIcon.getAttribute('style'),
-                                        computed_width: computedStyle.width,
-                                        computed_height: computedStyle.height,
-                                        computed_max_width: computedStyle.maxWidth,
-                                        computed_max_height: computedStyle.maxHeight
-                                    },
-                                    container: {
-                                        width: containerRect.width,
-                                        height: containerRect.height,
-                                        display: containerStyle.display,
-                                        flex_direction: containerStyle.flexDirection,
-                                        gap: containerStyle.gap
-                                    },
-                                    all_svgs_in_container: Array.from(allSvgs).map(svg => ({
-                                        title: svg.getAttribute('title'),
-                                        width: svg.getAttribute('width'),
-                                        height: svg.getAttribute('height'),
-                                        viewBox: svg.getAttribute('viewBox'),
-                                        parent_tag: svg.parentElement.tagName,
-                                        parent_class: svg.parentElement.className
-                                    }))
-                                });
-                            } else {
-                                results.icons_missing.push({
-                                    trail_id: trailId,
-                                    section: 'recommended',
-                                    index: idx,
-                                    reason: 'SVG icon not found in DOM',
-                                    has_container: !!iconContainer,
-                                    container_html: iconContainer.innerHTML.substring(0, 200),
-                                    all_svgs_found: Array.from(allSvgs).map(svg => ({
-                                        title: svg.getAttribute('title'),
-                                        width: svg.getAttribute('width'),
-                                        height: svg.getAttribute('height'),
-                                        parent_tag: svg.parentElement.tagName
-                                    }))
-                                });
-                            }
-                        } else {
-                            results.icons_missing.push({
-                                trail_id: trailId,
-                                section: 'recommended',
-                                index: idx,
-                                reason: 'Icon container not found'
-                            });
-                        }
-                    }
-                }
-            });
-
-            logData.data.results = results;
-
-            fetch('http://127.0.0.1:7242/ingest/678178fc-53a3-40eb-9cfc-b7f8fbd8d250', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(logData)
-            }).catch(() => {});
-        }
-        // #endregion
     }
 })();

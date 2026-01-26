@@ -158,11 +158,9 @@ class MapManager {
             const { latitude, longitude, name, distance, duration, elevation_gain, difficulty, description, view_type, trail_id, elevation_profile, forecast_weather, is_collaborative } = trail;
             
             if (!latitude || !longitude) {
-                // #region agent log
                 if (is_collaborative || (view_type && view_type.includes('collaborative'))) {
                     console.warn('Collaborative trail missing coordinates:', { trail_id, name, latitude, longitude });
                 }
-                // #endregion
                 return;
             }
 
@@ -191,7 +189,7 @@ class MapManager {
             const icon = L.divIcon({
                 className: `custom-marker ${isCollaborative ? 'has-collaborative-ring' : ''}`,
                 html: `
-                    <div class="marker-wrapper" style="position: relative; width: 70px; height: 70px;">
+                    <div class="marker-wrapper" style="position: relative; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
                         ${isCollaborative ? `
                             <div class="collaborative-ring" style="
                                 position: absolute;
@@ -204,6 +202,7 @@ class MapManager {
                                 border-radius: 50%;
                                 background-color: transparent;
                                 pointer-events: none;
+                                z-index: 1;
                             "></div>
                         ` : ''}
                         <div class="marker-dot" style="
@@ -217,7 +216,7 @@ class MapManager {
                             border-radius: 50%;
                             border: 2px solid #fff;
                             box-shadow: 0 2px 6px rgba(0,0,0,.3);
-                            z-index: 10;
+                            z-index: 2;
                         "></div>
                     </div>
                 `,
@@ -230,30 +229,33 @@ class MapManager {
             // Toggle de visibilité du cercle collaboratif basé sur le zoom
             // Utilise le DOM directement pour un contrôle précis
             if (isCollaborative) {
-                // #region agent log
-                console.log('Adding collaborative circle for trail:', { trail_id, name, latitude, longitude, view_type, is_collaborative, color: collaborativeColor });
-                // #endregion
                 
-                const updateCircleVisibility = () => {
-                    const currentZoom = map.getZoom();
-                    const iconElement = marker._icon;
-                    if (iconElement) {
-                        const ring = iconElement.querySelector('.collaborative-ring');
-                        if (ring) {
-                            if (currentZoom < 7) {
-                                // Hide circle at very low zoom to avoid taking too much space
-                                ring.style.display = 'none';
+                // Use setTimeout to ensure the marker icon is fully rendered before accessing it
+                setTimeout(() => {
+                    const updateCircleVisibility = () => {
+                        const currentZoom = map.getZoom();
+                        const iconElement = marker._icon;
+                        if (iconElement) {
+                            const ring = iconElement.querySelector('.collaborative-ring');
+                            if (ring) {
+                                // Show ring at zoom 6 and above (less restrictive than before)
+                                if (currentZoom < 6) {
+                                    ring.style.display = 'none';
+                                } else {
+                                    ring.style.display = 'block';
+                                    ring.style.opacity = '1';
+                                    ring.style.visibility = 'visible';
+                                }
                             } else {
-                                // Show circle at normal zoom levels
-                                ring.style.display = 'block';
+                                // Ring element not found - this can happen if marker hasn't rendered yet
                             }
                         }
-                    }
-                };
-                
-                // Update visibility on zoom changes
-                map.on('zoomend', updateCircleVisibility);
-                updateCircleVisibility(); // Set initial visibility
+                    };
+                    
+                    // Update visibility on zoom changes
+                    map.on('zoomend', updateCircleVisibility);
+                    updateCircleVisibility(); // Set initial visibility
+                }, 100); // Small delay to ensure DOM is ready
             }
             
             // Format difficulty

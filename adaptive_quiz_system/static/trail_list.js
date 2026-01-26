@@ -1319,6 +1319,11 @@ const TrailListManager = (function() {
             if (photoList[index]) {
                 mainImageEl.src = `/static/${photoList[index]}`;
                 mainImageEl.alt = `Trail photo ${index + 1}`;
+                // Handle image load errors
+                mainImageEl.onerror = function() {
+                    this.style.display = 'none';
+                    console.warn(`Failed to load trail image: ${photoList[index]}`);
+                };
             }
         }
         
@@ -1329,7 +1334,7 @@ const TrailListManager = (function() {
             const isLast = i === visibleThumbnails - 1 && photoList.length > 4;
             thumbnailsHTML += `
                 <div class="trail-gallery-thumbnail ${i === 0 ? 'active' : ''}" data-index="${i}">
-                    <img src="/static/${photoList[i]}" alt="Thumbnail ${i + 1}" />
+                    <img src="/static/${photoList[i]}" alt="Thumbnail ${i + 1}" onerror="this.style.display='none'; console.warn('Failed to load thumbnail: ${photoList[i]}');" />
                     ${isLast ? `<div class="image-count-overlay">+${photoList.length - 4} images</div>` : ''}
                 </div>
             `;

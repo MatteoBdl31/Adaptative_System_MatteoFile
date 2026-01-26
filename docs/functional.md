@@ -8,6 +8,7 @@ The Adaptive Trail Recommender provides the following core features:
 - Personalized recommendations based on user profile, available time, device, weather, season, and connection quality
 - Progressive fallback system ensures results even with strict filters
 - Real-time weather integration for trail safety
+- Collaborative recommendations from similar users (same profile) who have completed and rated trails highly
 
 ### 2. User Profile Detection
 - Automatic profile classification from trail completion history
@@ -43,6 +44,13 @@ The Adaptive Trail Recommender provides the following core features:
 - Metrics and charts for each profile type
 - Historical trend analysis
 
+### 8. Collaborative Recommendations
+- Recommends trails based on what similar users (same profile) have completed and rated highly
+- Filters trails by minimum rating threshold (default: 3.5/5) and minimum user count (default: 2 users)
+- Displays collaborative metadata: average rating, number of users, completion count
+- Integrates with main recommendation pipeline - trails can appear in exact/suggestions with collaborative markers, or in dedicated collaborative section
+- Visual indicators: collaborative icons, badges, special map markers with dashed rings
+
 ## Use Cases
 
 ### UC-1: Get Personalized Recommendations
@@ -55,13 +63,19 @@ The Adaptive Trail Recommender provides the following core features:
 4. System scores all candidate trails
 5. System enriches top trails with weather forecasts
 6. System ranks trails into exact matches and suggestions
-7. System generates explanations
-8. User sees personalized trail list with map, list, and card views
+7. System retrieves collaborative recommendations from similar users (same profile)
+8. System marks trails that appear in both main recommendations and collaborative results
+9. System generates explanations
+10. User sees personalized trail list with map, list, and card views, including:
+    - Exact matches (with collaborative markers if applicable)
+    - Suggestions (with collaborative markers if applicable)
+    - Dedicated "Popular with Similar Hikers" section with collaborative-only trails
 
 **Alternative Flows**:
 - No exact matches: System uses progressive fallback to relax filters
 - Weather API unavailable: System continues without weather data
 - AI explanations fail: System uses rule-based fallback explanations
+- No collaborative recommendations: User has no profile or no similar users have completed trails - collaborative section is hidden
 
 ### UC-2: Complete a Trail with Performance Data
 **Actor**: Hiker  
@@ -111,6 +125,28 @@ The Adaptive Trail Recommender provides the following core features:
 5. If not matched, user selects trail manually
 6. System processes and stores performance data
 7. System updates user profile
+
+### UC-6: View Collaborative Recommendations
+**Actor**: Hiker  
+**Preconditions**: User has a detected profile, other users with same profile have completed trails  
+**Main Flow**:
+1. User navigates to demo page or recommendations page
+2. System retrieves user's profile from database
+3. System queries for trails completed by users with same profile
+4. System filters trails by minimum rating (default: 3.5/5) and minimum user count (default: 2)
+5. System excludes trails already completed by current user
+6. System enriches collaborative trails with metadata (average rating, user count)
+7. System integrates collaborative trails with main recommendations:
+   - Trails in exact/suggestions that are also collaborative → marked with collaborative indicators
+   - Top 5 collaborative trails not in exact/suggestions → added to suggestions with collaborative markers
+   - Remaining collaborative trails → displayed in dedicated "Popular with Similar Hikers" section
+8. User sees collaborative recommendations with badges showing ratings and user counts
+9. User can view collaborative trails on map with special markers (dashed rings)
+
+**Alternative Flows**:
+- User has no profile: No collaborative recommendations shown
+- No similar users: No collaborative recommendations shown
+- All collaborative trails already in exact/suggestions: Dedicated section may be empty, but trails show collaborative markers
 
 ## Adaptive Navigation Behavior
 
@@ -393,6 +429,13 @@ classDiagram
         -_generate_ai_explanation(trail, user, profile, weather_recommendations, similar_hiker_context) Dict
         -_build_recommendation_prompt(trail, user, profile, weather_recommendations, similar_hiker_context) str
     }
+    
+    class CollaborativeRecommendationService {
+        +get_trails_from_similar_users(user_id, min_rating, min_users, exclude_trail_ids) List~Dict~
+    }
+    
+    CollaborativeRecommendationService --> "users.db"
+    RecommendationEngine --> CollaborativeRecommendationService
 ```
 
 ## Sequence Diagrams

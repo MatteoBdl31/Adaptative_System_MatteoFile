@@ -11,6 +11,7 @@
 - `profile.html`: profile dashboard and trail management.
 - `profile_trail_detail.html`: extended detail view with analytics.
 - `all_trails.html`: global trails list and map view.
+- `recommendations.html`: dedicated recommendations page with collaborative section.
 - `admin_rules.html`: rules inspection.
 - `dashboard.html`: legacy dashboard view.
  
@@ -40,8 +41,10 @@ The `profile_trail_detail.html` template includes adaptive navigation ordering l
  
 ## Client-side data flow (examples)
 - Demo/Recommendations:
-  - Server renders `demo.html` with trail recommendations.
+  - Server renders `demo.html` with trail recommendations (exact matches, suggestions, and collaborative).
   - `demo.js` initializes Leaflet and plots trails on map view.
+  - Collaborative recommendations are displayed in a separate "Popular with Similar Hikers" section.
+  - Trails can appear in multiple categories (exact/suggestions with collaborative markers, or standalone collaborative).
 - Profile dashboards:
    - `profile.js` calls `/api/profile/<user_id>/dashboard/<dashboard_type>`.
    - Charts are rendered dynamically.
@@ -64,10 +67,31 @@ The `profile_trail_detail.html` template includes adaptive navigation ordering l
      - Similar-profile hiker insights when available
      - Profile-specific focus areas (elevation, photography, performance, etc.)
  
- ## Accessibility and performance
- - Templates use semantic sections and aria labels in the base layout.
- - Weather enrichment is limited server-side to reduce API calls.
- - Maps are initialized lazily and invalidated on view change.
+## Collaborative Recommendations UI
+
+The system displays collaborative recommendations (trails popular with similar users) in multiple ways:
+
+1. **Collaborative Markers**: Trails that appear in exact matches or suggestions but are also recommended by similar users display:
+   - A collaborative icon (👥) with hover tooltip "Similar profiles likes it"
+   - A dashed ring around map markers in collaborative color (#f71e50)
+   - Collaborative metadata (average rating, user count) when available
+
+2. **Dedicated Collaborative Section**: A separate "Popular with Similar Hikers" section displays:
+   - Trails that are collaborative but not in exact/suggestions
+   - Badge showing average rating and number of users who completed it
+   - Styling with left border accent in collaborative color
+
+3. **View Types**: Trails have a `view_type` property that can include "collaborative" alongside "recommended" or "suggested", allowing trails to appear in multiple categories with appropriate styling.
+
+4. **Map Visualization**: Collaborative trails are marked on maps with:
+   - Special marker styling (dashed ring)
+   - Collaborative color (#f71e50) for standalone collaborative trails
+   - Legend entry explaining collaborative markers
+
+## Accessibility and performance
+- Templates use semantic sections and aria labels in the base layout.
+- Weather enrichment is limited server-side to reduce API calls.
+- Maps are initialized lazily and invalidated on view change.
  
 ## See also
 - Backend routes: `docs/backend.md`

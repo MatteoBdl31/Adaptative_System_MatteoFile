@@ -28,31 +28,34 @@
      dataPipeline --> shapefile[TrailShapefile]
  ```
  
- ## Request lifecycle (high level)
- 1. Flask route resolves user, context, and inputs.
- 2. `adapt_trails()` delegates to `RecommendationEngine`.
- 3. Engine applies rule-based filters, scores trails, enriches weather, ranks results.
- 4. Explanation layer builds AI summaries and fallback explanations.
- 5. Jinja templates render HTML and attach JS for maps/dashboards.
+## Request lifecycle (high level)
+1. Flask route resolves user, context, and inputs.
+2. `adapt_trails()` delegates to `RecommendationEngine`.
+3. Engine applies rule-based filters, scores trails, enriches weather, ranks results.
+4. Engine retrieves collaborative recommendations from similar users (same profile).
+5. Engine integrates collaborative trails with main recommendations (marking overlaps, adding to suggestions, creating dedicated section).
+6. Explanation layer builds AI summaries and fallback explanations.
+7. Jinja templates render HTML and attach JS for maps/dashboards.
  
- ### Recommendation pipeline (Mermaid)
+### Recommendation pipeline (Mermaid)
+
+```mermaid
+flowchart LR
+    request[RequestContext] --> filters[FilterBuilder]
+    filters --> candidates[CandidateTrails]
+    candidates --> scoring[TrailScorer]
+    scoring --> weather[WeatherEnricher]
+    weather --> ranking[TrailRanker]
+    ranking --> collaborative[CollaborativeService]
+    collaborative --> explanations[ExplanationEnricher]
+    explanations --> output[ExactMatchesSuggestionsCollaborative]
+```
  
- ```mermaid
- flowchart LR
-     request[RequestContext] --> filters[FilterBuilder]
-     filters --> candidates[CandidateTrails]
-     candidates --> scoring[TrailScorer]
-     scoring --> weather[WeatherEnricher]
-     weather --> ranking[TrailRanker]
-     ranking --> explanations[ExplanationEnricher]
-     explanations --> output[ExactMatchesAndSuggestions]
- ```
- 
- ## Data boundaries
- - **Web layer**: `adaptive_quiz_system/app/__init__.py` (routes, template binding).
- - **Backend services**: `adaptive_quiz_system/backend/*` (persistence, analytics, uploads, weather).
- - **Recommendation engine**: `adaptive_quiz_system/recommendation_engine/*`.
- - **Data pipeline**: `adaptive_quiz_system/data_pipeline/*` for shapefile ingestion and seeding.
+## Data boundaries
+- **Web layer**: `adaptive_quiz_system/app/__init__.py` (routes, template binding).
+- **Backend services**: `adaptive_quiz_system/backend/*` (persistence, analytics, uploads, weather, collaborative filtering).
+- **Recommendation engine**: `adaptive_quiz_system/recommendation_engine/*`.
+- **Data pipeline**: `adaptive_quiz_system/data_pipeline/*` for shapefile ingestion and seeding.
  
  ## Non-functional considerations
  - **Performance**: weather enrichment is limited to top-scored trails; map rendering is client-side.

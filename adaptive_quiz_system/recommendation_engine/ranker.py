@@ -48,14 +48,6 @@ class TrailRanker:
         # Apply hard filters (safety, season, fear of heights)
         filtered_trails = self._apply_hard_filters(trails, filters, user, context, debugger)
         
-        # #region agent log
-        target_trail_id = "pyrenees_1269480"
-        target_before_filters = any(t.get("trail_id") == target_trail_id for t in trails)
-        target_after_filters = any(t.get("trail_id") == target_trail_id for t in filtered_trails)
-        import json
-        with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"ranker.py:49","message":"After hard filters","data":{"trail_id":target_trail_id,"target_before_filters":target_before_filters,"target_after_filters":target_after_filters,"trails_before":len(trails),"trails_after":len(filtered_trails)},"timestamp":int(__import__('time').time()*1000)}) + '\n')
-        # #endregion
         
         # Separate exact matches from suggestions
         exact_matches = []
@@ -91,18 +83,6 @@ class TrailRanker:
         logger.debug(f"Ranking results: {len(exact_matches)} exact matches, {len(suggestions)} suggestions "
                      f"(below threshold: {below_threshold_count}, filter failed: {filter_failed_count})")
         
-        # #region agent log
-        target_trail_id = "pyrenees_1269480"
-        target_in_exact = any(t.get("trail_id") == target_trail_id for t in exact_matches)
-        target_in_suggestions = any(t.get("trail_id") == target_trail_id for t in suggestions)
-        target_trail = next((t for t in exact_matches + suggestions if t.get("trail_id") == target_trail_id), None)
-        if target_trail:
-            with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"ranker.py:85","message":"After ranking - target trail found","data":{"trail_id":target_trail_id,"in_exact":target_in_exact,"in_suggestions":target_in_suggestions,"relevance_percentage":target_trail.get("relevance_percentage"),"exact_match_threshold":self.exact_match_threshold,"exact_count":len(exact_matches),"suggestions_count":len(suggestions)},"timestamp":int(__import__('time').time()*1000)}) + '\n')
-        else:
-            with open('/Users/matteo/Desktop/Cours/M2/S1/Lavoue/Hiking_Recommandation/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"ranker.py:85","message":"After ranking - target trail NOT found","data":{"trail_id":target_trail_id,"exact_count":len(exact_matches),"suggestions_count":len(suggestions),"below_threshold_count":below_threshold_count,"filter_failed_count":filter_failed_count},"timestamp":int(__import__('time').time()*1000)}) + '\n')
-        # #endregion
         
         return exact_matches, suggestions
     
@@ -265,7 +245,8 @@ class TrailRanker:
         # Landscape filter
         if "landscape_filter" in filters:
             landscapes = (trail.get("landscapes") or "").lower()
-            if filters["landscape_filter"].lower() not in landscapes:
+            required_landscape = filters["landscape_filter"].lower()
+            if required_landscape not in landscapes:
                 return False
         
         return True
