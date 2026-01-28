@@ -6969,9 +6969,13 @@ body.komoot-style.trail-detail-page {
         }
 
   .trail-list {
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: var(--space-md);
+        }
+
+  .trail-list.active {
+            display: flex;
         }
 
   .trail-grid {

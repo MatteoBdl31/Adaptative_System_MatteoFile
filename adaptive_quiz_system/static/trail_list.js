@@ -20,9 +20,9 @@ const TrailListManager = (function() {
         currentUserId = userId;
         currentUserProfile = userProfile || currentUserProfile || null;
         
-        // Load saved preferences
+        // Load saved preferences (timeline view removed; fallback to grid if stored)
         const savedViewMode = localStorage.getItem('trail-view-mode') || 'grid';
-        switchViewMode(savedViewMode);
+        switchViewMode(savedViewMode === 'timeline' ? 'grid' : savedViewMode);
         
         setupTabs();
         setupViewModeToggle();
@@ -2515,6 +2515,7 @@ const TrailListManager = (function() {
     }
     
     function switchViewMode(mode) {
+        if (mode === 'timeline') mode = 'grid'; // timeline view removed
         currentViewMode = mode;
         localStorage.setItem('trail-view-mode', mode);
         
@@ -2825,9 +2826,6 @@ const TrailListManager = (function() {
             } else if (e.key.toLowerCase() === 'l' && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 switchViewMode('list');
-            } else if (e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                switchViewMode('timeline');
             }
             
             // Escape to close filter panel
