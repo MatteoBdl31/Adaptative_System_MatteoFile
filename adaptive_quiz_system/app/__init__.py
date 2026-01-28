@@ -1,5 +1,6 @@
 from pathlib import Path
 from datetime import date, datetime
+import json
 import os
 
 from dotenv import load_dotenv
@@ -72,7 +73,7 @@ def adapt_trails(user, context):
         return ([], [], {}, [], {})
 
 
-def get_season_from_date(target_date: str = None) -> str:
+def get_season_from_date(target_date: str | None = None) -> str:
     """
     Determine the season based on a date.
     
@@ -104,7 +105,7 @@ def get_season_from_date(target_date: str = None) -> str:
         return "fall"  # Using "fall" to match form options
 
 
-def detect_device_from_user_agent(user_agent: str = None) -> str:
+def detect_device_from_user_agent(user_agent: str | None = None) -> str:
     """
     Detect device type from user agent string.
     
@@ -367,7 +368,7 @@ def extract_context_from_request(prefix, request_args):
     # Don't add device to form_values since it's not shown in UI
     
     # Auto-determine season from hike date (in background, not shown in UI)
-    season = get_season_from_date(context.get("hike_start_date"))
+    season = get_season_from_date(context.get("hike_start_date") or None)
     context["season"] = season
     # Don't add season to form_values since it's not shown in UI
     
@@ -518,7 +519,7 @@ def index():
         # Get season from form, or determine from hike date, or use current season
         season = request.form.get("season")
         if not season:
-            season = get_season_from_date(hike_start_date)
+            season = get_season_from_date(hike_start_date or None)
         
         # Build query string
         params = {
@@ -914,23 +915,20 @@ def all_trails():
     """Page showing all available trails in list and map views"""
     from datetime import date
     
-    trails = get_all_trails()
-    
+    trails = get_all_trails() or []
     # Get optional date parameters for weather forecast
     hike_start_date = request.args.get("hike_start_date")
     hike_end_date = request.args.get("hike_end_date")
-    
     # If no date specified, use today's date
     if not hike_start_date:
         hike_start_date = date.today().isoformat()
     if not hike_end_date:
         hike_end_date = hike_start_date
-    
     # PERFORMANCE FIX: Don't fetch weather on initial page load
     # Weather will be loaded asynchronously via AJAX when user requests it
-    # This makes the page load instantly instead of waiting for 50+ API calls
     for trail in trails:
-        trail["forecast_weather"] = None
+        if trail is not None:
+            trail["forecast_weather"] = None
     
     return render_template(
         "all_trails.html", 
@@ -977,14 +975,13 @@ def api_weather_batch():
     
     # Get trail data
     trails = get_all_trails()
-    trail_dict = {str(t.get("trail_id")): t for t in trails}
+    trail_dict = {str(t.get("trail_id")): t for t in trails if t is not None}
     
     # Function to fetch weather for a single trail
-    def fetch_trail_weather(trail_id):
+    def fetch_trail_weather(trail_id: str):
         trail = trail_dict.get(trail_id)
-        if not trail:
+        if trail is None:
             return trail_id, None
-        
         lat = trail.get("latitude")
         lon = trail.get("longitude")
         
@@ -1359,11 +1356,23 @@ def api_complete_trail(user_id, trail_id):
     # Handle both JSON and form-data requests
     if request.is_json:
         data = request.get_json() or {}
-        actual_duration = data.get("actual_duration")
+        raw_duration = data.get("actual_duration")
+        actual_duration = None
+        if raw_duration not in (None, ""):
+            try:
+                actual_duration = float(raw_duration)
+            except (ValueError, TypeError):
+                pass
         rating = data.get("rating")
         difficulty_rating = data.get("difficulty_rating")
         photos = data.get("photos", [])  # List of photo paths/URLs
-        uploaded_file_id = data.get("uploaded_file_id")
+        raw_upload_id = data.get("uploaded_file_id")
+        uploaded_file_id = None
+        if raw_upload_id not in (None, ""):
+            try:
+                uploaded_file_id = int(raw_upload_id)
+            except (ValueError, TypeError):
+                pass
     else:
         # Form data
         actual_duration = request.form.get("actual_duration")
@@ -1617,14 +1626,16 @@ def api_complete_trail(user_id, trail_id):
             }), 200
     
     # Otherwise, complete the trail normally (using complete_started_trail which handles removal)
+    _actual_duration = None if actual_duration == "" else actual_duration
+    _uploaded_file_id = None if uploaded_file_id == "" else uploaded_file_id
     success, completed_trail_id = complete_started_trail(
         user_id,
         trail_id,
-        actual_duration=actual_duration,
+        actual_duration=_actual_duration,
         rating=rating,
         difficulty_rating=difficulty_rating,
         photos=photos,
-        uploaded_file_id=uploaded_file_id
+        uploaded_file_id=_uploaded_file_id
     )
     
     if success:
@@ -2000,7 +2011,7 @@ def api_upload_trail_data(user_id):
     service = UploadService()
     
     # Save uploaded file
-    upload_id = service.save_uploaded_file(user_id, file.filename, file_content, data_format)
+    upload_id = service.save_uploaded_file(user_id, file.filename or "upload", file_content, data_format)
     
     # Parse data
     parse_result = service.parse_uploaded_data(file_content, data_format)
