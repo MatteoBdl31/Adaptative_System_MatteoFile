@@ -201,6 +201,52 @@ class UserProfiler:
         
         return best_profile, scores
     
+    def _stats_from_trail_list(self, trail_data: List[Dict]) -> Dict:
+        """Build the same statistics dict as calculate_statistics, but from a list of trail dicts."""
+        if not trail_data:
+            return {"trail_count": 0}
+        stats = {
+            "trail_count": len(trail_data),
+            "distance": self._calc_stats([t.get("distance", 0) for t in trail_data]),
+            "elevation_gain": self._calc_stats([t.get("elevation_gain", 0) for t in trail_data]),
+            "difficulty": self._calc_stats([t.get("difficulty", 0) for t in trail_data]),
+            "duration": self._calc_stats([t.get("duration", 0) for t in trail_data]),
+            "landscapes": self._calc_landscape_freq(trail_data),
+            "safety_risks": self._calc_safety_distribution(trail_data),
+            "trail_type": self._calc_trail_type_distribution(trail_data),
+            "avg_popularity": statistics.mean([t.get("popularity", 0) for t in trail_data]),
+        }
+        popularity_values = [t.get("popularity", 0) for t in trail_data]
+        stats["popularity_std"] = statistics.stdev(popularity_values) if len(popularity_values) > 1 else 0
+        return stats
+    
+    def detect_profile_from_trail_list(self, trail_data: List[Dict]) -> Tuple[Optional[str], Dict]:
+        """
+        Detect profile from a list of trail dicts (no DB access).
+        Useful to simulate "what if this user completed these trails".
+        Returns (primary_profile, scores) or (None, {}).
+        """
+        if len(trail_data) < 3:
+            return None, {}
+        stats = self._stats_from_trail_list(trail_data)
+        scores = self._score_profiles(stats)
+        if not scores:
+            return None, {}
+        max_score = max(scores.values())
+        profiles_with_max_score = [p for p, s in scores.items() if s == max_score]
+        priority_order = [
+            "elevation_lover", "performance_athlete", "explorer", "photographer",
+            "contemplative", "family", "casual"
+        ]
+        if len(profiles_with_max_score) > 1:
+            for profile in priority_order:
+                if profile in profiles_with_max_score:
+                    return profile, scores
+            best_profile = sorted(profiles_with_max_score)[0]
+        else:
+            best_profile = profiles_with_max_score[0]
+        return best_profile, scores
+    
     def _score_profiles(self, stats: Dict) -> Dict[str, float]:
         """Score each profile based on statistics."""
         scores = {}

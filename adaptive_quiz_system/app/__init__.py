@@ -915,7 +915,9 @@ def all_trails():
     """Page showing all available trails in list and map views"""
     from datetime import date
     
-    trails = get_all_trails() or []
+    trails = get_all_trails()
+    users = get_all_users()
+    
     # Get optional date parameters for weather forecast
     hike_start_date = request.args.get("hike_start_date")
     hike_end_date = request.args.get("hike_end_date")
@@ -933,6 +935,7 @@ def all_trails():
     return render_template(
         "all_trails.html", 
         trails=trails,
+        users=users,
         hike_start_date=hike_start_date,
         hike_end_date=hike_end_date
     )
@@ -1339,19 +1342,41 @@ def api_update_progress(user_id, trail_id):
     return jsonify({"success": success}), 200 if success else 404
 
 
+def _complete_trail_profile_change_payload(user_id, previous_primary):
+    """Build profile_changed, new_profile, display names for complete-trail response."""
+    from backend.db import get_user_profile
+    from backend.user_profiling import UserProfiler
+    after = get_user_profile(user_id)
+    new_primary = (after.get("primary_profile") if after else None)
+    names = UserProfiler.PROFILE_NAMES
+    payload = {}
+    if new_primary is not None and previous_primary != new_primary:
+        payload["profile_changed"] = True
+        payload["previous_profile"] = previous_primary
+        payload["new_profile"] = new_primary
+        payload["previous_profile_display_name"] = names.get(previous_primary, previous_primary or "—")
+        payload["new_profile_display_name"] = names.get(new_primary, new_primary)
+    else:
+        payload["profile_changed"] = False
+    return payload
+
+
 @app.route("/api/profile/<int:user_id>/trails/<trail_id>/complete", methods=["POST"])
 def api_complete_trail(user_id, trail_id):
     """Mark a started trail as completed with rating, difficulty, photos, and optional file."""
     from backend.trail_management import complete_started_trail
     from backend.upload_service import UploadService
     from backend.trail_analytics import TrailAnalytics
-    from backend.db import get_user, get_trail
+    from backend.db import get_user, get_trail, get_user_profile
     import json as json_lib
     from werkzeug.utils import secure_filename
     import shutil
     
     uploaded_file_id = None
     actual_duration_from_file = None
+    # Capture profile before completion to detect category change
+    _prof_before = get_user_profile(user_id)
+    previous_primary = (_prof_before.get("primary_profile") if _prof_before else None)
     
     # Handle both JSON and form-data requests
     if request.is_json:
@@ -1619,11 +1644,9 @@ def api_complete_trail(user_id, trail_id):
             except Exception as e:
                 print(f"Warning: Could not update user profile: {e}")
             
-            return jsonify({
-                "success": True,
-                "completed_trail_id": completed_trail_id,
-                "uploaded_file_id": uploaded_file_id
-            }), 200
+            resp = {"success": True, "completed_trail_id": completed_trail_id, "uploaded_file_id": uploaded_file_id}
+            resp.update(_complete_trail_profile_change_payload(user_id, previous_primary))
+            return jsonify(resp), 200
     
     # Otherwise, complete the trail normally (using complete_started_trail which handles removal)
     _actual_duration = None if actual_duration == "" else actual_duration
@@ -1639,11 +1662,9 @@ def api_complete_trail(user_id, trail_id):
     )
     
     if success:
-        return jsonify({
-            "success": True,
-            "completed_trail_id": completed_trail_id,
-            "uploaded_file_id": uploaded_file_id
-        }), 200
+        resp = {"success": True, "completed_trail_id": completed_trail_id, "uploaded_file_id": uploaded_file_id}
+        resp.update(_complete_trail_profile_change_payload(user_id, previous_primary))
+        return jsonify(resp), 200
     else:
         return jsonify({"error": "Failed to complete trail"}), 400
 
