@@ -54,6 +54,51 @@ const TrailListManager = (function() {
                 }
                 toggle.classList.toggle('expanded', !isExpanded);
             }
+            });
+    }
+    
+    /**
+     * Show celebratory popup with confetti when user's profile category changes after completing a trail.
+     * @param {Object} data - API response with profile_changed, new_profile_display_name, previous_profile_display_name
+     * @param {Function} onClose - Callback when user dismisses (e.g. loadTrails)
+     */
+    function showProfileChangeCelebration(data, onClose) {
+        if (typeof onClose !== 'function') onClose = function() {};
+        var newName = (data && data.new_profile_display_name) ? data.new_profile_display_name : 'your new profile';
+        var title = 'You\u2019ve evolved!';
+        var message = 'Your new trail shifted your profile. You are now: ';
+        var overlay = document.createElement('div');
+        overlay.className = 'profile-change-celebration-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'profile-change-title');
+        overlay.innerHTML =
+            '<div class="profile-change-celebration">' +
+            '  <div class="profile-change-celebration__confetti-canvas" id="profile-change-confetti-canvas" aria-hidden="true"></div>' +
+            '  <div class="profile-change-celebration__card">' +
+            '    <h2 id="profile-change-title" class="profile-change-celebration__title">' + title + '</h2>' +
+            '    <p class="profile-change-celebration__message">' + message + '<strong class="profile-change-celebration__profile-name">' + newName + '</strong></p>' +
+            '    <p class="profile-change-celebration__sub">Your recommendations will adapt to your new style.</p>' +
+            '    <button type="button" class="profile-change-celebration__cta">Awesome!</button>' +
+            '  </div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+        if (typeof confetti === 'function') {
+            try {
+                confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
+                setTimeout(function() {
+                    confetti({ particleCount: 80, spread: 100, origin: { y: 0.5, x: 0.3 } });
+                    confetti({ particleCount: 80, spread: 100, origin: { y: 0.5, x: 0.7 } });
+                }, 200);
+            } catch (e) { /* no confetti if lib missing */ }
+        }
+        function dismiss() {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            onClose();
+        }
+        overlay.querySelector('.profile-change-celebration__cta').addEventListener('click', dismiss);
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) dismiss();
         });
     }
     
@@ -856,7 +901,11 @@ const TrailListManager = (function() {
             .then(data => {
                 if (data.success) {
                     document.body.removeChild(modal);
-                    loadTrails();
+                    if (data.profile_changed) {
+                        showProfileChangeCelebration(data, loadTrails);
+                    } else {
+                        loadTrails();
+                    }
                 } else {
                     alert('Failed to complete trail: ' + (data.error || 'Unknown error'));
                 }
@@ -2429,8 +2478,12 @@ const TrailListManager = (function() {
             })
             .then(data => {
                 if (data.success) {
-                    alert('Trail marked as completed!');
-                    loadTrails();
+                    if (data.profile_changed) {
+                        showProfileChangeCelebration(data, loadTrails);
+                    } else {
+                        alert('Trail marked as completed!');
+                        loadTrails();
+                    }
                 } else {
                     alert('Failed to complete trail');
                 }

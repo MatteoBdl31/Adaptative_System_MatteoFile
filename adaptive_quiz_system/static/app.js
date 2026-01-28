@@ -327,10 +327,19 @@ class MapManager {
             }
             
             // Build popup content with all trail information
+            const titleHtml = (options.userId && trail_id)
+                ? `<a href="/profile/${options.userId}/trail/${trail_id}" class="trail-popup__title-link">${name || 'Unknown'}</a>`
+                : `<span class="trail-popup__title">${name || 'Unknown'}</span>`;
+            const saveBtnHtml = (options.userId && trail_id)
+                ? `<button type="button" class="btn-save-trail-map btn btn-secondary btn--sm" data-trail-id="${trail_id}" data-user-id="${options.userId}" style="margin-left: auto;">Save Trail</button>`
+                : '';
             const popupContent = `
                 <div class="trail-popup">
-                    <div class="trail-popup__header">
-                        <h3 class="trail-popup__title">${name || 'Unknown'}</h3>
+                    <div class="trail-popup__header" style="display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap;">
+                        <h3 class="trail-popup__title-wrap" style="margin: 0; flex: 1 1 auto; min-width: 0;">
+                            ${titleHtml}
+                        </h3>
+                        ${saveBtnHtml}
                         <div style="display: flex; align-items: center; gap: var(--space-xs);">
                             <span class="trail-popup__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
                             <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail_id || ''}" data-user-id="${options.userId || ''}" style="width: 18px; height: 18px; padding: 0;">
@@ -477,6 +486,33 @@ class MapManager {
                         } else {
                             explanationDiv.style.display = 'none';
                         }
+                    });
+                }
+                // Setup Save Trail button in popup (demo map)
+                const saveBtn = document.querySelector(`.trail-popup-wrapper .btn-save-trail-map[data-trail-id="${trail_id}"]`);
+                if (saveBtn && !saveBtn._saveBound) {
+                    saveBtn._saveBound = true;
+                    saveBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const uid = this.dataset.userId;
+                        const tid = this.dataset.trailId;
+                        if (!uid || !tid) return;
+                        fetch(`/api/profile/${uid}/trails/save`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ trail_id: tid })
+                        })
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d.success) {
+                                    this.textContent = 'Saved!';
+                                    this.disabled = true;
+                                } else {
+                                    this.textContent = 'Already saved';
+                                    this.disabled = true;
+                                }
+                            })
+                            .catch(() => { this.textContent = 'Error'; });
                     });
                 }
             });
