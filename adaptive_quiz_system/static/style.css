@@ -363,6 +363,17 @@ body {
     background-color: var(--color-bg-secondary);
 }
 
+.app-header__nav-link.is-active {
+    color: var(--color-primary);
+    background-color: var(--color-bg-secondary);
+}
+
+.app-header__nav-link.is-active:hover,
+.app-header__nav-link.is-active:focus {
+    color: var(--color-primary-dark);
+    background-color: var(--color-bg-tertiary);
+}
+
 .app-header__nav-link--icon {
     display: flex;
     align-items: center;
@@ -2938,40 +2949,149 @@ select:focus-visible {
 }
 
 /* ============================================
-   Settings Page Styles
+   Settings Page Styles (Layout l-settings + BEM)
    ============================================ */
 
-.settings-container {
-    max-width: var(--container-max-width);
-    margin: 0 auto;
-    padding: var(--container-padding);
+/* Layout: two-column settings (sidebar + main) */
+.settings-page .app-main {
+    display: flex;
+    flex-direction: column;
 }
 
-.settings-title {
+.l-settings {
+    display: grid;
+    grid-template-columns: minmax(200px, 240px) 1fr;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.l-settings__sidebar {
+    align-self: stretch;
+    background: var(--color-bg-secondary);
+    border-right: 1px solid var(--color-border);
+    padding: var(--space-lg) 0;
+}
+
+.l-settings__sidebar-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    padding: 0 var(--space-lg);
+    margin: 0 0 var(--space-md);
+}
+
+.l-settings__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.l-settings__nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    border: none;
+    border-left: 3px solid transparent;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
+}
+
+.l-settings__nav-item:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text);
+}
+
+.l-settings__nav-item.is-active {
+    background: var(--color-bg-tertiary);
+    color: var(--color-primary);
+    border-left-color: var(--color-primary);
+}
+
+.l-settings__nav-icon {
+    font-size: 1.25em;
+    flex-shrink: 0;
+}
+
+.l-settings__main {
+    padding: var(--space-xl) var(--space-lg);
+    overflow: auto;
+}
+
+.l-settings__panel {
+    display: none;
+}
+
+.l-settings__panel.is-active {
+    display: block;
+}
+
+.l-settings__card {
+    max-width: 48rem;
+}
+
+.l-settings__panel-title {
     font-size: var(--font-size-3xl);
     font-weight: var(--font-weight-bold);
-    margin-bottom: var(--space-sm);
+    color: var(--color-text);
+    margin: 0 0 var(--space-sm);
 }
 
-.settings-lead {
+.l-settings__panel-lead {
     color: var(--color-text-secondary);
-    margin-bottom: var(--space-xl);
+    margin: 0 0 var(--space-xl);
 }
 
-.settings-section {
-    margin-bottom: var(--space-xl);
-}
-
-.settings-section__title {
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-semibold);
-    margin-bottom: var(--space-md);
-    padding-bottom: var(--space-sm);
-    border-bottom: 1px solid var(--color-border, #e5e7eb);
-}
-
-.settings-section__content {
+.l-settings__panel-content {
     color: var(--color-text-secondary);
+}
+
+.l-settings__panel-content p {
+    margin: 0 0 var(--space-md);
+}
+
+/* Responsive: settings layout */
+@media (max-width: 768px) {
+    .l-settings {
+        grid-template-columns: 1fr;
+    }
+
+    .l-settings__sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        padding: var(--space-md) 0;
+    }
+
+    .l-settings__nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 0 var(--space-md);
+    }
+
+    .l-settings__nav-item {
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .l-settings__nav-item.is-active {
+        border-left-color: transparent;
+        border-bottom-color: var(--color-primary);
+    }
+
+    .l-settings__main {
+        padding: var(--space-lg);
+    }
 }
 
 .settings-theme-options {

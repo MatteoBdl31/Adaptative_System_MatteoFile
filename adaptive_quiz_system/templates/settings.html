@@ -1,45 +1,72 @@
 {% extends "base.html" %}
 {% block title %}Settings · Adaptive Trails{% endblock %}
+{% block page_class %}settings-page{% endblock %}
 {% block content %}
-<div class="container settings-container">
-    <h1 class="settings-title">Paramètres</h1>
-    <p class="settings-lead">Configurez vos préférences pour l’application Adaptive Trails.</p>
+<div class="l-settings">
+    <aside class="l-settings__sidebar" role="navigation" aria-label="Settings sections">
+        <h2 class="l-settings__sidebar-title">Settings</h2>
+        <nav class="l-settings__nav">
+            <button type="button" class="l-settings__nav-item is-active" data-panel="general" aria-current="true">
+                <span class="l-settings__nav-icon" aria-hidden="true">⚙️</span>
+                <span class="l-settings__nav-label">General</span>
+            </button>
+            <button type="button" class="l-settings__nav-item" data-panel="theme" aria-current="false">
+                <span class="l-settings__nav-icon" aria-hidden="true">🎨</span>
+                <span class="l-settings__nav-label">Theme</span>
+            </button>
+            <button type="button" class="l-settings__nav-item" data-panel="account" aria-current="false">
+                <span class="l-settings__nav-icon" aria-hidden="true">👤</span>
+                <span class="l-settings__nav-label">Account</span>
+            </button>
+        </nav>
+    </aside>
 
-    <section class="settings-section" aria-labelledby="settings-general-heading">
-        <h2 id="settings-general-heading" class="settings-section__title">Général</h2>
-        <div class="settings-section__content">
-            <p>Options générales de l’application (à compléter selon vos besoins).</p>
+    <main class="l-settings__main" role="main">
+        <div class="l-settings__panel is-active" data-panel="general" id="panel-general">
+            <div class="c-Card l-settings__card">
+                <h1 class="l-settings__panel-title">General</h1>
+                <p class="l-settings__panel-lead">General application options.</p>
+                <div class="l-settings__panel-content">
+                    <p>Configure global preferences here (to be completed as needed).</p>
+                </div>
+            </div>
         </div>
-    </section>
 
-    <section class="settings-section settings-section--theme" aria-labelledby="settings-theme-heading">
-        <h2 id="settings-theme-heading" class="settings-section__title">Thème</h2>
-        <div class="settings-section__content">
-            <fieldset class="settings-theme-options" role="group" aria-labelledby="settings-theme-heading">
-                <legend class="visually-hidden">Choisir l’apparence de l’interface</legend>
-                <label class="settings-theme-option">
-                    <input type="radio" name="theme" value="light" class="settings-theme-option__input">
-                    <span class="settings-theme-option__label">Clair</span>
-                </label>
-                <label class="settings-theme-option">
-                    <input type="radio" name="theme" value="dark" class="settings-theme-option__input">
-                    <span class="settings-theme-option__label">Sombre</span>
-                </label>
-                <label class="settings-theme-option">
-                    <input type="radio" name="theme" value="system" class="settings-theme-option__input">
-                    <span class="settings-theme-option__label">Système</span>
-                </label>
-            </fieldset>
-            <p class="settings-theme-hint">« Système » suit la préférence de votre appareil (clair ou sombre).</p>
+        <div class="l-settings__panel" data-panel="theme" id="panel-theme">
+            <div class="c-Card l-settings__card">
+                <h1 class="l-settings__panel-title">Theme</h1>
+                <p class="l-settings__panel-lead">Choose the interface appearance.</p>
+                <div class="l-settings__panel-content">
+                    <fieldset class="settings-theme-options" role="group" aria-labelledby="theme-legend">
+                        <legend id="theme-legend" class="visually-hidden">Appearance</legend>
+                        <label class="settings-theme-option">
+                            <input type="radio" name="theme" value="light" class="settings-theme-option__input">
+                            <span class="settings-theme-option__label">Light</span>
+                        </label>
+                        <label class="settings-theme-option">
+                            <input type="radio" name="theme" value="dark" class="settings-theme-option__input">
+                            <span class="settings-theme-option__label">Dark</span>
+                        </label>
+                        <label class="settings-theme-option">
+                            <input type="radio" name="theme" value="system" class="settings-theme-option__input">
+                            <span class="settings-theme-option__label">System</span>
+                        </label>
+                    </fieldset>
+                    <p class="settings-theme-hint">“System” follows your device preference (light or dark).</p>
+                </div>
+            </div>
         </div>
-    </section>
 
-    <section class="settings-section" aria-labelledby="settings-account-heading">
-        <h2 id="settings-account-heading" class="settings-section__title">Compte</h2>
-        <div class="settings-section__content">
-            <p>Préférences liées au compte utilisateur (à compléter selon vos besoins).</p>
+        <div class="l-settings__panel" data-panel="account" id="panel-account">
+            <div class="c-Card l-settings__card">
+                <h1 class="l-settings__panel-title">Account</h1>
+                <p class="l-settings__panel-lead">User account preferences.</p>
+                <div class="l-settings__panel-content">
+                    <p>Account options (to be completed as needed).</p>
+                </div>
+            </div>
         </div>
-    </section>
+    </main>
 </div>
 {% endblock %}
 {% block extra_scripts %}
@@ -53,6 +80,23 @@
         r.addEventListener('change', function() {
             localStorage.setItem(key, this.value);
             if (window.__applyTheme) window.__applyTheme();
+        });
+    });
+
+    var navItems = document.querySelectorAll('.l-settings__nav-item');
+    var panels = document.querySelectorAll('.l-settings__panel');
+    navItems.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var panelId = this.getAttribute('data-panel');
+            navItems.forEach(function(n) {
+                n.classList.remove('is-active');
+                n.setAttribute('aria-current', n.getAttribute('data-panel') === panelId ? 'true' : 'false');
+            });
+            panels.forEach(function(p) {
+                p.classList.toggle('is-active', p.getAttribute('data-panel') === panelId);
+            });
+            this.classList.add('is-active');
+            this.setAttribute('aria-current', 'true');
         });
     });
 })();
