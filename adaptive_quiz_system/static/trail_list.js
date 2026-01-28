@@ -691,65 +691,64 @@ const TrailListManager = (function() {
     }
     
     function showCompletionForm(trailId) {
-        // Create modal overlay
         const modal = document.createElement('div');
-        modal.className = 'completion-form-modal';
+        modal.className = 'completion-form-overlay';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'completion-form-title');
         modal.innerHTML = `
-            <div class="completion-form-content">
-                <div class="completion-form-header">
-                    <h2>Complete Trail</h2>
-                    <button class="completion-form-close">&times;</button>
-                </div>
+            <div class="completion-form-card">
+                <header class="completion-form-header">
+                    <h2 id="completion-form-title" class="completion-form-title">Complete Trail</h2>
+                    <button type="button" class="completion-form-close" aria-label="Close">&times;</button>
+                </header>
                 <form id="completion-form" class="completion-form">
-                    <div class="form-group">
-                        <label>Trail Rating (1-5 stars)</label>
-                        <div class="rating-input-interactive">
-                            <input type="radio" name="rating" value="5" id="rating-5" checked>
-                            <label for="rating-5" data-rating="5" title="5 stars - Excellent">⭐</label>
-                            <input type="radio" name="rating" value="4" id="rating-4">
-                            <label for="rating-4" data-rating="4" title="4 stars - Very Good">⭐</label>
-                            <input type="radio" name="rating" value="3" id="rating-3">
-                            <label for="rating-3" data-rating="3" title="3 stars - Good">⭐</label>
-                            <input type="radio" name="rating" value="2" id="rating-2">
-                            <label for="rating-2" data-rating="2" title="2 stars - Fair">⭐</label>
-                            <input type="radio" name="rating" value="1" id="rating-1">
-                            <label for="rating-1" data-rating="1" title="1 star - Poor">⭐</label>
+                    <div class="completion-form-body">
+                        <div class="form-group">
+                            <label class="form-label">Trail rating (1–5 stars)</label>
+                            <div class="rating-input-interactive" role="group" aria-label="Trail rating">
+                                <input type="radio" name="rating" value="5" id="rating-5" checked>
+                                <label for="rating-5" data-rating="5" title="5 stars – Excellent">&#9733;</label>
+                                <input type="radio" name="rating" value="4" id="rating-4">
+                                <label for="rating-4" data-rating="4" title="4 stars – Very good">&#9733;</label>
+                                <input type="radio" name="rating" value="3" id="rating-3">
+                                <label for="rating-3" data-rating="3" title="3 stars – Good">&#9733;</label>
+                                <input type="radio" name="rating" value="2" id="rating-2">
+                                <label for="rating-2" data-rating="2" title="2 stars – Fair">&#9733;</label>
+                                <input type="radio" name="rating" value="1" id="rating-1">
+                                <label for="rating-1" data-rating="1" title="1 star – Poor">&#9733;</label>
+                            </div>
+                            <span class="rating-display" id="rating-display" aria-live="polite">5 stars</span>
                         </div>
-                        <div class="rating-display" id="rating-display">Selected: 5 stars</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="difficulty-rating">Difficulty Rating (1-10)</label>
-                        <div class="difficulty-input">
-                            <input type="range" id="difficulty-rating" name="difficulty_rating" min="1" max="10" value="5">
-                            <span id="difficulty-value">5</span>
+                        <div class="form-group">
+                            <label class="form-label" for="difficulty-rating">Difficulty (1–10)</label>
+                            <div class="difficulty-input">
+                                <input type="range" id="difficulty-rating" name="difficulty_rating" min="1" max="10" value="5" aria-valuetext="5">
+                                <span id="difficulty-value" class="difficulty-value">5</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="photos">Photos (optional)</label>
+                            <input type="file" id="photos" name="photos" multiple accept="image/*" class="form-input-file">
+                            <div id="photo-preview" class="photo-preview"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label form-label-checkbox">
+                                <input type="checkbox" id="has-file" name="has_file">
+                                <span>Upload smartwatch data (optional)</span>
+                            </label>
+                            <input type="file" id="trail-file" name="trail_file" accept=".json,.gpx,.fit" class="form-input-file form-input-file--hidden">
+                            <div id="file-info" class="file-info u-hidden"></div>
+                        </div>
+                        <div class="form-group" id="duration-group">
+                            <label class="form-label" for="actual-duration">Duration (minutes)</label>
+                            <input type="number" id="actual-duration" name="actual_duration" min="1" required class="form-input" placeholder="e.g. 120">
                         </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="photos">Photos (optional)</label>
-                        <input type="file" id="photos" name="photos" multiple accept="image/*">
-                        <div id="photo-preview" class="photo-preview"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="has-file" name="has_file">
-                            Upload smartwatch data file (optional)
-                        </label>
-                        <input type="file" id="trail-file" name="trail_file" accept=".json,.gpx,.fit" style="display: none;">
-                        <div id="file-info" class="file-info" style="display: none;"></div>
-                    </div>
-                    
-                    <div class="form-group" id="duration-group">
-                        <label for="actual-duration">Duration (minutes)</label>
-                        <input type="number" id="actual-duration" name="actual_duration" min="1" required>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn-cancel">Cancel</button>
-                        <button type="submit" class="btn-submit">Complete Trail</button>
-                    </div>
+                    <footer class="completion-form-actions">
+                        <button type="button" class="completion-form-btn completion-form-btn--secondary btn-cancel">Cancel</button>
+                        <button type="submit" class="completion-form-btn completion-form-btn--primary btn-submit">Complete Trail</button>
+                    </footer>
                 </form>
             </div>
         `;
@@ -762,7 +761,7 @@ const TrailListManager = (function() {
         ratingInputs.forEach(input => {
             input.addEventListener('change', function() {
                 const value = parseInt(this.value);
-                ratingDisplay.textContent = `Selected: ${value} ${value === 1 ? 'star' : 'stars'}`;
+                ratingDisplay.textContent = value === 1 ? '1 star' : `${value} stars`;
                 // Update visual feedback
                 ratingInputs.forEach(inp => {
                     const label = modal.querySelector(`label[for="${inp.id}"]`);
@@ -777,7 +776,7 @@ const TrailListManager = (function() {
             });
         });
         // Initialize display
-        ratingDisplay.textContent = 'Selected: 5 stars';
+        ratingDisplay.textContent = '5 stars';
         ratingInputs.forEach(inp => {
             if (inp.checked) {
                 const value = parseInt(inp.value);
@@ -805,21 +804,21 @@ const TrailListManager = (function() {
         
         hasFileCheckbox.addEventListener('change', function() {
             if (this.checked) {
-                fileInput.style.display = 'block';
-                durationGroup.style.display = 'none';
+                fileInput.classList.remove('form-input-file--hidden');
+                durationGroup.classList.add('u-hidden');
                 durationGroup.querySelector('input').removeAttribute('required');
             } else {
-                fileInput.style.display = 'none';
-                durationGroup.style.display = 'block';
+                fileInput.classList.add('form-input-file--hidden');
+                durationGroup.classList.remove('u-hidden');
                 durationGroup.querySelector('input').setAttribute('required', 'required');
-                fileInfo.style.display = 'none';
+                fileInfo.classList.add('u-hidden');
             }
         });
         
         fileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
-                fileInfo.textContent = `Selected: ${this.files[0].name}`;
-                fileInfo.style.display = 'block';
+                fileInfo.textContent = this.files[0].name;
+                fileInfo.classList.remove('u-hidden');
             }
         });
         
