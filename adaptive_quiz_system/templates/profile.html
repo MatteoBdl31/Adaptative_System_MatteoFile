@@ -114,7 +114,7 @@
             </div>
             
             <!-- Filter Panel -->
-            <div id="filter-panel" class="filter-panel" style="display: none;">
+            <div id="filter-panel" class="filter-panel is-hidden">
                 <div class="filter-section">
                     <h4>Difficulty</h4>
                     <div class="filter-options">
@@ -149,7 +149,7 @@
             </div>
             
             <!-- Active Filter Chips -->
-            <div id="active-filters" class="active-filters" style="display: none;"></div>
+            <div id="active-filters" class="active-filters is-hidden"></div>
             
             <!-- Trail List Tabs -->
             <div class="trail-tabs">
@@ -178,7 +178,7 @@
                     <button type="submit" class="btn-primary">Upload</button>
                 </form>
                 <div id="upload-status" class="upload-status"></div>
-                <div id="upload-matching" class="upload-matching" style="display: none;">
+                <div id="upload-matching" class="upload-matching is-hidden">
                     <h3>Match Trail</h3>
                     <select id="trail-match-select">
                         <option value="">Select a trail...</option>
@@ -190,12 +190,12 @@
     </div>
 
     <!-- Trail Detail Modal Template (hidden) -->
-    <div id="trail-detail-modal-template" style="display: none;">
+    <div id="trail-detail-modal-template" class="is-hidden">
         {% include 'partials/trail_detail_modal.html' %}
     </div>
     
     <!-- Trail Detail Modal -->
-    <div id="trail-detail-modal" class="modal" style="display: none;">
+    <div id="trail-detail-modal" class="modal is-hidden">
         <div class="modal-content">
             <span class="modal-close">&times;</span>
             <div id="trail-detail-content">

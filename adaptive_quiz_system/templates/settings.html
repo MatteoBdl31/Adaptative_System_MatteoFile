@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Settings · Adaptive Trails{% endblock %}
+{% block content %}
+<div class="container settings-container">
+    <h1 class="settings-title">Paramètres</h1>
+    <p class="settings-lead">Configurez vos préférences pour l’application Adaptive Trails.</p>
+
+    <section class="settings-section" aria-labelledby="settings-general-heading">
+        <h2 id="settings-general-heading" class="settings-section__title">Général</h2>
+        <div class="settings-section__content">
+            <p>Options générales de l’application (à compléter selon vos besoins).</p>
+        </div>
+    </section>
+
+    <section class="settings-section settings-section--theme" aria-labelledby="settings-theme-heading">
+        <h2 id="settings-theme-heading" class="settings-section__title">Thème</h2>
+        <div class="settings-section__content">
+            <fieldset class="settings-theme-options" role="group" aria-labelledby="settings-theme-heading">
+                <legend class="visually-hidden">Choisir l’apparence de l’interface</legend>
+                <label class="settings-theme-option">
+                    <input type="radio" name="theme" value="light" class="settings-theme-option__input">
+                    <span class="settings-theme-option__label">Clair</span>
+                </label>
+                <label class="settings-theme-option">
+                    <input type="radio" name="theme" value="dark" class="settings-theme-option__input">
+                    <span class="settings-theme-option__label">Sombre</span>
+                </label>
+                <label class="settings-theme-option">
+                    <input type="radio" name="theme" value="system" class="settings-theme-option__input">
+                    <span class="settings-theme-option__label">Système</span>
+                </label>
+            </fieldset>
+            <p class="settings-theme-hint">« Système » suit la préférence de votre appareil (clair ou sombre).</p>
+        </div>
+    </section>
+
+    <section class="settings-section" aria-labelledby="settings-account-heading">
+        <h2 id="settings-account-heading" class="settings-section__title">Compte</h2>
+        <div class="settings-section__content">
+            <p>Préférences liées au compte utilisateur (à compléter selon vos besoins).</p>
+        </div>
+    </section>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function() {
+    var key = 'theme';
+    var radios = document.querySelectorAll('input[name="theme"]');
+    var current = window.__getTheme ? window.__getTheme() : (localStorage.getItem(key) || 'system');
+    radios.forEach(function(r) {
+        if (r.value === current) r.checked = true;
+        r.addEventListener('change', function() {
+            localStorage.setItem(key, this.value);
+            if (window.__applyTheme) window.__applyTheme();
+        });
+    });
+})();
+</script>
+{% endblock %}

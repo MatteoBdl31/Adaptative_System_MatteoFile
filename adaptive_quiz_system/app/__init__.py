@@ -903,6 +903,12 @@ def admin_rules():
     return render_template("admin_rules.html", rules=rules)
 
 
+@app.route("/settings")
+def settings():
+    """Settings page"""
+    return render_template("settings.html")
+
+
 @app.route("/trails")
 def all_trails():
     """Page showing all available trails in list and map views"""

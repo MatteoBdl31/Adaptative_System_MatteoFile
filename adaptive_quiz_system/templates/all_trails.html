@@ -20,7 +20,7 @@
         <div class="filter-section">
             <h3>Filter Trails & Weather</h3>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-lg);">
+            <div class="filter-section__grid">
                 <div class="filter-group">
                     <label for="hike-start-date">🗓️ Hike Start Date</label>
                     <input type="date" id="hike-start-date" value="{{ hike_start_date }}">
@@ -64,13 +64,13 @@
                 </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); margin-top: var(--space-lg);">
+            <div class="filter-section__actions">
                 <button onclick="applyFilters()" class="btn-primary">🔍 Apply Filters</button>
                 <button onclick="clearFilters()" class="btn-secondary">✖️ Clear Filters</button>
             </div>
         </div>
 
-        <div class="connection-status" id="connection-status" style="display: none;">
+        <div class="connection-status is-hidden" id="connection-status">
             <span id="connection-indicator">📶</span>
             <span id="connection-text">Detecting connection...</span>
         </div>
@@ -82,7 +82,7 @@
             <button onclick="showView('list')" id="btn-list">
                 📋 List View
             </button>
-            <button onclick="showView('cards')" id="btn-cards" style="display: none;">
+            <button onclick="showView('cards')" id="btn-cards" class="is-hidden">
                 🃏 Card View
             </button>
         </div>
@@ -90,7 +90,7 @@
         <!-- Map View -->
         <div id="map-view" class="view-section active">
             <h2>🗺️ Trail Locations on Map</h2>
-            <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--space-lg);">
+            <p class="all-trails-intro">
                 Explore all available trails on an interactive map. Click on markers to see trail details.
             </p>
             <div id="trails-map"></div>
@@ -99,7 +99,7 @@
         <!-- Card View (for strong connection) -->
         <div id="cards-view" class="view-section">
             <h2>🃏 All Trails ({{ trails|length }})</h2>
-            <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--space-xl);">
+            <p class="all-trails-intro all-trails-intro--xl">
                 Browse trails with interactive mini-maps. Perfect for exploring details at a glance.
             </p>
             <div class="trails-card-view" id="trails-cards">
@@ -167,7 +167,7 @@
         <!-- List View (for weak connection) -->
         <div id="list-view" class="view-section">
             <h2>📋 All Trails ({{ trails|length }})</h2>
-            <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--space-xl);">
+            <p class="all-trails-intro all-trails-intro--xl">
                 A lightweight list view optimized for slower connections. All essential trail information at your fingertips.
             </p>
             <div class="trails-list-view" id="trails-list">
@@ -202,7 +202,7 @@
                                     {{ trail.forecast_weather|title }}
                                 </span>
                             {% else %}
-                                <span class="badge" style="opacity: 0.5;" title="Weather data unavailable">🌤️ N/A</span>
+                                <span class="badge badge--muted" title="Weather data unavailable">🌤️ N/A</span>
                             {% endif %}
                         </div>
                         <p class="trail-description">{{ trail.description }}</p>
@@ -218,13 +218,13 @@
                                 {% endif %}
                             </div>
                         </div>
-                        <div style="margin-top: var(--space-md); display: flex; gap: var(--space-lg); color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                        <div class="trail-card__meta">
                             <span><strong>Type:</strong> {{ trail.trail_type.replace('_', ' ').title() }}</span>
                             <span><strong>Popularity:</strong> ⭐ {{ trail.popularity }}/10</span>
                         </div>
                         {% if trail.latitude and trail.longitude %}
                         <a href="#" onclick="showTrailOnMap({{ trail.latitude }}, {{ trail.longitude }}); return false;" 
-                           class="btn-primary" style="margin-top: var(--space-md);">📍 View on Map</a>
+                           class="btn-primary trail-card__action">📍 View on Map</a>
                         {% endif %}
                     </div>
                 </div>
@@ -365,9 +365,10 @@
                 if (strength === 'weak') {
                     indicatorEl.textContent = '📶';
                     textEl.textContent = 'Weak connection detected - Using lightweight view';
-                    statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
-                    statusEl.style.display = 'block';
-                    cardsBtn.style.display = 'none';
+                    statusEl.classList.remove('is-hidden');
+                    statusEl.classList.add('connection-status--weak');
+                    statusEl.classList.remove('connection-status--strong');
+                    cardsBtn.classList.add('is-hidden');
                     // Ensure list view is shown for weak connection
                     if (!document.getElementById('list-view').classList.contains('active')) {
                         showView('list');
@@ -375,9 +376,10 @@
                 } else {
                     indicatorEl.textContent = '📶';
                     textEl.textContent = 'Strong connection detected - Card view with maps available';
-                    statusEl.style.background = 'rgba(34, 197, 94, 0.2)';
-                    statusEl.style.display = 'block';
-                    cardsBtn.style.display = 'inline-block';
+                    statusEl.classList.remove('is-hidden');
+                    statusEl.classList.add('connection-status--strong');
+                    statusEl.classList.remove('connection-status--weak');
+                    cardsBtn.classList.remove('is-hidden');
                     // Show card view by default for strong connection
                     showView('cards');
                     // Initialize mini maps after a short delay

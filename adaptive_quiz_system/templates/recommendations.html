@@ -8,11 +8,11 @@
     <div class="container">
         <header class="page-header">
             <div class="page-header__left">
-                <p class="text-muted" style="font-size: var(--font-size-sm); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-sm);">Adaptive Recommendations</p>
+                <p class="page-header__label text-muted">Adaptive Recommendations</p>
                 <h1 class="page-header__title">{{ user.name }} · {{ user.experience }} profile</h1>
                 <p class="page-header__subtitle">Personalised shortlist based on your live context and long-term preferences.</p>
             </div>
-            <div class="context-pills" style="margin-top: var(--space-lg);">
+            <div class="context-pills context-pills--header">
                 {% set days = (context.time_available // (24 * 60)) %}
                 {% set hours = ((context.time_available % (24 * 60)) // 60) %}
                 {% if days > 0 %}
@@ -33,50 +33,40 @@
             </div>
         </header>
 
-        <section class="card" style="margin-bottom: var(--space-xl);">
+        <section class="card card--spaced">
             <div class="card__header">
                 <h2 class="card__title">Overview</h2>
             </div>
-            <div class="grid grid-cols-4" style="gap: var(--space-lg);">
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-bottom: var(--space-xs);">
-                        {{ exact_matches|length }}
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">⭐ Exact matches</div>
+            <div class="overview-grid">
+                <div class="overview-stat">
+                    <div class="overview-stat__number overview-stat__number--primary">{{ exact_matches|length }}</div>
+                    <div class="overview-stat__label">⭐ Exact matches</div>
                 </div>
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-accent); margin-bottom: var(--space-xs);">
-                        {{ suggestions|length }}
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">💡 Smart suggestions</div>
+                <div class="overview-stat">
+                    <div class="overview-stat__number overview-stat__number--accent">{{ suggestions|length }}</div>
+                    <div class="overview-stat__label">💡 Smart suggestions</div>
                 </div>
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-secondary); margin-bottom: var(--space-xs);">
-                        {{ active_rules|length }}
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">🧠 Active rules</div>
+                <div class="overview-stat">
+                    <div class="overview-stat__number overview-stat__number--secondary">{{ active_rules|length }}</div>
+                    <div class="overview-stat__label">🧠 Active rules</div>
                 </div>
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-text); margin-bottom: var(--space-xs);">
-                        {{ display_settings.display_mode|title }}
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">🎯 Display mode</div>
+                <div class="overview-stat">
+                    <div class="overview-stat__number overview-stat__number--text">{{ display_settings.display_mode|title }}</div>
+                    <div class="overview-stat__label">🎯 Display mode</div>
                 </div>
                 {% if collaborative_recommendations %}
-                <div class="text-center">
-                    <div style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: #f71e50; margin-bottom: var(--space-xs);">
-                        {{ collaborative_recommendations|length }}
-                    </div>
-                    <div style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">👥 Collaborative</div>
+                <div class="overview-stat">
+                    <div class="overview-stat__number overview-stat__number--collaborative">{{ collaborative_recommendations|length }}</div>
+                    <div class="overview-stat__label">👥 Collaborative</div>
                 </div>
                 {% endif %}
             </div>
         </section>
 
-        <section class="card" style="margin-bottom: var(--space-xl);">
-            <div class="flex items-center justify-between" style="margin-bottom: var(--space-lg);">
+        <section class="card card--spaced">
+            <div class="flex items-center justify-between card__header-row">
                 <div>
-                    <h2 class="card__title" style="margin-bottom: var(--space-xs);">Presentation Mode</h2>
+                    <h2 class="card__title card__title--tight">Presentation Mode</h2>
                     <p class="card__description">Select how to view the personalised shortlist.</p>
                 </div>
             </div>
@@ -98,17 +88,17 @@
                         <span class="badge badge-primary">{{ combined_trails|length }} routes plotted</span>
                     </div>
                 </div>
-                <div id="recommendations-map" class="map-container" style="height: 600px;"></div>
+                <div id="recommendations-map" class="map-container map-container--recommendations"></div>
             </article>
 
             <article class="card view-panel hidden" data-view-panel="cards">
                 {% if exact_matches %}
-                <div style="margin-bottom: var(--space-2xl);">
+                <div class="section-spaced">
                     <div class="card__header">
                         <h2 class="card__title">Top Picks ({{ exact_matches|length }})</h2>
                         <p class="card__description">Trails that satisfy every adaptation rule.</p>
                     </div>
-                    <div class="trail-grid" style="margin-top: var(--space-lg);">
+                    <div class="trail-grid trail-grid--spaced">
                         {% for trail in exact_matches %}
                         <div class="trail-card recommended">
                             <div class="trail-card__header">
@@ -126,7 +116,7 @@
                                     {% if trail.forecast_weather %}
                                         <span class="badge">🌦 {{ trail.forecast_weather|title }}</span>
                                     {% else %}
-                                        <span class="badge" style="opacity: 0.5;">🌦 N/A</span>
+                                        <span class="badge badge--muted">🌦 N/A</span>
                                     {% endif %}
                                 {% endif %}
                             </div>
@@ -139,7 +129,7 @@
                             {% endif %}
                             {% set days = (context.time_available // (24 * 60)) %}
                             {% set hours = ((context.time_available % (24 * 60)) // 60) %}
-                            <a class="btn btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}" style="margin-top: var(--space-md);">Inspect Trail</a>
+                            <a class="btn btn-secondary btn--spaced" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}">Inspect Trail</a>
                         </div>
                         {% endfor %}
                     </div>
@@ -152,7 +142,7 @@
                         <h2 class="card__title">Context-aware Suggestions ({{ suggestions|length }})</h2>
                         <p class="card__description">Ranked by relevance percentage.</p>
                     </div>
-                    <div class="trail-grid" style="margin-top: var(--space-lg);">
+                    <div class="trail-grid trail-grid--spaced">
                         {% for trail in suggestions %}
                         <div class="trail-card suggested">
                             <div class="trail-card__header">
@@ -167,30 +157,30 @@
                                     {% if trail.forecast_weather %}
                                         <span class="badge">🌦 {{ trail.forecast_weather|title }}</span>
                                     {% else %}
-                                        <span class="badge" style="opacity: 0.5;">🌦 N/A</span>
+                                        <span class="badge badge--muted">🌦 N/A</span>
                                     {% endif %}
                                 {% endif %}
                             </div>
                             {% if trail.landscapes %}
-                            <div class="context-pills" style="margin-top: var(--space-md);">
+                            <div class="context-pills context-pills--spaced">
                                 {% for landscape in trail.landscapes.split(',') %}
                                 <span class="context-pill">{{ landscape.strip().title() }}</span>
                                 {% endfor %}
                             </div>
                             {% endif %}
                             {% if trail.unmatched_criteria %}
-                            <div style="margin-top: var(--space-md); padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-                                <small style="color: var(--color-text-secondary); font-weight: var(--font-weight-medium); display: block; margin-bottom: var(--space-xs);">Missing criteria:</small>
-                                <ul style="list-style: none; padding: 0; margin: 0;">
+                            <div class="missing-criteria-box">
+                                <small>Missing criteria:</small>
+                                <ul>
                                     {% for criteria in trail.unmatched_criteria %}
-                                    <li style="color: var(--color-text-muted); font-size: var(--font-size-sm); padding: var(--space-xs) 0;">• {{ criteria }}</li>
+                                    <li>• {{ criteria }}</li>
                                     {% endfor %}
                                 </ul>
                             </div>
                             {% endif %}
                             {% set days = (context.time_available // (24 * 60)) %}
                             {% set hours = ((context.time_available % (24 * 60)) // 60) %}
-                            <a class="btn btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}" style="margin-top: var(--space-md);">Inspect Trail</a>
+                            <a class="btn btn-secondary btn--spaced" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}">Inspect Trail</a>
                         </div>
                         {% endfor %}
                     </div>
@@ -198,17 +188,17 @@
                 {% endif %}
 
                 {% if collaborative_recommendations %}
-                <div style="margin-top: var(--space-2xl);">
+                <div class="section-spaced section-spaced--top">
                     <div class="card__header">
                         <h2 class="card__title">👥 Popular with Similar Hikers ({{ collaborative_recommendations|length }})</h2>
                         <p class="card__description">Trails loved by other {{ user.detected_profile|default('similar')|replace('_', ' ')|title }}s like you.</p>
                     </div>
-                    <div class="trail-grid" style="margin-top: var(--space-lg);">
+                    <div class="trail-grid trail-grid--spaced">
                         {% for trail in collaborative_recommendations %}
-                        <div class="trail-card collaborative" style="border-left: 3px solid #f71e50;">
+                        <div class="trail-card collaborative card--collaborative">
                             <div class="trail-card__header">
                                 <h3 class="trail-card__title">{{ trail.name }}</h3>
-                                <span class="badge badge-info" style="background: #f71e50; color: white;">
+                                <span class="badge badge-info badge--collaborative">
                                     ⭐ {{ trail.collaborative_avg_rating|default('N/A') }}/5 ({{ trail.collaborative_user_count|default(0) }} users)
                                 </span>
                             </div>
@@ -221,27 +211,25 @@
                                     {% if trail.forecast_weather %}
                                         <span class="badge">🌦 {{ trail.forecast_weather|title }}</span>
                                     {% else %}
-                                        <span class="badge" style="opacity: 0.5;">🌦 N/A</span>
+                                        <span class="badge badge--muted">🌦 N/A</span>
                                     {% endif %}
                                 {% endif %}
                             </div>
                             {% if trail.landscapes %}
-                            <div class="context-pills" style="margin-top: var(--space-md);">
+                            <div class="context-pills context-pills--spaced">
                                 {% for landscape in trail.landscapes.split(',') %}
                                 <span class="context-pill">{{ landscape.strip().title() }}</span>
                                 {% endfor %}
                             </div>
                             {% endif %}
                             {% if trail.recommendation_reason %}
-                            <div style="margin-top: var(--space-md); padding: var(--space-md); background: #ffeef0; border-radius: var(--radius-md); border-left: 3px solid #f71e50;">
-                                <small style="color: #a00d2f; font-weight: var(--font-weight-medium); display: block;">
-                                    💡 {{ trail.recommendation_reason }}
-                                </small>
+                            <div class="recommendation-reason-box">
+                                <small>💡 {{ trail.recommendation_reason }}</small>
                             </div>
                             {% endif %}
                             {% set days = (context.time_available // (24 * 60)) %}
                             {% set hours = ((context.time_available % (24 * 60)) // 60) %}
-                            <a class="btn btn-secondary" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}" style="margin-top: var(--space-md);">Inspect Trail</a>
+                            <a class="btn btn-secondary btn--spaced" href="{{ url_for('trail_detail', user_id=user.id, trail_id=trail.trail_id, device=context.device, connection=context.connection, weather=context.weather, time_available_days=days, time_available_hours=hours, season=context.season) }}">Inspect Trail</a>
                         </div>
                         {% endfor %}
                     </div>
@@ -260,16 +248,16 @@
         {% endif %}
 
         {% if active_rules %}
-        <section class="card" style="margin-top: var(--space-xl);">
+        <section class="card card--spaced">
             <div class="card__header">
                 <h2 class="card__title">Active Adaptation Rules</h2>
                 <p class="card__description">Transparent logic powering this shortlist.</p>
             </div>
-            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-md);">
+            <ul class="rules-list">
                 {% for rule in active_rules %}
-                <li style="padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md); border-left: 3px solid var(--color-primary);">
-                    <strong style="display: block; margin-bottom: var(--space-xs); color: var(--color-text);">{{ rule.description or rule.condition }}</strong>
-                    <span style="color: var(--color-text-secondary); font-size: var(--font-size-sm); font-family: var(--font-family-mono);">{{ rule.condition }}</span>
+                <li class="rules-list__item">
+                    <strong class="rules-list__title">{{ rule.description or rule.condition }}</strong>
+                    <span class="rules-list__condition">{{ rule.condition }}</span>
                 </li>
                 {% endfor %}
             </ul>

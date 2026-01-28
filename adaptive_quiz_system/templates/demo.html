@@ -26,7 +26,7 @@
                                 {% if selected_user_a %}
                                 <a href="{{ url_for('profile', user_id=selected_user_a.id) }}" class="btn btn-secondary btn--sm" title="View Profile Dashboard">👤 Profile</a>
                                 {% endif %}
-                                <button type="button" class="btn btn-ghost btn-remove-user" data-user="a" aria-label="Remove user A" style="display: none;">×</button>
+                                <button type="button" class="btn btn-ghost btn-remove-user is-hidden" data-user="a" aria-label="Remove user A">×</button>
                             </div>
                         </div>
                         <div class="form-group">
@@ -41,7 +41,7 @@
                                     </option>
                                 {% endfor %}
                             </select>
-                            <div class="user-profile-badge" id="profile-badge-a" style="display: {% if selected_user_a and selected_user_a.detected_profile %}inline-block{% else %}none{% endif %};">
+                            <div class="user-profile-badge {% if not (selected_user_a and selected_user_a.detected_profile) %}is-hidden{% endif %}" id="profile-badge-a">
                                 <strong>Detected Profile:</strong> 
                                 <span class="user-profile-badge__name" id="profile-name-a">
                                     {% if selected_user_a and selected_user_a.detected_profile %}
@@ -97,7 +97,7 @@
                                     </option>
                                 {% endfor %}
                             </select>
-                            <div class="user-profile-badge" id="profile-badge-b" style="display: {% if selected_user_b and selected_user_b.detected_profile %}inline-block{% else %}none{% endif %};">
+                            <div class="user-profile-badge {% if not (selected_user_b and selected_user_b.detected_profile) %}is-hidden{% endif %}" id="profile-badge-b">
                                 <strong>Detected Profile:</strong> 
                                 <span class="user-profile-badge__name" id="profile-name-b">
                                     {% if selected_user_b and selected_user_b.detected_profile %}

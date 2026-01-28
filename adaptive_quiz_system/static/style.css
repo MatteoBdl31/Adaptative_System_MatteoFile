@@ -197,7 +197,7 @@
    - Cohérence: utilisation des mêmes breakpoints partout
    ============================================ */
 
-/* Dark Theme */
+/* Dark Theme (system preference) */
 @media (prefers-color-scheme: dark) {
   :root {
         --color-bg: #0f172a;
@@ -213,6 +213,48 @@
         --color-border: #334155;
         --color-border-light: #475569;
     }
+}
+
+/* User-chosen theme (overrides system) */
+html[data-theme="dark"] {
+    --color-bg: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    --color-surface: #1e293b;
+    --color-surface-elevated: #334155;
+    --color-text: #f1f5f9;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #94a3b8;
+    --color-border: #334155;
+    --color-border-light: #475569;
+}
+
+html[data-theme="light"] {
+    --color-bg: #ffffff;
+    --color-bg-secondary: #f8fafc;
+    --color-bg-tertiary: #f1f5f9;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #ffffff;
+    --color-text: #1e293b;
+    --color-text-secondary: #64748b;
+    --color-text-muted: #94a3b8;
+    --color-border: #e2e8f0;
+    --color-border-light: #f1f5f9;
+}
+
+/* Utility: visibility (JS toggles) */
+.is-hidden {
+    display: none !important;
+}
+
+/* Utility: text alignment */
+.text-center {
+    text-align: center;
+}
+
+/* Utility: muted badge (e.g. N/A) */
+.badge--muted {
+    opacity: 0.5;
 }
 
 /* Base Styles */
@@ -321,6 +363,18 @@ body {
     background-color: var(--color-bg-secondary);
 }
 
+.app-header__nav-link--icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-sm);
+}
+
+.app-header__icon-gear {
+    display: block;
+    flex-shrink: 0;
+}
+
 /* Responsive: App Header */
 @media (max-width: 768px) {
     :root {
@@ -420,6 +474,160 @@ body {
 .card__description {
     color: var(--color-text-secondary);
     font-size: var(--font-size-base);
+}
+
+/* Recommendations page: layout and components */
+.recommendations-page .page-header__label {
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-sm);
+    color: var(--color-text-secondary);
+}
+
+.recommendations-page .context-pills--header {
+    margin-top: var(--space-lg);
+}
+
+.recommendations-page .context-pills--spaced {
+    margin-top: var(--space-md);
+}
+
+.recommendations-page .card--spaced {
+    margin-bottom: var(--space-xl);
+}
+
+.recommendations-page .card__header-row {
+    margin-bottom: var(--space-lg);
+}
+
+.recommendations-page .card__title--tight {
+    margin-bottom: var(--space-xs);
+}
+
+.recommendations-page .overview-grid {
+    display: grid;
+    gap: var(--space-lg);
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.recommendations-page .overview-stat {
+    text-align: center;
+}
+
+.recommendations-page .overview-stat__number {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-xs);
+}
+
+.recommendations-page .overview-stat__number--primary { color: var(--color-primary); }
+.recommendations-page .overview-stat__number--accent { color: var(--color-accent); }
+.recommendations-page .overview-stat__number--secondary { color: var(--color-secondary); }
+.recommendations-page .overview-stat__number--text { color: var(--color-text); }
+.recommendations-page .overview-stat__number--collaborative { color: var(--color-collaborative); }
+
+.recommendations-page .overview-stat__label {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.recommendations-page .map-container--recommendations {
+    height: 600px;
+}
+
+.recommendations-page .trail-grid--spaced {
+    margin-top: var(--space-lg);
+}
+
+.recommendations-page .section-spaced {
+    margin-bottom: var(--space-2xl);
+}
+
+.recommendations-page .section-spaced + .section-spaced,
+.recommendations-page .section-spaced--top {
+    margin-top: var(--space-2xl);
+}
+
+.recommendations-page .recommendation-reason-box {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background: rgba(247, 30, 80, 0.08);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-collaborative);
+}
+
+.recommendations-page .recommendation-reason-box small {
+    color: var(--color-danger);
+    font-weight: var(--font-weight-medium);
+    display: block;
+}
+
+.recommendations-page .rules-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.recommendations-page .rules-list__item {
+    padding: var(--space-md);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-primary);
+}
+
+.recommendations-page .rules-list__title {
+    display: block;
+    margin-bottom: var(--space-xs);
+    color: var(--color-text);
+}
+
+.recommendations-page .rules-list__condition {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family-mono);
+}
+
+.recommendations-page .card--collaborative {
+    border-left: 3px solid var(--color-collaborative);
+}
+
+.recommendations-page .missing-criteria-box {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.recommendations-page .missing-criteria-box small {
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+    display: block;
+    margin-bottom: var(--space-xs);
+}
+
+.recommendations-page .missing-criteria-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recommendations-page .missing-criteria-box li {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    padding: var(--space-xs) 0;
+}
+
+.recommendations-page .btn--spaced {
+    margin-top: var(--space-md);
+}
+
+.recommendations-page .badge--collaborative {
+    background: var(--color-collaborative);
+    color: white;
 }
 
 /* Buttons */
@@ -1869,6 +2077,7 @@ body {
 
 /* User profile badge */
 .user-profile-badge {
+    display: inline-block;
     margin-top: 8px;
     padding: 8px 12px;
     background-color: var(--color-neutral-bg);
@@ -2082,6 +2291,19 @@ body {
     color: var(--color-text);
 }
 
+.filter-section__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-lg);
+}
+
+.filter-section__actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
 .filter-group {
     display: flex;
     flex-direction: column;
@@ -2164,6 +2386,40 @@ body {
 .connection-status span {
     font-weight: var(--font-weight-medium);
     color: var(--color-text);
+}
+
+.connection-status--weak {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.connection-status--strong {
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.all-trails-intro {
+    text-align: center;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-lg);
+}
+
+.all-trails-intro--xl {
+    margin-bottom: var(--space-xl);
+}
+
+.trail-card__meta {
+    margin-top: var(--space-md);
+    display: flex;
+    gap: var(--space-lg);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.trail-card__action {
+    margin-top: var(--space-md);
+}
+
+.trail-card__action--block {
+    width: 100%;
 }
 
 #connection-indicator {
@@ -2679,6 +2935,101 @@ select:focus-visible {
         box-shadow: none;
         border: 1px solid #000;
     }
+}
+
+/* ============================================
+   Settings Page Styles
+   ============================================ */
+
+.settings-container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: var(--container-padding);
+}
+
+.settings-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-sm);
+}
+
+.settings-lead {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xl);
+}
+
+.settings-section {
+    margin-bottom: var(--space-xl);
+}
+
+.settings-section__title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.settings-section__content {
+    color: var(--color-text-secondary);
+}
+
+.settings-theme-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin: 0 0 var(--space-md);
+    padding: 0;
+    border: none;
+}
+
+.settings-theme-option {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-secondary);
+    transition: background-color var(--transition-base), border-color var(--transition-base);
+}
+
+.settings-theme-option:hover {
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-primary);
+}
+
+.settings-theme-option__input {
+    margin: 0;
+}
+
+.settings-theme-option__input:checked + .settings-theme-option__label {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+}
+
+.settings-theme-option:has(.settings-theme-option__input:checked) {
+    border-color: var(--color-primary);
+    background: var(--color-bg-tertiary);
+}
+
+.settings-theme-hint {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* ============================================
