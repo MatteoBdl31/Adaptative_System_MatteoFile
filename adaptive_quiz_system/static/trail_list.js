@@ -337,22 +337,22 @@ const TrailListManager = (function() {
         const cardClass = `trail-card trail-card-${viewMode} trail-card-${status}`;
         
         if (viewMode === 'list') {
+            // List view: one compact row. No performance indicators (HR, speed, calories) — use "View" for details.
             return `
                 <div class="${cardClass}" data-trail-id="${trail.trail_id}">
                     <div class="trail-card-list-content">
                         <div class="trail-card-list-main">
                             ${statusBadge}
                             ${difficultyBadge}
-                            <h3 class="trail-name">${escapeHtml(trail.name || trail.trail_id)}</h3>
+                            <h3 class="trail-name trail-name-list">${escapeHtml(trail.name || trail.trail_id)}</h3>
                             <div class="trail-info-compact">
-                                <span>📏 ${trail.distance || 'N/A'} km</span>
-                                <span>⛰️ ${trail.elevation_gain || 'N/A'}m</span>
-                                <span>⏱️ ${formatDuration(trail.estimated_duration || trail.actual_duration)}</span>
+                                <span>${trail.distance != null ? trail.distance : 'N/A'} km</span>
+                                <span>${trail.elevation_gain != null ? trail.elevation_gain : 'N/A'} m</span>
+                                <span>${formatDuration(trail.estimated_duration || trail.actual_duration || trail.duration)}</span>
                             </div>
                             ${dateBadge}
                             ${statisticsBadge}
                             ${ratingStars}
-                            ${performanceIndicators}
                         </div>
                         <div class="trail-card-list-actions">
                             ${progressRing}
@@ -2349,10 +2349,9 @@ const TrailListManager = (function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Trail started!');
                 loadTrails();
             } else {
-                alert('Trail is already started');
+                alert('Error starting trail');
             }
         })
         .catch(error => {

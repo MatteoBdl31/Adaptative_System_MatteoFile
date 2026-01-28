@@ -2975,6 +2975,11 @@ select:focus-visible {
     font-weight: var(--font-weight-medium);
 }
 
+/* Dashboard Section: confines sticky switcher to this block so it unsticks when My Trails is in view */
+.dashboard-section {
+    position: relative;
+}
+
 /* Dashboard Switcher */
 .dashboard-switcher {
     display: flex;
@@ -2982,6 +2987,10 @@ select:focus-visible {
     margin-bottom: var(--space-xl);
     flex-wrap: wrap;
     border-bottom: 2px solid var(--color-border);
+    position: sticky;
+    top: 73px;
+    z-index: 101;
+    background: var(--color-surface);
 }
 
 .dashboard-tab {
@@ -3283,6 +3292,10 @@ select:focus-visible {
     gap: var(--space-sm);
     margin-bottom: var(--space-lg);
     border-bottom: 2px solid var(--color-border);
+    position: sticky;
+    top: 73px;
+    z-index: 100;
+    background: var(--color-surface);
 }
 
 .trail-tab {
@@ -5048,12 +5061,13 @@ section.trail-detail-section h4 {
 .trail-card-list-content {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-lg);
 }
 
 .trail-card-list-main {
     flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: var(--space-md);
@@ -5061,9 +5075,15 @@ section.trail-detail-section h4 {
 }
 
 .trail-card-list-actions {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: var(--space-md);
+}
+
+.trail-name-list {
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .trail-info-compact {
@@ -5071,6 +5091,7 @@ section.trail-detail-section h4 {
     gap: var(--space-md);
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
+    flex-shrink: 0;
 }
 
 /* Timeline View */
