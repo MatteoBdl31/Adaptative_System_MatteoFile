@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import date, datetime
 import json
 import os
+from typing import Optional
 
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, jsonify
@@ -73,7 +74,7 @@ def adapt_trails(user, context):
         return ([], [], {}, [], {})
 
 
-def get_season_from_date(target_date: str | None = None) -> str:
+def get_season_from_date(target_date: Optional[str] = None) -> str:
     """
     Determine the season based on a date.
     
@@ -105,7 +106,7 @@ def get_season_from_date(target_date: str | None = None) -> str:
         return "fall"  # Using "fall" to match form options
 
 
-def detect_device_from_user_agent(user_agent: str | None = None) -> str:
+def detect_device_from_user_agent(user_agent: Optional[str] = None) -> str:
     """
     Detect device type from user agent string.
     

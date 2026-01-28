@@ -66,6 +66,14 @@
                             <line x1="3" y1="15" x2="17" y2="15"></line>
                         </svg>
                     </button>
+                    <button class="view-mode-btn" data-view="timeline" title="Timeline View">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="4" y1="2" x2="4" y2="18"></line>
+                            <circle cx="4" cy="5" r="2"></circle>
+                            <circle cx="4" cy="10" r="2"></circle>
+                            <circle cx="4" cy="15" r="2"></circle>
+                        </svg>
+                    </button>
                 </div>
             </div>
             
@@ -106,7 +114,7 @@
             </div>
             
             <!-- Filter Panel -->
-            <div id="filter-panel" class="filter-panel is-hidden">
+            <div id="filter-panel" class="filter-panel" style="display: none;">
                 <div class="filter-section">
                     <h4>Difficulty</h4>
                     <div class="filter-options">
@@ -141,7 +149,7 @@
             </div>
             
             <!-- Active Filter Chips -->
-            <div id="active-filters" class="active-filters is-hidden"></div>
+            <div id="active-filters" class="active-filters" style="display: none;"></div>
             
             <!-- Trail List Tabs -->
             <div class="trail-tabs">
@@ -157,15 +165,37 @@
                 <div id="completed-trails" class="trail-list"></div>
             </div>
         </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2>Upload Trail Data</h2>
+            <div class="upload-container">
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="upload-input-group">
+                        <label for="trail-file">Select JSON file:</label>
+                        <input type="file" id="trail-file" name="file" accept=".json" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Upload</button>
+                </form>
+                <div id="upload-status" class="upload-status"></div>
+                <div id="upload-matching" class="upload-matching" style="display: none;">
+                    <h3>Match Trail</h3>
+                    <select id="trail-match-select">
+                        <option value="">Select a trail...</option>
+                    </select>
+                    <button id="associate-trail-btn" class="btn-primary">Associate with Trail</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Trail Detail Modal Template (hidden) -->
-    <div id="trail-detail-modal-template" class="is-hidden">
+    <div id="trail-detail-modal-template" style="display: none;">
         {% include 'partials/trail_detail_modal.html' %}
     </div>
     
     <!-- Trail Detail Modal -->
-    <div id="trail-detail-modal" class="modal is-hidden">
+    <div id="trail-detail-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="modal-close">&times;</span>
             <div id="trail-detail-content">
@@ -177,6 +207,7 @@
     <script src="{{ url_for('static', filename='app.js') }}"></script>
     <script src="{{ url_for('static', filename='profile.js') }}"></script>
     <script src="{{ url_for('static', filename='trail_list.js') }}"></script>
+    <script src="{{ url_for('static', filename='upload.js') }}"></script>
     <script>
         // Initialize with current user
         const currentUserId = {{ user.id }};

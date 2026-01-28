@@ -10,27 +10,6 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block page_class %}{% endblock %}">
-    <script>
-    (function() {
-        var key = 'theme';
-        function getResolved() {
-            var s = localStorage.getItem(key) || 'system';
-            if (s === 'dark' || s === 'light') return s;
-            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        function apply() {
-            var s = localStorage.getItem(key) || 'system';
-            if (s === 'dark' || s === 'light') document.documentElement.setAttribute('data-theme', s);
-            else document.documentElement.removeAttribute('data-theme');
-        }
-        apply();
-        if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
-            if (localStorage.getItem(key) !== 'dark' && localStorage.getItem(key) !== 'light') apply();
-        });
-        window.__applyTheme = apply;
-        window.__getTheme = function() { return localStorage.getItem(key) || 'system'; };
-    })();
-    </script>
     <header class="app-header" role="banner">
         <div class="app-header__container">
             <div class="app-header__brand">
@@ -40,15 +19,9 @@
                 </a>
             </div>
             <nav class="app-header__nav" role="navigation" aria-label="Main navigation">
-                <a href="{{ url_for('demo') }}" class="app-header__nav-link{% if request.endpoint == 'demo' %} is-active{% endif %}"{% if request.endpoint == 'demo' %} aria-current="page"{% endif %}>Demo</a>
-                <a href="{{ url_for('all_trails') }}" class="app-header__nav-link{% if request.endpoint == 'all_trails' %} is-active{% endif %}"{% if request.endpoint == 'all_trails' %} aria-current="page"{% endif %}>All Trails</a>
-                <a href="{{ url_for('profile', user_id=101) }}" class="app-header__nav-link{% if request.endpoint == 'profile' %} is-active{% endif %}" id="header-profile-link"{% if request.endpoint == 'profile' %} aria-current="page"{% endif %}>Profile</a>
-                <a href="{{ url_for('settings') }}" class="app-header__nav-link app-header__nav-link--icon{% if request.endpoint == 'settings' %} is-active{% endif %}" title="Settings" aria-label="Settings"{% if request.endpoint == 'settings' %} aria-current="page"{% endif %}>
-                    <svg class="app-header__icon-gear" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                </a>
+                <a href="{{ url_for('demo') }}" class="app-header__nav-link">Demo</a>
+                <a href="{{ url_for('all_trails') }}" class="app-header__nav-link">All Trails</a>
+                <a href="{{ url_for('profile', user_id=101) }}" class="app-header__nav-link" id="header-profile-link">Profile</a>
             </nav>
         </div>
     </header>
