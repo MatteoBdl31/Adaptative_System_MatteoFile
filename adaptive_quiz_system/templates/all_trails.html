@@ -10,6 +10,14 @@
         <header class="all-trails-header">
             <h1 class="all-trails-header__title">🗺️ All Available Trails</h1>
             <p class="all-trails-header__subtitle">Explore our complete collection of hiking trails with real-time weather forecasts</p>
+            <div class="all-trails-header__user-select">
+                <label for="all-trails-user-select">Select User (for Save Trail):</label>
+                <select id="all-trails-user-select" class="form-select">
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.name }}{% if u.detected_profile %} ({{ u.detected_profile|profile_name_en }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <nav class="all-trails-header__nav">
                 <a href="{{ url_for('demo') }}" class="btn btn-secondary">🎯 Demo</a>
                 <a href="{{ url_for('admin_rules') }}" class="btn btn-secondary">⚙️ Admin Rules</a>
@@ -113,7 +121,10 @@
                         <div class="trail-mini-map" id="mini-map-{{ trail.trail_id }}"></div>
                     </div>
                     <div class="trail-card-content">
-                        <h3>{{ trail.name }}</h3>
+                        <div class="all-trails-card-heading-row" style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;margin-bottom:var(--space-sm);">
+                            <h3 style="margin:0;flex:1;min-width:0;"><a href="#" class="view-details-at trail-name-link" data-trail-id="{{ trail.trail_id }}">{{ trail.name }}</a></h3>
+                            <button type="button" class="save-trail-at btn-secondary" data-trail-id="{{ trail.trail_id }}">Save Trail</button>
+                        </div>
                         <div class="trail-stats">
                             <span class="difficulty-badge difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
                                 {% if trail.difficulty <= 3 %}✅ Easy
@@ -181,7 +192,10 @@
                     </div>
                     {% endif %}
                     <div class="trail-content">
-                        <h3>{{ trail.name }}</h3>
+                        <div class="all-trails-list-heading-row" style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;margin-bottom:var(--space-sm);">
+                            <h3 style="margin:0;flex:1;min-width:0;"><a href="#" class="view-details-at trail-name-link" data-trail-id="{{ trail.trail_id }}">{{ trail.name }}</a></h3>
+                            <button type="button" class="save-trail-at btn-secondary" data-trail-id="{{ trail.trail_id }}">Save Trail</button>
+                        </div>
                         <div class="trail-stats">
                             <span class="difficulty-badge difficulty-{{ 'easy' if trail.difficulty <= 3 else 'medium' if trail.difficulty <= 6 else 'hard' }}">
                                 {% if trail.difficulty <= 3 %}✅ Easy
@@ -595,7 +609,10 @@
                 var marker = L.marker([trail.lat, trail.lon])
                     .addTo(map)
                     .bindPopup(
-                        '<strong>' + (trail.name || 'Unnamed Trail') + '</strong><br>' +
+                        '<div class="all-trails-popup-header" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;">' +
+                        '<a href="#" class="view-details-at trail-popup__title-link" data-trail-id="' + trail.id + '" style="flex:1;min-width:0;color:var(--color-primary,#667eea);text-decoration:none;font-weight:600;">' + (trail.name || 'Unnamed Trail') + '</a>' +
+                        '<button type="button" class="save-trail-at btn btn-secondary btn--sm" data-trail-id="' + trail.id + '">Save Trail</button>' +
+                        '</div>' +
                         'Difficulty: ' + (trail.difficulty <= 3 ? 'Easy' : trail.difficulty <= 6 ? 'Medium' : 'Hard') + '<br>' +
                         'Distance: ' + (trail.distance !== null ? trail.distance + ' km' : 'N/A') + '<br>' +
                         'Duration: ' + formatDuration(trail.duration) + '<br>' +
@@ -794,6 +811,37 @@
                 scrollBtn.classList.add('visible');
             } else {
                 scrollBtn.classList.remove('visible');
+            }
+        });
+
+        // Selected user for View Details / Save Trail (map, list, cards)
+        function getSelectedUserId() {
+            var el = document.getElementById('all-trails-user-select');
+            return el ? el.value : '';
+        }
+        document.body.addEventListener('click', function(e) {
+            var viewBtn = e.target.closest && e.target.closest('.view-details-at');
+            if (viewBtn) {
+                e.preventDefault();
+                var tid = viewBtn.getAttribute('data-trail-id');
+                var uid = getSelectedUserId();
+                if (uid && tid) window.location.href = '/profile/' + uid + '/trail/' + tid;
+                return;
+            }
+            var saveBtn = e.target.closest && e.target.closest('.save-trail-at');
+            if (saveBtn) {
+                e.preventDefault();
+                var tid = saveBtn.getAttribute('data-trail-id');
+                var uid = getSelectedUserId();
+                if (!uid || !tid) { alert('Please select a user first.'); return; }
+                fetch('/api/profile/' + uid + '/trails/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trail_id: tid })
+                }).then(function(r) { return r.json(); }).then(function(d) {
+                    if (d.success) { saveBtn.textContent = 'Saved!'; saveBtn.disabled = true; }
+                    else { saveBtn.textContent = 'Already saved'; saveBtn.disabled = true; }
+                }).catch(function() { saveBtn.textContent = 'Error'; });
             }
         });
     </script>

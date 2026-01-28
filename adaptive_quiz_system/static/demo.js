@@ -231,8 +231,34 @@
                 getTrailsBtn.addEventListener('click', () => this.fetchResults());
             }
 
-            // Context info button clicks (using event delegation)
+            // Context info, view toggle, and other delegated clicks
             document.addEventListener('click', (e) => {
+                // View toggle (List / Map / Cards) for server-rendered demo panels
+                const viewToggleBtn = e.target.closest('.view-toggle-btn');
+                if (viewToggleBtn) {
+                    e.preventDefault();
+                    const view = viewToggleBtn.dataset.view;
+                    const panel = viewToggleBtn.closest('.demo-panel, .result-panel');
+                    if (panel && view) {
+                        const viewSections = panel.querySelector('.demo-results[data-panel-id], .view-sections');
+                        if (viewSections) {
+                            viewSections.querySelectorAll('.demo-view-section, .view-section').forEach((section) => {
+                                if (section.dataset.view === view) {
+                                    section.classList.add('active');
+                                    section.classList.remove('hidden');
+                                } else {
+                                    section.classList.remove('active');
+                                    section.classList.add('hidden');
+                                }
+                            });
+                            panel.querySelectorAll('.view-toggle-btn, .view-toggle__button').forEach((b) => {
+                                b.classList.toggle('active', b === viewToggleBtn);
+                            });
+                        }
+                    }
+                    return;
+                }
+
                 const infoBtn = e.target.closest('.context-info-btn');
                 if (infoBtn) {
                     e.preventDefault();
@@ -263,9 +289,36 @@
                     e.preventDefault();
                     const trailId = trailExplanationBtn.dataset.trailId;
                     const userId = trailExplanationBtn.dataset.userIdx || 
+                                 trailExplanationBtn.dataset.userId ||
                                  trailExplanationBtn.closest('.result-panel, .demo-panel')?.dataset.user || 
                                  'a';
                     this.toggleTrailExplanation(trailId, userId, trailExplanationBtn);
+                    return;
+                }
+
+                // Save Trail button (demo list/cards)
+                const saveTrailBtn = e.target.closest('.btn-save-trail-demo');
+                if (saveTrailBtn) {
+                    e.preventDefault();
+                    const trailId = saveTrailBtn.dataset.trailId;
+                    const userId = saveTrailBtn.dataset.userId;
+                    if (!userId || !trailId) return;
+                    fetch(`/api/profile/${userId}/trails/save`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ trail_id: trailId })
+                    })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d.success) {
+                                saveTrailBtn.textContent = 'Saved!';
+                                saveTrailBtn.disabled = true;
+                            } else {
+                                saveTrailBtn.textContent = 'Already saved';
+                                saveTrailBtn.disabled = true;
+                            }
+                        })
+                        .catch(() => { saveTrailBtn.textContent = 'Error'; });
                     return;
                 }
 
@@ -899,7 +952,8 @@
                         suggestions: result.suggestions || [],
                         collaborative: result.collaborative || [],
                         user_label: userLabel,
-                        user_id: userId
+                        user_id: userId,
+                        actual_user_id: result.scenario?.user_id ?? result.user_id ?? (userId === 'a' || userId === 'b' ? null : userId)
                     })}
                 </script>
             `;
@@ -974,26 +1028,50 @@
             `;
         }
 
+        /** Resolve "a"/"b" to numeric profile id for profile URLs and save API. */
+        resolveNumericUserId(userId, result) {
+            if (userId === 'a' || userId === 'b') {
+                const fromResult = result?.scenario?.user_id ?? result?.user_id ?? result?.actual_user_id;
+                if (fromResult != null) return String(fromResult);
+                const sel = document.getElementById('demo-form')?.querySelector(`#user-select-${userId}`);
+                if (sel?.value) return sel.value;
+                return userId;
+            }
+            if (userId != null && userId !== '') return String(userId);
+            const fromResult = result?.actual_user_id ?? result?.user_id ?? result?.scenario?.user_id;
+            return fromResult != null ? String(fromResult) : '';
+        }
+
         renderListView(result, userId, defaultView) {
             const isActive = defaultView === 'list';
-            const exactTrails = (result.exact || []).map(trail => this.renderTrailItem(trail, 'recommended')).join('');
-            const suggestions = (result.suggestions || []).map(trail => this.renderTrailItem(trail, 'suggested')).join('');
-            const collaborative = (result.collaborative || []).map(trail => this.renderTrailItem(trail, 'collaborative')).join('');
+            const uid = this.resolveNumericUserId(userId, result);
+            const exactTrails = (result.exact || []).map(trail => this.renderTrailItem(trail, 'recommended', uid)).join('');
+            const suggestions = (result.suggestions || []).map(trail => this.renderTrailItem(trail, 'suggested', uid)).join('');
+            const collaborative = (result.collaborative || []).map(trail => this.renderTrailItem(trail, 'collaborative', uid)).join('');
 
             return `
                 <div class="view-section ${isActive ? 'active' : ''}" data-view="list" data-panel="${userId}">
                     <div class="result-section">
-                        <h3>🎯 Recommended (${(result.exact || []).length})</h3>
-                        <div class="trail-list">${exactTrails || '<p class="empty-state">No direct matches</p>'}</div>
+                        <div class="section-header">
+                            <h3>🎯 Recommended (${(result.exact || []).length})</h3>
+                            <small>Perfect matches for this situation</small>
+                        </div>
+                        <div class="trail-list modern">${exactTrails || '<p class="empty-state">No direct matches</p>'}</div>
                     </div>
                     <div class="result-section">
-                        <h3>✨ Suggestions (${(result.suggestions || []).length})</h3>
-                        <div class="trail-list">${suggestions || '<p class="empty-state">No suggestions</p>'}</div>
+                        <div class="section-header">
+                            <h3>✨ Suggestions (${(result.suggestions || []).length})</h3>
+                            <small>High potential even if slightly off the brief</small>
+                        </div>
+                        <div class="trail-list modern">${suggestions || '<p class="empty-state">No suggestions</p>'}</div>
                     </div>
                     ${(result.collaborative || []).length > 0 ? `
                     <div class="result-section">
-                        <h3>👥 Popular with Similar Hikers (${(result.collaborative || []).length})</h3>
-                        <div class="trail-list">${collaborative || '<p class="empty-state">No collaborative recommendations</p>'}</div>
+                        <div class="section-header">
+                            <h3>👥 Popular with Similar Hikers (${(result.collaborative || []).length})</h3>
+                            <small>Trails loved by other users with the same profile</small>
+                        </div>
+                        <div class="trail-list modern">${collaborative || '<p class="empty-state">No collaborative recommendations</p>'}</div>
                     </div>
                     ` : ''}
                 </div>
@@ -1002,9 +1080,10 @@
 
         renderCardsView(result, userId, defaultView) {
             const isActive = defaultView === 'cards';
-            const exactTrails = (result.exact || []).map(trail => this.renderTrailCard(trail, 'recommended')).join('');
-            const suggestions = (result.suggestions || []).map(trail => this.renderTrailCard(trail, 'suggested')).join('');
-            const collaborative = (result.collaborative || []).map(trail => this.renderTrailCard(trail, 'collaborative')).join('');
+            const uid = this.resolveNumericUserId(userId, result);
+            const exactTrails = (result.exact || []).map(trail => this.renderTrailCard(trail, 'recommended', uid)).join('');
+            const suggestions = (result.suggestions || []).map(trail => this.renderTrailCard(trail, 'suggested', uid)).join('');
+            const collaborative = (result.collaborative || []).map(trail => this.renderTrailCard(trail, 'collaborative', uid)).join('');
 
             return `
                 <div class="view-section ${isActive ? 'active' : ''}" data-view="cards" data-panel="${userId}">
@@ -1026,15 +1105,15 @@
             `;
         }
 
-        renderTrailItem(trail, type) {
+        renderTrailItem(trail, type, userId) {
+            const uid = userId != null && userId !== '' ? String(userId) : '';
+            const detailUrl = uid ? `/profile/${uid}/trail/${trail.trail_id || ''}` : '#';
             const difficulty = trail.difficulty || 0;
             const difficultyClass = difficulty <= 3 ? 'easy' : difficulty <= 6 ? 'medium' : 'hard';
             const difficultyText = difficulty <= 3 ? 'Easy' : difficulty <= 6 ? 'Medium' : 'Hard';
-            const relevance = type === 'suggested' ? `<span class="trail-item__relevance">${Math.round(trail.relevance_percentage || 0)}% match</span>` : '';
-            
-            // Check if trail is collaborative (for any type, not just 'collaborative')
+
             const isCollaborative = trail.is_collaborative || (trail.view_type && trail.view_type.includes('collaborative'));
-            const collaborativeIcon = isCollaborative ? 
+            const collaborativeIcon = isCollaborative ?
                 `<div class="collaborative-icon-wrapper">
                     <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
@@ -1042,51 +1121,39 @@
                     </svg>
                     <span class="collaborative-icon-tooltip">Similar profiles likes it</span>
                 </div>` : '';
-            
-            const collaborativeBadge = type === 'collaborative' && trail.collaborative_avg_rating ? 
-                `<span class="badge badge--collaborative">⭐ ${trail.collaborative_avg_rating.toFixed(1)}/5 (${trail.collaborative_user_count || 0} users)</span>` : '';
-            
-            // Truncate description if too long
-            let description = trail.description || '';
-            if (description && description.length > 120) {
-                description = description.substring(0, 120) + '...';
-            }
-            
-            // Format landscapes if available
-            let landscapesHTML = '';
-            if (trail.landscapes) {
-                const landscapes = typeof trail.landscapes === 'string' 
-                    ? trail.landscapes.split(',').map(l => l.trim())
-                    : trail.landscapes;
-                if (Array.isArray(landscapes) && landscapes.length > 0) {
-                    landscapesHTML = `
-                        <div class="trail-item__landscapes">
-                            ${landscapes.slice(0, 3).map(landscape => 
-                                `<span class="trail-item__landscape-tag">${landscape.trim().replace(/_/g, ' ')}</span>`
-                            ).join('')}
-                        </div>
-                    `;
-                }
-            }
 
+            const relevanceBadge = type === 'suggested' ? `<span class="relevance-badge">${Math.round(trail.relevance_percentage || 0)}%</span>` : '';
+            const collaborativeBadge = type === 'collaborative' && trail.collaborative_avg_rating ?
+                `<span class="badge badge--collaborative">⭐ ${(trail.collaborative_avg_rating).toFixed(1)}/5 (${trail.collaborative_user_count || 0} users)</span>` : '';
+
+            const weatherSpan = trail.forecast_weather
+                ? `<span>${this.getWeatherIcon(trail.forecast_weather)} ${(trail.forecast_weather).charAt(0).toUpperCase() + (trail.forecast_weather).slice(1).replace('_', ' ')}</span>`
+                : '';
+
+            // Match server-rendered list structure: name as link, Save in meta, compact stats row
             return `
-                <div class="trail-item ${type}">
-                    <div class="trail-item__header">
-                        <div class="trail-item__title-group">
-                            <h4 class="trail-item__title">${trail.name || 'Unknown'}</h4>
-                            ${relevance}
+                <div class="trail-card modern ${type}" data-trail-id="${trail.trail_id || ''}">
+                    <div class="card-heading">
+                        <a href="${detailUrl}" class="trail-name-link">${(trail.name || 'Unknown').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</a>
+                        <div class="card-heading__meta">
+                            <button type="button" class="btn-save-trail-demo btn btn-secondary btn--sm" data-trail-id="${trail.trail_id || ''}" data-user-id="${uid}">Save Trail</button>
+                            ${collaborativeIcon}
                             ${collaborativeBadge}
-                            <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}">
+                            ${relevanceBadge}
+                            <span class="pill difficulty-${difficultyClass}">${difficultyText}</span>
+                            <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}" data-user-id="${uid}">
                                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                     <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                 </svg>
                             </button>
                         </div>
-                        <div class="card-heading__meta">
-                            ${collaborativeIcon}
-                            <span class="trail-item__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
-                        </div>
+                    </div>
+                    <div class="trail-stats">
+                        <span>${trail.distance || '—'} km</span>
+                        <span>${Utils.formatDuration(trail.duration)}</span>
+                        <span>${trail.elevation_gain || '—'} m</span>
+                        ${weatherSpan}
                     </div>
                     <div class="trail-explanation-content" id="trail-explanation-${trail.trail_id || ''}">
                         <div class="trail-explanation-loading"><span class="spinner">⏳</span> Generating...</div>
@@ -1095,35 +1162,7 @@
                             <ul class="trail-explanation-factors"></ul>
                         </div>
                     </div>
-                    ${description ? `<p class="trail-item__description">${description}</p>` : ''}
-                    ${landscapesHTML}
-                    ${type === 'collaborative' && trail.recommendation_reason ? `
-                    <div class="alert--collaborative"><small class="alert-title">💡 ${trail.recommendation_reason}</small></div>
-                    ` : ''}
-                    <div class="trail-item__stats">
-                        <div class="trail-item__stat">
-                            <span class="trail-item__stat-icon">📏</span>
-                            <span class="trail-item__stat-label">Distance</span>
-                            <span class="trail-item__stat-value">${trail.distance || '—'} km</span>
-                        </div>
-                        <div class="trail-item__stat">
-                            <span class="trail-item__stat-icon">⏱</span>
-                            <span class="trail-item__stat-label">Duration</span>
-                            <span class="trail-item__stat-value">${Utils.formatDuration(trail.duration)}</span>
-                        </div>
-                        <div class="trail-item__stat">
-                            <span class="trail-item__stat-icon">⛰</span>
-                            <span class="trail-item__stat-label">Elevation</span>
-                            <span class="trail-item__stat-value">${trail.elevation_gain || '—'} m</span>
-                        </div>
-                        ${trail.forecast_weather ? `
-                        <div class="trail-item__stat">
-                            <span class="trail-item__stat-icon">${this.getWeatherIcon(trail.forecast_weather)}</span>
-                            <span class="trail-item__stat-label">Weather</span>
-                            <span class="trail-item__stat-value">${trail.forecast_weather.charAt(0).toUpperCase() + trail.forecast_weather.slice(1).replace('_', ' ')}</span>
-                        </div>
-                        ` : ''}
-                    </div>
+                    ${type === 'collaborative' && trail.recommendation_reason ? `<div class="alert--collaborative"><small class="alert-title">💡 ${(trail.recommendation_reason).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</small></div>` : ''}
                 </div>
             `;
         }
@@ -1139,7 +1178,9 @@
             return icons[weather] || '🌤️';
         }
 
-        renderTrailCard(trail, type) {
+        renderTrailCard(trail, type, userId) {
+            const uid = userId != null && userId !== '' ? String(userId) : '';
+            const detailUrl = uid ? `/profile/${uid}/trail/${trail.trail_id || ''}` : '#';
             const difficulty = trail.difficulty || 0;
             const difficultyClass = difficulty <= 3 ? 'easy' : difficulty <= 6 ? 'medium' : 'hard';
             const difficultyText = difficulty <= 3 ? 'Easy' : difficulty <= 6 ? 'Medium' : 'Hard';
@@ -1187,21 +1228,23 @@
             
             // Prepare coordinates for the minimap
             const coordinatesAttr = trail.coordinates ? `data-coordinates='${JSON.stringify(trail.coordinates)}'` : '';
+            const nameEscaped = (trail.name || 'Unknown').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
             return `
-                <div class="trail-card ${type}">
+                <div class="trail-card ${type}" data-trail-id="${trail.trail_id || ''}">
                     <div class="trail-card__map-container">
                         <div class="trail-card__mini-map" id="${mapId}" data-lat="${trail.latitude}" data-lng="${trail.longitude}" ${coordinatesAttr}></div>
                         ${relevance ? `<div class="trail-card__relevance-badge">${relevance}</div>` : ''}
                     </div>
                     <div class="trail-card__content">
                         <div class="trail-card__header">
-                            <h3 class="trail-card__title">${trail.name || 'Unknown'}</h3>
+                            <h3 class="trail-card__title"><a href="${detailUrl}" class="trail-name-link">${nameEscaped}</a></h3>
                             <div class="card-heading__meta">
+                                <button type="button" class="btn-save-trail-demo btn btn-secondary btn--sm" data-trail-id="${trail.trail_id || ''}" data-user-id="${uid}">Save Trail</button>
                                 ${collaborativeIcon}
                                 ${collaborativeBadge}
                                 <span class="trail-card__difficulty difficulty-${difficultyClass}">${difficultyText}</span>
-                                <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}">
+                                <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="${trail.trail_id || ''}" data-user-id="${uid}">
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M8 2C4.69 2 2 4.69 2 8C2 11.31 4.69 14 8 14C11.31 14 14 11.31 14 8C14 4.69 11.31 2 8 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                         <path d="M8 5.5V8.5M8 11H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1353,20 +1396,25 @@
             try {
                 const trailData = JSON.parse(dataScript.textContent);
                 const allTrails = [
-                    ...(trailData.exact || []).map(t => ({ 
-                        ...t, 
+                    ...(trailData.exact || []).map(t => ({
+                        ...t,
                         view_type: t.view_type && t.view_type.includes('collaborative') ? t.view_type : 'recommended'
                     })),
-                    ...(trailData.suggestions || []).map(t => ({ 
-                        ...t, 
+                    ...(trailData.suggestions || []).map(t => ({
+                        ...t,
                         // Preserve view_type if it includes 'collaborative', otherwise set to 'suggested'
                         view_type: t.view_type && t.view_type.includes('collaborative') ? t.view_type : 'suggested'
                     })),
                     ...(trailData.collaborative || []).map(t => ({ ...t, view_type: 'collaborative', is_collaborative: true }))
                 ];
 
-                this.mapManager.addTrailMarkers(map, allTrails, { 
-                    userId: userId,
+                // Use numeric user id for profile/save links: resolve "a"/"b" from form selection
+                const numericUserId = (userId === 'a' || userId === 'b')
+                    ? (document.getElementById('demo-form')?.querySelector(`#user-select-${userId}`)?.value || trailData.actual_user_id || trailData.user_id || userId)
+                    : (trailData.actual_user_id ?? trailData.user_id ?? userId);
+
+                this.mapManager.addTrailMarkers(map, allTrails, {
+                    userId: numericUserId,
                     collaborativeColor: '#f71e50'
                 });
             } catch (e) {

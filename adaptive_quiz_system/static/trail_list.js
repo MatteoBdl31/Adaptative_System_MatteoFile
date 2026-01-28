@@ -54,6 +54,51 @@ const TrailListManager = (function() {
                 }
                 toggle.classList.toggle('expanded', !isExpanded);
             }
+            });
+    }
+    
+    /**
+     * Show celebratory popup with confetti when user's profile category changes after completing a trail.
+     * @param {Object} data - API response with profile_changed, new_profile_display_name, previous_profile_display_name
+     * @param {Function} onClose - Callback when user dismisses (e.g. loadTrails)
+     */
+    function showProfileChangeCelebration(data, onClose) {
+        if (typeof onClose !== 'function') onClose = function() {};
+        var newName = (data && data.new_profile_display_name) ? data.new_profile_display_name : 'your new profile';
+        var title = 'You\u2019ve evolved!';
+        var message = 'Your new trail shifted your profile. You are now: ';
+        var overlay = document.createElement('div');
+        overlay.className = 'profile-change-celebration-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'profile-change-title');
+        overlay.innerHTML =
+            '<div class="profile-change-celebration">' +
+            '  <div class="profile-change-celebration__confetti-canvas" id="profile-change-confetti-canvas" aria-hidden="true"></div>' +
+            '  <div class="profile-change-celebration__card">' +
+            '    <h2 id="profile-change-title" class="profile-change-celebration__title">' + title + '</h2>' +
+            '    <p class="profile-change-celebration__message">' + message + '<strong class="profile-change-celebration__profile-name">' + newName + '</strong></p>' +
+            '    <p class="profile-change-celebration__sub">Your recommendations will adapt to your new style.</p>' +
+            '    <button type="button" class="profile-change-celebration__cta">Awesome!</button>' +
+            '  </div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+        if (typeof confetti === 'function') {
+            try {
+                confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
+                setTimeout(function() {
+                    confetti({ particleCount: 80, spread: 100, origin: { y: 0.5, x: 0.3 } });
+                    confetti({ particleCount: 80, spread: 100, origin: { y: 0.5, x: 0.7 } });
+                }, 200);
+            } catch (e) { /* no confetti if lib missing */ }
+        }
+        function dismiss() {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            onClose();
+        }
+        overlay.querySelector('.profile-change-celebration__cta').addEventListener('click', dismiss);
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) dismiss();
         });
     }
     
@@ -646,65 +691,71 @@ const TrailListManager = (function() {
     }
     
     function showCompletionForm(trailId) {
-        // Create modal overlay
         const modal = document.createElement('div');
-        modal.className = 'completion-form-modal';
+        modal.className = 'completion-form-overlay';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'completion-form-title');
         modal.innerHTML = `
-            <div class="completion-form-content">
-                <div class="completion-form-header">
-                    <h2>Complete Trail</h2>
-                    <button class="completion-form-close">&times;</button>
-                </div>
+            <div class="completion-form-card">
+                <header class="completion-form-header">
+                    <h2 id="completion-form-title" class="completion-form-title">Complete Trail</h2>
+                    <button type="button" class="completion-form-close" aria-label="Close">&times;</button>
+                </header>
                 <form id="completion-form" class="completion-form">
-                    <div class="form-group">
-                        <label>Trail Rating (1-5 stars)</label>
-                        <div class="rating-input-interactive">
-                            <input type="radio" name="rating" value="5" id="rating-5" checked>
-                            <label for="rating-5" data-rating="5" title="5 stars - Excellent">⭐</label>
-                            <input type="radio" name="rating" value="4" id="rating-4">
-                            <label for="rating-4" data-rating="4" title="4 stars - Very Good">⭐</label>
-                            <input type="radio" name="rating" value="3" id="rating-3">
-                            <label for="rating-3" data-rating="3" title="3 stars - Good">⭐</label>
-                            <input type="radio" name="rating" value="2" id="rating-2">
-                            <label for="rating-2" data-rating="2" title="2 stars - Fair">⭐</label>
-                            <input type="radio" name="rating" value="1" id="rating-1">
-                            <label for="rating-1" data-rating="1" title="1 star - Poor">⭐</label>
+                    <div class="completion-form-body">
+                        <div class="form-group">
+                            <label class="form-label">Trail rating (1–5 stars)</label>
+                            <div class="rating-input-interactive" role="group" aria-label="Trail rating">
+                                <input type="radio" name="rating" value="1" id="rating-1">
+                                <label for="rating-1" data-rating="1" title="1 star – Poor">&#9733;</label>
+                                <input type="radio" name="rating" value="2" id="rating-2">
+                                <label for="rating-2" data-rating="2" title="2 stars – Fair">&#9733;</label>
+                                <input type="radio" name="rating" value="3" id="rating-3">
+                                <label for="rating-3" data-rating="3" title="3 stars – Good">&#9733;</label>
+                                <input type="radio" name="rating" value="4" id="rating-4">
+                                <label for="rating-4" data-rating="4" title="4 stars – Very good">&#9733;</label>
+                                <input type="radio" name="rating" value="5" id="rating-5" checked>
+                                <label for="rating-5" data-rating="5" title="5 stars – Excellent">&#9733;</label>
+                            </div>
+                            <span class="rating-display" id="rating-display" aria-live="polite">5 stars</span>
                         </div>
-                        <div class="rating-display" id="rating-display">Selected: 5 stars</div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="difficulty-rating">Difficulty Rating (1-10)</label>
-                        <div class="difficulty-input">
-                            <input type="range" id="difficulty-rating" name="difficulty_rating" min="1" max="10" value="5">
-                            <span id="difficulty-value">5</span>
+                        <div class="form-group">
+                            <label class="form-label" for="difficulty-rating">Difficulty (1–10)</label>
+                            <div class="difficulty-input">
+                                <input type="range" id="difficulty-rating" name="difficulty_rating" min="1" max="10" value="5" aria-valuetext="5">
+                                <span id="difficulty-value" class="difficulty-value">5</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="photos">Photos (optional)</label>
+                            <div class="file-upload-trigger">
+                                <input type="file" id="photos" name="photos" multiple accept="image/*" class="file-upload-input">
+                                <button type="button" class="file-upload-btn" id="photos-trigger">
+                                    <span class="file-upload-btn-icon" aria-hidden="true">+</span>
+                                    <span class="file-upload-btn-text">Add photos</span>
+                                    <span class="file-upload-btn-hint">image files</span>
+                                </button>
+                                <div id="photo-preview" class="photo-preview"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Smartwatch data (optional)</label>
+                            <div class="file-upload-trigger">
+                                <input type="file" id="trail-file" name="trail_file" accept=".json,.gpx,.fit" class="file-upload-input">
+                                <button type="button" class="file-upload-btn" id="trail-file-trigger">
+                                    <span class="file-upload-btn-icon" aria-hidden="true">+</span>
+                                    <span class="file-upload-btn-text">Add smartwatch file</span>
+                                    <span class="file-upload-btn-hint">.json, .gpx, .fit</span>
+                                </button>
+                                <div id="file-info" class="file-info u-hidden"></div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="photos">Photos (optional)</label>
-                        <input type="file" id="photos" name="photos" multiple accept="image/*">
-                        <div id="photo-preview" class="photo-preview"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="has-file" name="has_file">
-                            Upload smartwatch data file (optional)
-                        </label>
-                        <input type="file" id="trail-file" name="trail_file" accept=".json,.gpx,.fit" style="display: none;">
-                        <div id="file-info" class="file-info" style="display: none;"></div>
-                    </div>
-                    
-                    <div class="form-group" id="duration-group">
-                        <label for="actual-duration">Duration (minutes)</label>
-                        <input type="number" id="actual-duration" name="actual_duration" min="1" required>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn-cancel">Cancel</button>
-                        <button type="submit" class="btn-submit">Complete Trail</button>
-                    </div>
+                    <footer class="completion-form-actions">
+                        <button type="button" class="completion-form-btn completion-form-btn--secondary btn-cancel">Cancel</button>
+                        <button type="submit" class="completion-form-btn completion-form-btn--primary btn-submit">Complete Trail</button>
+                    </footer>
                 </form>
             </div>
         `;
@@ -717,7 +768,7 @@ const TrailListManager = (function() {
         ratingInputs.forEach(input => {
             input.addEventListener('change', function() {
                 const value = parseInt(this.value);
-                ratingDisplay.textContent = `Selected: ${value} ${value === 1 ? 'star' : 'stars'}`;
+                ratingDisplay.textContent = value === 1 ? '1 star' : `${value} stars`;
                 // Update visual feedback
                 ratingInputs.forEach(inp => {
                     const label = modal.querySelector(`label[for="${inp.id}"]`);
@@ -732,7 +783,7 @@ const TrailListManager = (function() {
             });
         });
         // Initialize display
-        ratingDisplay.textContent = 'Selected: 5 stars';
+        ratingDisplay.textContent = '5 stars';
         ratingInputs.forEach(inp => {
             if (inp.checked) {
                 const value = parseInt(inp.value);
@@ -752,34 +803,33 @@ const TrailListManager = (function() {
             difficultyValue.textContent = this.value;
         });
         
-        // Handle file checkbox
-        const hasFileCheckbox = modal.querySelector('#has-file');
         const fileInput = modal.querySelector('#trail-file');
-        const durationGroup = modal.querySelector('#duration-group');
         const fileInfo = modal.querySelector('#file-info');
+        const fileTriggerBtn = modal.querySelector('#trail-file-trigger');
+        const photoInput = modal.querySelector('#photos');
+        const photosTriggerBtn = modal.querySelector('#photos-trigger');
         
-        hasFileCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                fileInput.style.display = 'block';
-                durationGroup.style.display = 'none';
-                durationGroup.querySelector('input').removeAttribute('required');
-            } else {
-                fileInput.style.display = 'none';
-                durationGroup.style.display = 'block';
-                durationGroup.querySelector('input').setAttribute('required', 'required');
-                fileInfo.style.display = 'none';
-            }
-        });
+        if (fileTriggerBtn && fileInput) {
+            fileTriggerBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+        }
+        if (photosTriggerBtn && photoInput) {
+            photosTriggerBtn.addEventListener('click', function() {
+                photoInput.click();
+            });
+        }
         
         fileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
-                fileInfo.textContent = `Selected: ${this.files[0].name}`;
-                fileInfo.style.display = 'block';
+                fileInfo.textContent = this.files[0].name;
+                fileInfo.classList.remove('u-hidden');
+            } else {
+                fileInfo.classList.add('u-hidden');
             }
         });
         
         // Handle photo preview
-        const photoInput = modal.querySelector('#photos');
         const photoPreview = modal.querySelector('#photo-preview');
         photoInput.addEventListener('change', function() {
             photoPreview.innerHTML = '';
@@ -830,21 +880,8 @@ const TrailListManager = (function() {
                 formData.append('photos', photos[i]);
             }
             
-            // Add file if provided
-            if (hasFileCheckbox.checked && fileInput.files.length > 0) {
+            if (fileInput.files.length > 0) {
                 formData.append('trail_file', fileInput.files[0]);
-                // Note: For now, we'll need to upload the file separately and get the upload_id
-                // This is a simplified version - in production, you'd handle file upload first
-            }
-            
-            // Add duration if no file
-            if (!hasFileCheckbox.checked || fileInput.files.length === 0) {
-                const duration = durationGroup.querySelector('input').value;
-                if (!duration) {
-                    alert('Please enter duration or upload a file');
-                    return;
-                }
-                formData.append('actual_duration', duration);
             }
             
             // Submit
@@ -856,7 +893,11 @@ const TrailListManager = (function() {
             .then(data => {
                 if (data.success) {
                     document.body.removeChild(modal);
-                    loadTrails();
+                    if (data.profile_changed) {
+                        showProfileChangeCelebration(data, loadTrails);
+                    } else {
+                        loadTrails();
+                    }
                 } else {
                     alert('Failed to complete trail: ' + (data.error || 'Unknown error'));
                 }
@@ -2429,8 +2470,12 @@ const TrailListManager = (function() {
             })
             .then(data => {
                 if (data.success) {
-                    alert('Trail marked as completed!');
-                    loadTrails();
+                    if (data.profile_changed) {
+                        showProfileChangeCelebration(data, loadTrails);
+                    } else {
+                        alert('Trail marked as completed!');
+                        loadTrails();
+                    }
                 } else {
                     alert('Failed to complete trail');
                 }

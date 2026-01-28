@@ -2042,6 +2042,21 @@ body {
     min-width: 0;
 }
 
+.trail-name-link {
+    color: var(--color-primary, #667eea);
+    text-decoration: none;
+    font-weight: inherit;
+}
+.trail-name-link:hover {
+    text-decoration: underline;
+}
+.card-heading .trail-name-link,
+.trail-card h3 .trail-name-link {
+    font-size: inherit;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary, #667eea);
+}
+
 .trail-card__header {
     display: flex;
     align-items: flex-start;
@@ -2184,6 +2199,22 @@ body {
     opacity: 0.9;
     max-width: 60ch;
     margin: 0 auto var(--space-lg);
+}
+
+.all-trails-header__user-select {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin: var(--space-md) 0;
+    flex-wrap: wrap;
+}
+.all-trails-header__user-select label {
+    font-weight: var(--font-weight-medium);
+    margin: 0;
+}
+.all-trails-header__user-select .form-select {
+    min-width: 200px;
 }
 
 .all-trails-header__nav {
@@ -2349,6 +2380,88 @@ body {
 .view-section.active {
     display: block;
     animation: fadeIn 0.3s ease;
+}
+
+/* Demo panel view sections (Map / List / Cards) */
+.demo-view-section {
+    display: none;
+}
+.demo-view-section.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+.demo-view-section.hidden {
+    display: none !important;
+}
+
+/* Demo list view: show trail lists (they don't use .active tab switching) */
+.demo-view-list .trail-list,
+.demo-view-section.demo-view-list .trail-list,
+.demo-results .demo-view-section.demo-view-list .trail-list {
+    display: block !important;
+}
+.demo-view-list .trail-list.modern,
+.demo-view-section.demo-view-list .trail-list.modern,
+.demo-results .demo-view-section.demo-view-list .trail-list.modern {
+    display: flex !important;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+/* Client-rendered demo list (after "Get My Trails" – uses .view-section[data-view="list"]). */
+.view-section[data-view="list"] .trail-list,
+.view-sections .view-section[data-view="list"] .trail-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+/* Ensure trail cards/items are visible inside demo list view */
+.demo-view-section.demo-view-list .trail-card.modern,
+.demo-view-section.demo-view-list .trail-item,
+.view-section[data-view="list"] .trail-item,
+.view-section[data-view="list"] .trail-card.modern {
+    display: flex;
+    flex-direction: column;
+    visibility: visible;
+}
+
+/* Demo list: clear layout for link + Save, and visible link/button styling */
+.demo-view-section.demo-view-list .card-heading,
+.view-section[data-view="list"] .card-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+}
+.demo-view-section.demo-view-list .card-heading .trail-name-link,
+.view-section[data-view="list"] .card-heading .trail-name-link {
+    color: var(--color-primary, #6366f1);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+    cursor: pointer;
+}
+.demo-view-section.demo-view-list .card-heading .trail-name-link:hover,
+.view-section[data-view="list"] .card-heading .trail-name-link:hover {
+    text-decoration: underline;
+}
+.demo-view-section.demo-view-list .card-heading__meta,
+.view-section[data-view="list"] .card-heading__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}
+.demo-view-section.demo-view-list .btn-save-trail-demo,
+.view-section[data-view="list"] .btn-save-trail-demo {
+    flex-shrink: 0;
+}
+.demo-view-section.demo-view-list .trail-stats,
+.view-section[data-view="list"] .trail-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
 }
 
 @keyframes fadeIn {
@@ -5199,94 +5312,270 @@ section.trail-detail-section h4 {
     color: var(--color-text-secondary);
 }
 
-/* Completion Form Modal */
-.completion-form-modal {
+/* Profile change celebration popup (confetti + modal when profile category changes after completing a trail) */
+.profile-change-celebration-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    z-index: var(--z-modal);
+    inset: 0;
+    z-index: calc(var(--z-modal, 1000) + 10);
     display: flex;
     align-items: center;
     justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    animation: profile-change-fadeIn 0.25s ease-out;
+}
+@keyframes profile-change-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.profile-change-celebration {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.profile-change-celebration__card {
+    pointer-events: auto;
+    background: var(--color-surface, #fff);
+    border-radius: var(--radius-lg, 12px);
+    padding: var(--space-xl, 1.5rem);
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: var(--shadow-2xl, 0 25px 50px -12px rgba(0,0,0,0.25));
+    animation: profile-change-scaleIn 0.35s ease-out;
+}
+@keyframes profile-change-scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+.profile-change-celebration__title {
+    margin: 0 0 var(--space-md, 1rem);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text, #1a1a1a);
+}
+.profile-change-celebration__message {
+    margin: 0 0 var(--space-sm, 0.5rem);
+    color: var(--color-text-secondary, #555);
+    line-height: 1.5;
+}
+.profile-change-celebration__profile-name {
+    display: block;
+    margin-top: 0.35em;
+    font-size: 1.15em;
+    color: var(--color-primary, #0d9488);
+}
+.profile-change-celebration__sub {
+    margin: 0 0 var(--space-lg, 1.25rem);
+    font-size: 0.9rem;
+    color: var(--color-text-secondary, #666);
+}
+.profile-change-celebration__cta {
+    padding: 0.6rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--color-primary, #0d9488);
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.profile-change-celebration__cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+}
+.profile-change-celebration__confetti-canvas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
 }
 
-.completion-form-content {
-    background-color: var(--color-surface);
+/* Completion Form Modal – aligned with profile-change and app modals */
+.completion-form-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal, 1000) + 5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    animation: completion-form-fadeIn 0.2s ease-out;
+}
+@keyframes completion-form-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.completion-form-card {
+    background: var(--color-surface);
     border-radius: var(--radius-lg);
     width: 90%;
-    max-width: 600px;
+    max-width: 520px;
     max-height: 90vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     box-shadow: var(--shadow-2xl);
-    position: relative;
+    animation: completion-form-scaleIn 0.25s ease-out;
+}
+@keyframes completion-form-scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .completion-form-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-lg);
-    border-bottom: 2px solid var(--color-border);
+    padding: var(--space-xl) var(--space-xl) var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
 }
 
-.completion-form-header h2 {
+.completion-form-title {
     margin: 0;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
 }
 
 .completion-form-close {
     background: none;
     border: none;
-    font-size: var(--font-size-2xl);
+    font-size: 1.5rem;
     cursor: pointer;
     color: var(--color-text-secondary);
     line-height: 1;
-    padding: 0;
-    width: 32px;
-    height: 32px;
+    padding: var(--space-xs);
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: var(--radius-md);
+    transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .completion-form-close:hover {
     color: var(--color-text);
+    background: var(--color-bg-secondary);
 }
 
 .completion-form {
-    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.completion-form-body {
+    padding: var(--space-xl);
+    overflow-y: auto;
+    flex: 1;
 }
 
 .completion-form .form-group {
     margin-bottom: var(--space-lg);
 }
 
-.completion-form label {
+.completion-form .form-group:last-child {
+    margin-bottom: 0;
+}
+
+.completion-form .form-label {
     display: block;
     margin-bottom: var(--space-sm);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     color: var(--color-text);
 }
 
+.completion-form .form-label-checkbox {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.completion-form .form-label-checkbox input {
+    flex-shrink: 0;
+}
+
+.completion-form .form-label-checkbox span {
+    color: var(--color-text-secondary);
+}
+
+/* Completion form: inputs and controls */
+.completion-form .form-input {
+    display: block;
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+}
+
+.completion-form .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.completion-form .form-input-file {
+    display: block;
+    width: 100%;
+    padding: var(--space-xs);
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+}
+
+.completion-form .form-input-file--hidden {
+    display: none;
+}
+
 .rating-input-interactive {
     display: flex;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
     flex-direction: row;
     justify-content: flex-start;
     align-items: center;
 }
 
 .rating-input-interactive input[type="radio"] {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
 }
 
 .rating-input-interactive label {
-    font-size: var(--font-size-2xl);
+    font-size: 1.5rem;
     cursor: pointer;
-    color: #d1d5db;
-    transition: var(--transition-base);
+    color: var(--color-border);
+    transition: transform 0.15s ease, color 0.15s ease;
     margin: 0;
     padding: var(--space-xs);
     border-radius: var(--radius-sm);
@@ -5294,25 +5583,20 @@ section.trail-detail-section h4 {
 }
 
 .rating-input-interactive label:hover {
-    background-color: var(--color-bg-secondary);
-    transform: scale(1.2);
-}
-
-.rating-input-interactive label.star-selected {
     color: var(--color-accent-yellow);
-    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
+    transform: scale(1.15);
 }
 
+.rating-input-interactive label.star-selected,
 .rating-input-interactive input[type="radio"]:checked + label {
     color: var(--color-accent-yellow);
-    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
 }
 
 .rating-display {
-    margin-top: var(--space-sm);
+    display: block;
+    margin-top: var(--space-xs);
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
-    font-weight: var(--font-weight-medium);
 }
 
 .rating-input {
@@ -5340,20 +5624,23 @@ section.trail-detail-section h4 {
     color: var(--color-accent-yellow);
 }
 
-.difficulty-input {
+.completion-form .difficulty-input {
     display: flex;
     align-items: center;
     gap: var(--space-md);
 }
 
-.difficulty-input input[type="range"] {
+.completion-form .difficulty-input input[type="range"] {
     flex: 1;
+    height: 6px;
+    accent-color: var(--color-primary);
 }
 
-.difficulty-input span {
+.completion-form .difficulty-value {
     font-weight: var(--font-weight-semibold);
-    min-width: 30px;
-    text-align: center;
+    min-width: 2ch;
+    text-align: right;
+    color: var(--color-text);
 }
 
 .photo-preview {
@@ -5364,57 +5651,127 @@ section.trail-detail-section h4 {
 }
 
 .photo-preview-item {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     object-fit: cover;
     border-radius: var(--radius-md);
-    border: 2px solid var(--color-border);
+    border: 1px solid var(--color-border);
 }
 
-.file-info {
+/* Styled smartwatch file upload */
+.file-upload-trigger {
+    position: relative;
+}
+
+.file-upload-input {
+    position: absolute;
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.file-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+    background: transparent;
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.file-upload-btn:hover {
+    border-color: var(--color-primary);
+    background: rgba(99, 102, 241, 0.06);
+    color: var(--color-primary);
+}
+
+.file-upload-btn:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.file-upload-btn-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+.file-upload-btn-text {
+    margin: 0;
+}
+
+.file-upload-btn-hint {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-normal);
+    color: var(--color-text-secondary);
+    margin-left: var(--space-xs);
+}
+
+.completion-form .file-info {
     margin-top: var(--space-sm);
-    padding: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
     background: var(--color-bg-secondary);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
 }
 
-.form-actions {
+.completion-form-actions {
     display: flex;
     gap: var(--space-md);
     justify-content: flex-end;
-    margin-top: var(--space-xl);
-    padding-top: var(--space-lg);
-    border-top: 2px solid var(--color-border);
-}
-
-.btn-cancel,
-.btn-submit {
-    padding: var(--space-sm) var(--space-lg);
-    border: none;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-weight: var(--font-weight-medium);
-    transition: var(--transition-base);
-}
-
-.btn-cancel {
+    padding: var(--space-lg) var(--space-xl);
+    border-top: 1px solid var(--color-border);
     background: var(--color-bg-secondary);
-    color: var(--color-text);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    flex-shrink: 0;
 }
 
-.btn-cancel:hover {
+.completion-form-btn {
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.completion-form-btn--secondary,
+.completion-form .btn-cancel {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.completion-form-btn--secondary:hover,
+.completion-form .btn-cancel:hover {
     background: var(--color-bg-tertiary);
 }
 
-.btn-submit {
+.completion-form-btn--primary,
+.completion-form .btn-submit {
     background: var(--color-primary);
-    color: white;
+    color: #fff;
+    border: none;
 }
 
-.btn-submit:hover {
-    background: var(--color-primary-dark);
+.completion-form-btn--primary:hover,
+.completion-form .btn-submit:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 /* ============================================
@@ -6991,13 +7348,21 @@ body.komoot-style.trail-detail-page {
             border-bottom: 1px solid var(--color-border);
         }
 
-  .trail-popup__title {
+  .trail-popup__title,
+  .trail-popup__title-link {
             font-size: var(--font-size-lg);
             font-weight: var(--font-weight-semibold);
             color: var(--color-text);
             margin: 0;
             flex: 1;
             line-height: 1.3;
+        }
+  .trail-popup__title-link {
+            color: var(--color-primary, #667eea);
+            text-decoration: none;
+        }
+  .trail-popup__title-link:hover {
+            text-decoration: underline;
         }
 
   .trail-popup__difficulty {

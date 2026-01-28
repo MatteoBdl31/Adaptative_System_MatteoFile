@@ -1,4 +1,5 @@
-<div class="demo-panel panel-card" data-user-index="{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-connection="{{ result.context.get('connection', 'strong') }}">
+{% set demo_user_id = result.scenario.user_id|default(result.user_id)|default(1) %}
+<div class="demo-panel panel-card" data-user-index="{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-connection="{{ result.context.get('connection', 'strong') }}" data-user-id="{{ demo_user_id }}">
     <div class="panel-header">
         <div class="result-panel__title-wrapper">
             <h2 class="result-panel__title">{{ result.scenario.title }}</h2>
@@ -73,16 +74,16 @@
         </div>
     </div>
 
-    {# View Toggle - Always show all 3 views (Map, List, Cards) #}
+    {# View Toggle - Always show all 3 views (Map, List, Cards). List is default. #}
     <div class="demo-view-toggle">
         <button type="button" class="view-toggle-btn" data-view="map" data-panel-id="demo-panel-{{ result.scenario.user_id }}">🗺️ Map</button>
-        <button type="button" class="view-toggle-btn" data-view="list" data-panel-id="demo-panel-{{ result.scenario.user_id }}">📋 List</button>
+        <button type="button" class="view-toggle-btn active" data-view="list" data-panel-id="demo-panel-{{ result.scenario.user_id }}">📋 List</button>
         <button type="button" class="view-toggle-btn" data-view="cards" data-panel-id="demo-panel-{{ result.scenario.user_id }}">🃏 Cards</button>
     </div>
 
     <div class="demo-results" data-panel-id="demo-panel-{{ result.scenario.user_id }}">
         {# Map View #}
-        <div class="demo-view-section demo-view-map" data-view="map">
+        <div class="demo-view-section demo-view-map hidden" data-view="map">
             <div class="map-container">
                 <div class="demo-map" id="demo-map-{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-user-id="{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-user-label="{{ result.user_label|default('User') }}"></div>
             </div>
@@ -110,8 +111,8 @@
             </div>
         </div>
 
-        {# List View (current view) #}
-        <div class="demo-view-section demo-view-list" data-view="list">
+        {# List View (default visible view) #}
+        <div class="demo-view-section demo-view-list active" data-view="list">
             <div class="result-section">
                 <div class="section-header">
                     <h3>🎯 Recommended ({{ result.exact|length }})</h3>
@@ -124,10 +125,11 @@
                     {% set is_collab_from_view = 'collaborative' in view_type_str if view_type_str else False %}
                     {% set show_collab_icon = trail.is_collaborative or is_collab_from_view %}
                     <!-- DEBUG RECOMMENDED: trail_id={{ trail.trail_id }}, is_collaborative={{ trail.is_collaborative }}, view_type={{ view_type_str }}, is_collab_from_view={{ is_collab_from_view }}, show_collab_icon={{ show_collab_icon }} -->
-                    <div class="trail-card modern recommended">
+                    <div class="trail-card modern recommended" data-trail-id="{{ trail.trail_id }}">
                         <div class="card-heading">
-                            <strong>{{ trail.name }}</strong>
+                            <a href="{{ url_for('profile_trail_detail', user_id=demo_user_id, trail_id=trail.trail_id) }}" class="trail-name-link">{{ trail.name }}</a>
                             <div class="card-heading__meta">
+                                <button type="button" class="btn-save-trail-demo btn btn-secondary btn--sm" data-trail-id="{{ trail.trail_id }}" data-user-id="{{ demo_user_id }}">Save Trail</button>
                                 {% if show_collab_icon %}
                                 <div class="collaborative-icon-wrapper">
                                     <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -183,8 +185,9 @@
                     <!-- DEBUG LIST: trail_id={{ trail.trail_id }}, is_collaborative={{ trail.is_collaborative }}, view_type={{ view_type_str }}, is_collab_from_view={{ is_collab_from_view }}, show_collab_icon={{ show_collab_icon }} -->
                     <div class="trail-card modern suggested" data-trail-id="{{ trail.trail_id }}" data-is-collab="{{ show_collab_icon|lower }}" data-view-type="{{ view_type_str }}">
                         <div class="card-heading">
-                            <strong>{{ trail.name }}</strong>
+                            <a href="{{ url_for('profile_trail_detail', user_id=demo_user_id, trail_id=trail.trail_id) }}" class="trail-name-link">{{ trail.name }}</a>
                             <div class="card-heading__meta">
+                                <button type="button" class="btn-save-trail-demo btn btn-secondary btn--sm" data-trail-id="{{ trail.trail_id }}" data-user-id="{{ demo_user_id }}">Save Trail</button>
                                 {% if show_collab_icon %}
                                 <div class="collaborative-icon-wrapper">
                                     <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -244,9 +247,10 @@
                     {% for trail in result.collaborative %}
                     <div class="trail-card modern collaborative">
                         <div class="card-heading">
-                            <strong>{{ trail.name }}</strong>
-<div class="card-heading__meta">
-                            <span class="badge badge--collaborative">
+                            <a href="{{ url_for('profile_trail_detail', user_id=demo_user_id, trail_id=trail.trail_id) }}" class="trail-name-link">{{ trail.name }}</a>
+                            <div class="card-heading__meta">
+                                <button type="button" class="btn-save-trail-demo btn btn-secondary btn--sm" data-trail-id="{{ trail.trail_id }}" data-user-id="{{ demo_user_id }}">Save Trail</button>
+                                <span class="badge badge--collaborative">
                                     ⭐ {{ trail.collaborative_avg_rating|default('N/A') }}/5 ({{ trail.collaborative_user_count|default(0) }} users)
                                 </span>
                                 <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="{{ trail.trail_id }}" data-user-idx>
@@ -278,7 +282,7 @@
         </div>
 
         {# Card View (available in all modes) #}
-        <div class="demo-view-section demo-view-cards" data-view="cards">
+        <div class="demo-view-section demo-view-cards hidden" data-view="cards">
             <div class="result-section">
                 <div class="section-header">
                     <h3>🎯 Recommended ({{ result.exact|length }})</h3>
@@ -304,8 +308,9 @@
                         <div class="demo-trail-card-content">
                             <div>
                                 <div class="card-heading">
-                                    <h3>{{ trail.name }}</h3>
+                                    <h3><a href="{{ url_for('profile_trail_detail', user_id=demo_user_id, trail_id=trail.trail_id) }}" class="trail-name-link">{{ trail.name }}</a></h3>
                                     <div class="card-heading__meta">
+                                        <button type="button" class="btn-save-trail-demo btn btn-secondary btn--sm" data-trail-id="{{ trail.trail_id }}" data-user-id="{{ demo_user_id }}">Save Trail</button>
                                         {% if show_collab_icon %}
                                         <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" title="Similar profiles likes it">
                                             <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
@@ -380,8 +385,9 @@
                         {% endif %}
                         <div class="demo-trail-card-content">
                             <div class="card-heading">
-                                <h3>{{ trail.name }}</h3>
+                                <h3><a href="{{ url_for('profile_trail_detail', user_id=demo_user_id, trail_id=trail.trail_id) }}" class="trail-name-link">{{ trail.name }}</a></h3>
                                 <div class="card-heading__meta">
+                                    <button type="button" class="btn-save-trail-demo btn btn-secondary btn--sm" data-trail-id="{{ trail.trail_id }}" data-user-id="{{ demo_user_id }}">Save Trail</button>
                                     {% if show_collab_icon %}
                                     <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" title="Similar profiles likes it">
                                         <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
@@ -467,8 +473,9 @@
                         {% endif %}
                         <div class="demo-trail-card-content">
                             <div class="card-heading">
-                                <h3>{{ trail.name }}</h3>
+                                <h3><a href="{{ url_for('profile_trail_detail', user_id=demo_user_id, trail_id=trail.trail_id) }}" class="trail-name-link">{{ trail.name }}</a></h3>
                                 <div class="card-heading__meta">
+                                    <button type="button" class="btn-save-trail-demo btn btn-secondary btn--sm" data-trail-id="{{ trail.trail_id }}" data-user-id="{{ demo_user_id }}">Save Trail</button>
                                     <span class="badge badge--collaborative">⭐ {{ trail.collaborative_avg_rating|default('N/A') }}/5 ({{ trail.collaborative_user_count|default(0) }} users)</span>
                                     <button type="button" class="trail-explanation-btn" aria-label="Why was this recommended?" data-trail-id="{{ trail.trail_id }}" data-user-idx>
                                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
