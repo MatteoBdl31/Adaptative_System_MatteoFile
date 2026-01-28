@@ -25,7 +25,7 @@ const UploadManager = (function() {
     }
     
     function handleUpload() {
-        const fileInput = document.getElementById('trail-file');
+        const fileInput = document.getElementById('upload-trail-file');
         const file = fileInput.files[0];
         
         if (!file) {

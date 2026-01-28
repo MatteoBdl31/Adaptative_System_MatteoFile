@@ -104,19 +104,20 @@ const TrailListManager = (function() {
     
     function setupTabs() {
         const tabs = document.querySelectorAll('.trail-tab');
+        const lists = document.querySelector('#trail-lists');
+        if (!lists) return;
         tabs.forEach(tab => {
             tab.addEventListener('click', function() {
                 const tabType = this.getAttribute('data-tab');
-                
-                // Update active tab
-                tabs.forEach(t => t.classList.remove('active'));
+                if (!tabType) return;
+                var panel = document.getElementById(tabType + '-trails');
+                if (!panel) return;
+                tabs.forEach(function(t) { t.classList.remove('active'); });
                 this.classList.add('active');
-                
-                // Show corresponding list
-                document.querySelectorAll('.trail-list').forEach(list => {
+                lists.querySelectorAll('.trail-list').forEach(function(list) {
                     list.classList.remove('active');
                 });
-                document.getElementById(`${tabType}-trails`).classList.add('active');
+                panel.classList.add('active');
             });
         });
     }
