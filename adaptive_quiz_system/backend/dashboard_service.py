@@ -306,7 +306,9 @@ class DashboardCalculator:
         completed_trails = self._get_completed_trails_with_details(user_id)
         
         if not completed_trails:
-            return self._empty_exploration_metrics()
+            out = self._empty_exploration_metrics()
+            out["exploration_level"] = self._get_user_performance(user_id).get("exploration_level")
+            return out
         
         # Unique regions
         regions = set(t.get("region", "unknown") for t in completed_trails)
@@ -343,12 +345,41 @@ class DashboardCalculator:
                     "region": trail.get("region", "unknown")
                 })
         
+        # Uncharted suggestions: trails in regions the user has not yet visited
+        uncharted_suggestions = []
+        if regions:
+            try:
+                conn = sqlite3.connect(self.trails_db)
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                placeholders = ",".join("?" * len(regions))
+                cur.execute(
+                    "SELECT trail_id, name, region, difficulty, distance FROM trails "
+                    "WHERE region NOT IN (" + placeholders + ") AND (region IS NOT NULL AND region != '') "
+                    "ORDER BY popularity DESC LIMIT 10",
+                    list(regions),
+                )
+                for row in cur.fetchall():
+                    uncharted_suggestions.append({
+                        "trail_id": row["trail_id"],
+                        "name": row["name"] or "Unknown",
+                        "region": row["region"] or "unknown",
+                        "difficulty": row["difficulty"],
+                        "distance": row["distance"],
+                    })
+                conn.close()
+            except Exception:
+                uncharted_suggestions = []
+        
+        perf = self._get_user_performance(user_id)
         return {
             "unique_regions": sorted(list(regions)),
             "trail_diversity_score": round(diversity_score, 1),
             "landscapes_discovered": dict(landscapes_discovered),
             "rare_trail_types": rare_trail_types,
-            "exploration_map": exploration_map
+            "exploration_map": exploration_map,
+            "uncharted_suggestions": uncharted_suggestions,
+            "exploration_level": perf.get("exploration_level"),
         }
     
     def calculate_photography_metrics(self, user_id: int) -> Dict:
@@ -361,13 +392,29 @@ class DashboardCalculator:
                 "best_photo_opportunities": List[Dict],
                 "landscape_variety": Dict,
                 "peak_viewing_times": List[Dict],
-                "instagram_locations": List[Dict]
+                "instagram_locations": List[Dict],
+                "trail_photos_count": int,
+                "recent_photos": List[Dict]
             }
         """
         completed_trails = self._get_completed_trails_with_details(user_id)
         
         if not completed_trails:
-            return self._empty_photography_metrics()
+            out = self._empty_photography_metrics()
+            try:
+                conn = sqlite3.connect(self.users_db)
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT COUNT(*) FROM trail_photos tp "
+                    "JOIN completed_trails ct ON tp.completed_trail_id = ct.id WHERE ct.user_id = ?",
+                    (user_id,),
+                )
+                out["trail_photos_count"] = cur.fetchone()[0] or 0
+                conn.close()
+            except Exception:
+                out["trail_photos_count"] = 0
+            out["recent_photos"] = []
+            return out
         
         # Scenic trails (high popularity, scenic landscapes)
         scenic_trails = []
@@ -431,12 +478,47 @@ class DashboardCalculator:
             if t.get("popularity", 0) >= 7.5
         ]
         
+        # Trail photos: aggregate count and recent photos for this user
+        trail_photos_count = 0
+        recent_photos: List[Dict] = []
+        try:
+            conn = sqlite3.connect(self.users_db)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT COUNT(*) FROM trail_photos tp "
+                "JOIN completed_trails ct ON tp.completed_trail_id = ct.id WHERE ct.user_id = ?",
+                (user_id,),
+            )
+            trail_photos_count = cur.fetchone()[0] or 0
+            cur.execute(
+                "SELECT tp.photo_path, tp.caption, tp.upload_date, ct.trail_id FROM trail_photos tp "
+                "JOIN completed_trails ct ON tp.completed_trail_id = ct.id "
+                "WHERE ct.user_id = ? ORDER BY tp.upload_date DESC LIMIT 8",
+                (user_id,),
+            )
+            for row in cur.fetchall():
+                trail_id = row["trail_id"]
+                trail = get_trail(trail_id) if trail_id else None
+                recent_photos.append({
+                    "photo_path": row["photo_path"],
+                    "caption": row["caption"] or "",
+                    "upload_date": row["upload_date"] or "",
+                    "trail_id": trail_id,
+                    "trail_name": trail.get("name", "Unknown") if trail else "Unknown",
+                })
+            conn.close()
+        except Exception:
+            pass
+        
         return {
             "scenic_trails": scenic_trails[:10],
             "best_photo_opportunities": best_photo_opportunities[:10],
             "landscape_variety": dict(landscape_variety),
             "peak_viewing_times": peak_viewing_times[:10],
-            "instagram_locations": instagram_locations
+            "instagram_locations": instagram_locations,
+            "trail_photos_count": trail_photos_count,
+            "recent_photos": recent_photos,
         }
     
     def calculate_contemplative_metrics(self, user_id: int) -> Dict:
@@ -535,7 +617,13 @@ class DashboardCalculator:
         completed_trails = self._get_completed_trails_with_details(user_id)
         
         if not completed_trails:
-            return self._empty_performance_metrics()
+            out = self._empty_performance_metrics()
+            perf = self._get_user_performance(user_id)
+            out["activity_frequency"] = perf.get("activity_frequency")
+            out["avg_difficulty_completed"] = perf.get("avg_difficulty_completed")
+            out["persistence_score"] = perf.get("persistence_score")
+            out["performance_improvements"] = self.calculate_performance_improvements(user_id)
+            return out
         
         # Performance trends over time
         performance_trends = []
@@ -587,14 +675,33 @@ class DashboardCalculator:
             "total_trails": len(completed_trails)
         }
         
+        perf = self._get_user_performance(user_id)
+        performance_improvements = self.calculate_performance_improvements(user_id)
         return {
             "performance_trends": performance_trends,
             "personal_records": personal_records,
             "improvement_metrics": improvement_metrics,
-            "comparison_to_average": comparison_to_average
+            "comparison_to_average": comparison_to_average,
+            "activity_frequency": perf.get("activity_frequency"),
+            "avg_difficulty_completed": perf.get("avg_difficulty_completed"),
+            "persistence_score": perf.get("persistence_score"),
+            "performance_improvements": performance_improvements,
         }
     
     # Helper methods
+
+    def _get_user_performance(self, user_id: int) -> Dict:
+        """Get aggregate performance row for the user (persistence_score, exploration_level, activity_frequency, etc.)."""
+        try:
+            conn = sqlite3.connect(self.users_db)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM performance WHERE user_id = ?", (user_id,))
+            row = cur.fetchone()
+            conn.close()
+            return dict(row) if row else {}
+        except Exception:
+            return {}
     
     def _get_completed_trails_with_details(self, user_id: int) -> List[Dict]:
         """Get completed trails with full trail details, including predicted metrics."""
@@ -967,7 +1074,8 @@ class DashboardCalculator:
             "trail_diversity_score": 0,
             "landscapes_discovered": {},
             "rare_trail_types": {},
-            "exploration_map": []
+            "exploration_map": [],
+            "uncharted_suggestions": [],
         }
     
     def _empty_photography_metrics(self) -> Dict:
