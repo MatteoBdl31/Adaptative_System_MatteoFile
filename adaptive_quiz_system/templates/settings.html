@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Settings — Adaptive Trails{% endblock %}
+{% block page_class %}settings-page{% endblock %}
+
+{% block content %}
+<div class="l-settings">
+    <aside class="l-settings__sidebar" role="navigation" aria-label="Settings sections">
+        <nav class="l-settings__nav">
+            <a href="#theme" class="l-settings__nav-item is-active" data-panel="theme" aria-current="page">Theme</a>
+        </nav>
+    </aside>
+    <div class="l-settings__main">
+        <section class="l-settings__panel is-active" id="panel-theme" aria-labelledby="theme-heading">
+            <h1 id="theme-heading" class="l-settings__heading">Theme</h1>
+            <fieldset class="l-settings__fieldset">
+                <legend class="u-visually-hidden">Appearance</legend>
+                <div class="l-settings__options">
+                    <label class="l-settings__option">
+                        <input type="radio" name="theme" value="light" class="l-settings__radio">
+                        <span class="l-settings__option-label">Light</span>
+                    </label>
+                    <label class="l-settings__option">
+                        <input type="radio" name="theme" value="dark" class="l-settings__radio">
+                        <span class="l-settings__option-label">Dark</span>
+                    </label>
+                    <label class="l-settings__option">
+                        <input type="radio" name="theme" value="system" class="l-settings__radio" checked>
+                        <span class="l-settings__option-label">System</span>
+                    </label>
+                </div>
+            </fieldset>
+        </section>
+    </div>
+</div>
+
+<script>
+(function() {
+    var KEY = 'theme';
+    var light = document.querySelector('input[name="theme"][value="light"]');
+    var dark = document.querySelector('input[name="theme"][value="dark"]');
+    var system = document.querySelector('input[name="theme"][value="system"]');
+    function apply(v) {
+        var root = document.documentElement;
+        if (v === 'system') {
+            root.removeAttribute('data-theme');
+        } else {
+            root.setAttribute('data-theme', v);
+        }
+    }
+    function load() {
+        var v = localStorage.getItem(KEY) || 'system';
+        if (v === 'light') { if (light) light.checked = true; apply('light'); }
+        else if (v === 'dark') { if (dark) dark.checked = true; apply('dark'); }
+        else { if (system) system.checked = true; apply('system'); }
+    }
+    function onChange() {
+        var v = document.querySelector('input[name="theme"]:checked');
+        v = v ? v.value : 'system';
+        localStorage.setItem(KEY, v);
+        apply(v);
+    }
+    [light, dark, system].forEach(function(el) { if (el) el.addEventListener('change', onChange); });
+    load();
+})();
+</script>
+{% endblock %}
