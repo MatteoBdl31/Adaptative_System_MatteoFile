@@ -5997,6 +5997,67 @@ section.trail-detail-section h4 {
     border: 1px solid var(--color-border);
 }
 
+/* Styled smartwatch file upload */
+.file-upload-trigger {
+    position: relative;
+}
+
+.file-upload-input {
+    position: absolute;
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.file-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+    background: transparent;
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.file-upload-btn:hover {
+    border-color: var(--color-primary);
+    background: rgba(99, 102, 241, 0.06);
+    color: var(--color-primary);
+}
+
+.file-upload-btn:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.file-upload-btn-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+.file-upload-btn-text {
+    margin: 0;
+}
+
+.file-upload-btn-hint {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-normal);
+    color: var(--color-text-secondary);
+    margin-left: var(--space-xs);
+}
+
 .completion-form .file-info {
     margin-top: var(--space-sm);
     padding: var(--space-sm) var(--space-md);

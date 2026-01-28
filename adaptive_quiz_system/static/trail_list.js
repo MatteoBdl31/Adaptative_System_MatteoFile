@@ -707,16 +707,16 @@ const TrailListManager = (function() {
                         <div class="form-group">
                             <label class="form-label">Trail rating (1–5 stars)</label>
                             <div class="rating-input-interactive" role="group" aria-label="Trail rating">
-                                <input type="radio" name="rating" value="5" id="rating-5" checked>
-                                <label for="rating-5" data-rating="5" title="5 stars – Excellent">&#9733;</label>
-                                <input type="radio" name="rating" value="4" id="rating-4">
-                                <label for="rating-4" data-rating="4" title="4 stars – Very good">&#9733;</label>
-                                <input type="radio" name="rating" value="3" id="rating-3">
-                                <label for="rating-3" data-rating="3" title="3 stars – Good">&#9733;</label>
-                                <input type="radio" name="rating" value="2" id="rating-2">
-                                <label for="rating-2" data-rating="2" title="2 stars – Fair">&#9733;</label>
                                 <input type="radio" name="rating" value="1" id="rating-1">
                                 <label for="rating-1" data-rating="1" title="1 star – Poor">&#9733;</label>
+                                <input type="radio" name="rating" value="2" id="rating-2">
+                                <label for="rating-2" data-rating="2" title="2 stars – Fair">&#9733;</label>
+                                <input type="radio" name="rating" value="3" id="rating-3">
+                                <label for="rating-3" data-rating="3" title="3 stars – Good">&#9733;</label>
+                                <input type="radio" name="rating" value="4" id="rating-4">
+                                <label for="rating-4" data-rating="4" title="4 stars – Very good">&#9733;</label>
+                                <input type="radio" name="rating" value="5" id="rating-5" checked>
+                                <label for="rating-5" data-rating="5" title="5 stars – Excellent">&#9733;</label>
                             </div>
                             <span class="rating-display" id="rating-display" aria-live="polite">5 stars</span>
                         </div>
@@ -729,20 +729,27 @@ const TrailListManager = (function() {
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="photos">Photos (optional)</label>
-                            <input type="file" id="photos" name="photos" multiple accept="image/*" class="form-input-file">
-                            <div id="photo-preview" class="photo-preview"></div>
+                            <div class="file-upload-trigger">
+                                <input type="file" id="photos" name="photos" multiple accept="image/*" class="file-upload-input">
+                                <button type="button" class="file-upload-btn" id="photos-trigger">
+                                    <span class="file-upload-btn-icon" aria-hidden="true">+</span>
+                                    <span class="file-upload-btn-text">Add photos</span>
+                                    <span class="file-upload-btn-hint">image files</span>
+                                </button>
+                                <div id="photo-preview" class="photo-preview"></div>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label form-label-checkbox">
-                                <input type="checkbox" id="has-file" name="has_file">
-                                <span>Upload smartwatch data (optional)</span>
-                            </label>
-                            <input type="file" id="trail-file" name="trail_file" accept=".json,.gpx,.fit" class="form-input-file form-input-file--hidden">
-                            <div id="file-info" class="file-info u-hidden"></div>
-                        </div>
-                        <div class="form-group" id="duration-group">
-                            <label class="form-label" for="actual-duration">Duration (minutes)</label>
-                            <input type="number" id="actual-duration" name="actual_duration" min="1" required class="form-input" placeholder="e.g. 120">
+                            <label class="form-label">Smartwatch data (optional)</label>
+                            <div class="file-upload-trigger">
+                                <input type="file" id="trail-file" name="trail_file" accept=".json,.gpx,.fit" class="file-upload-input">
+                                <button type="button" class="file-upload-btn" id="trail-file-trigger">
+                                    <span class="file-upload-btn-icon" aria-hidden="true">+</span>
+                                    <span class="file-upload-btn-text">Add smartwatch file</span>
+                                    <span class="file-upload-btn-hint">.json, .gpx, .fit</span>
+                                </button>
+                                <div id="file-info" class="file-info u-hidden"></div>
+                            </div>
                         </div>
                     </div>
                     <footer class="completion-form-actions">
@@ -796,34 +803,33 @@ const TrailListManager = (function() {
             difficultyValue.textContent = this.value;
         });
         
-        // Handle file checkbox
-        const hasFileCheckbox = modal.querySelector('#has-file');
         const fileInput = modal.querySelector('#trail-file');
-        const durationGroup = modal.querySelector('#duration-group');
         const fileInfo = modal.querySelector('#file-info');
+        const fileTriggerBtn = modal.querySelector('#trail-file-trigger');
+        const photoInput = modal.querySelector('#photos');
+        const photosTriggerBtn = modal.querySelector('#photos-trigger');
         
-        hasFileCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                fileInput.classList.remove('form-input-file--hidden');
-                durationGroup.classList.add('u-hidden');
-                durationGroup.querySelector('input').removeAttribute('required');
-            } else {
-                fileInput.classList.add('form-input-file--hidden');
-                durationGroup.classList.remove('u-hidden');
-                durationGroup.querySelector('input').setAttribute('required', 'required');
-                fileInfo.classList.add('u-hidden');
-            }
-        });
+        if (fileTriggerBtn && fileInput) {
+            fileTriggerBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+        }
+        if (photosTriggerBtn && photoInput) {
+            photosTriggerBtn.addEventListener('click', function() {
+                photoInput.click();
+            });
+        }
         
         fileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
                 fileInfo.textContent = this.files[0].name;
                 fileInfo.classList.remove('u-hidden');
+            } else {
+                fileInfo.classList.add('u-hidden');
             }
         });
         
         // Handle photo preview
-        const photoInput = modal.querySelector('#photos');
         const photoPreview = modal.querySelector('#photo-preview');
         photoInput.addEventListener('change', function() {
             photoPreview.innerHTML = '';
@@ -874,21 +880,8 @@ const TrailListManager = (function() {
                 formData.append('photos', photos[i]);
             }
             
-            // Add file if provided
-            if (hasFileCheckbox.checked && fileInput.files.length > 0) {
+            if (fileInput.files.length > 0) {
                 formData.append('trail_file', fileInput.files[0]);
-                // Note: For now, we'll need to upload the file separately and get the upload_id
-                // This is a simplified version - in production, you'd handle file upload first
-            }
-            
-            // Add duration if no file
-            if (!hasFileCheckbox.checked || fileInput.files.length === 0) {
-                const duration = durationGroup.querySelector('input').value;
-                if (!duration) {
-                    alert('Please enter duration or upload a file');
-                    return;
-                }
-                formData.append('actual_duration', duration);
             }
             
             // Submit
