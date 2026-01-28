@@ -111,15 +111,20 @@
                         }
                     }
 
-                    // Determine icon color based on view_type (prioritize recommended > suggested)
-                    let iconColor = '#f59e0b'; // default (suggested)
-                    if (trail.view_type && trail.view_type.includes('recommended')) {
-                        iconColor = '#5b8df9'; // recommended
-                    }
-                    
                     // Check if trail is collaborative
                     const isCollaborative = trail.is_collaborative || (trail.view_type && trail.view_type.includes('collaborative'));
-                    const collaborativeColor = '#f71e50';
+                    const collaborativeColor = '#8b5a2b';  // --color-collaborative (matches map legend)
+                    const vt = trail.view_type;
+
+                    // Determine icon color from view_type (matches map legend: recommended / suggestion / collaborative)
+                    let iconColor = '#606c38'; // --color-accent, default (suggested)
+                    if (vt === 'recommended' || vt === 'exact' || (vt && vt.includes && vt.includes('recommended'))) {
+                        iconColor = '#40916c'; // --color-recommended
+                    } else if (vt === 'suggested' || (vt && vt.includes && vt.includes('suggested'))) {
+                        iconColor = '#606c38'; // --color-accent
+                    } else if (isCollaborative && vt === 'collaborative' && !(vt && vt.includes && (vt.includes('recommended') || vt.includes('suggested')))) {
+                        iconColor = collaborativeColor; // only collaborative
+                    }
                     
                     // Option A: DOM/CSS dans divIcon - Le point et le cercle font partie du même élément DOM
                     const icon = L.divIcon({

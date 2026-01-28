@@ -1413,10 +1413,7 @@
                     ? (document.getElementById('demo-form')?.querySelector(`#user-select-${userId}`)?.value || trailData.actual_user_id || trailData.user_id || userId)
                     : (trailData.actual_user_id ?? trailData.user_id ?? userId);
 
-                this.mapManager.addTrailMarkers(map, allTrails, {
-                    userId: numericUserId,
-                    collaborativeColor: '#f71e50'
-                });
+                this.mapManager.addTrailMarkers(map, allTrails, { userId: numericUserId });
             } catch (e) {
                 console.error('Failed to parse trail data:', e);
             }

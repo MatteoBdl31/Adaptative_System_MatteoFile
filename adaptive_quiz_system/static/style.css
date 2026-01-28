@@ -6986,7 +6986,9 @@ body.komoot-style.trail-detail-page {
             display: block;
         }
 
-  .trail-list {
+  /* Only apply to demo view-sections; profile #trail-lists uses .trail-list.active to show one panel */
+  .demo-results .trail-list,
+  .view-section .trail-list {
             display: flex;
             flex-direction: column;
             gap: var(--space-md);

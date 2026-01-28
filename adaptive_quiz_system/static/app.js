@@ -145,9 +145,9 @@ class MapManager {
 
         const bounds = [];
         const { 
-            exactColor = '#5b8df9', 
-            suggestionColor = '#f59e0b',
-            collaborativeColor = '#f71e50',
+            exactColor = '#40916c',   // --color-recommended (matches map legend)
+            suggestionColor = '#606c38', // --color-accent (matches map legend)
+            collaborativeColor = '#8b5a2b', // --color-collaborative (matches map legend)
             onMarkerClick = null 
         } = options;
 

@@ -156,10 +156,10 @@ class RecommendationEngine:
                         key=lambda x: (x.get("relevance_percentage", 0), x.get("popularity", 0)),
                         reverse=True
                     )
-                    # Fetch weather for top 50 scored trails (enough for ranking to filter storm_risk)
-                    top_scored_trails = scored_trails_sorted[:50]
+                    # Fetch weather for top 15 scored trails (limits API calls to avoid Open-Meteo rate limits)
+                    top_scored_trails = scored_trails_sorted[:15]
                     
-                    enriched_trails_list = self.weather_enricher.enrich_trails(top_scored_trails, hike_date, max_trails=50)
+                    enriched_trails_list = self.weather_enricher.enrich_trails(top_scored_trails, hike_date, max_trails=15)
                     enriched_map = {t["trail_id"]: t for t in enriched_trails_list}
                     
                     # Update weather in all scored trails (only top 50 will have it)

@@ -12,6 +12,11 @@ from typing import Optional, Dict, List
 # Open-Meteo API - free, no API key required
 OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast"
 
+# Timeouts: (connect_sec, read_sec). Read timeouts often occur when we send many
+# concurrent requests (e.g. demo enriching 15+ trails); Open-Meteo may rate-limit
+# or queue, so the server doesn't send the response within the limit.
+WEATHER_REQUEST_TIMEOUT = (4, 10)  # 4s to connect, 10s to receive full response
+
 
 def normalize_weather_condition(weather_code: int) -> str:
     """
@@ -98,7 +103,7 @@ def get_weather_forecast(latitude: float, longitude: float, target_date: str) ->
             "end_date": target_date,  # End date (same as start for single day)
         }
         
-        response = requests.get(url, params=params, timeout=2)  # Reduced timeout for faster response
+        response = requests.get(url, params=params, timeout=WEATHER_REQUEST_TIMEOUT)
         response.raise_for_status()
         data = response.json()
         
@@ -131,6 +136,12 @@ def get_weather_forecast(latitude: float, longitude: float, target_date: str) ->
             print("Weather API error: Rate limit exceeded. Please try again later.")
         else:
             print(f"Weather API error: HTTP {e.response.status_code} - {e}")
+        return None
+    except requests.ConnectTimeout as e:
+        print(f"Weather API error: Connect timeout (server {OPEN_METEO_BASE_URL} not reachable within {WEATHER_REQUEST_TIMEOUT[0]}s): {e}")
+        return None
+    except requests.ReadTimeout as e:
+        print(f"Weather API error: Read timeout (server took longer than {WEATHER_REQUEST_TIMEOUT[1]}s to respond, often due to rate limiting or load): {e}")
         return None
     except (requests.RequestException, ValueError, KeyError, IndexError) as e:
         # Log error in production, but return None to allow fallback
@@ -198,10 +209,10 @@ def get_weekly_forecast(latitude: float, longitude: float, start_date: Optional[
             "end_date": end_date,
         }
         
-        response = requests.get(url, params=params, timeout=5)
+        response = requests.get(url, params=params, timeout=WEATHER_REQUEST_TIMEOUT)
         response.raise_for_status()
         data = response.json()
-        
+
         # Parse response
         daily = data.get("daily", {})
         weather_codes = daily.get("weather_code", [])
@@ -228,6 +239,12 @@ def get_weekly_forecast(latitude: float, longitude: float, start_date: Optional[
             print("Weather API error: Rate limit exceeded. Please try again later.")
         else:
             print(f"Weather API error: HTTP {e.response.status_code} - {e}")
+        return []
+    except requests.ConnectTimeout as e:
+        print(f"Weather API error: Connect timeout (server not reachable within {WEATHER_REQUEST_TIMEOUT[0]}s): {e}")
+        return []
+    except requests.ReadTimeout as e:
+        print(f"Weather API error: Read timeout (server took longer than {WEATHER_REQUEST_TIMEOUT[1]}s): {e}")
         return []
     except (requests.RequestException, ValueError, KeyError, IndexError) as e:
         print(f"Weather API error: {e}")
