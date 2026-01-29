@@ -591,8 +591,11 @@
                     button.classList.remove('loading');
                 }
             } else {
-                // Hide explanation
+                // Hide explanation and remove focus so the green circle outline disappears
                 explanationDiv.style.display = 'none';
+                if (button && typeof button.blur === 'function') {
+                    button.blur();
+                }
             }
         }
 
@@ -1112,7 +1115,7 @@
             const collaborativeIcon = isCollaborative ?
                 `<div class="collaborative-icon-wrapper">
                     <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
+                        <circle cx="10" cy="10" r="9" fill="rgb(14, 165, 233)" stroke="#fff" stroke-width="1"/>
                         <path d="M10 4.5L11.8 8.2L15.9 9.1L13.1 11.8L13.6 15.9L10 14.2L6.4 15.9L6.9 11.8L4.1 9.1L8.2 8.2L10 4.5Z" fill="#fff"/>
                     </svg>
                     <span class="collaborative-icon-tooltip">Similar profiles likes it</span>
@@ -1187,7 +1190,7 @@
             const collaborativeIcon = isCollaborative ? 
                 `<div class="collaborative-icon-wrapper">
                     <svg class="collaborative-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="10" cy="10" r="9" fill="#f71e50" stroke="#fff" stroke-width="1"/>
+                        <circle cx="10" cy="10" r="9" fill="rgb(14, 165, 233)" stroke="#fff" stroke-width="1"/>
                         <path d="M10 4.5L11.8 8.2L15.9 9.1L13.1 11.8L13.6 15.9L10 14.2L6.4 15.9L6.9 11.8L4.1 9.1L8.2 8.2L10 4.5Z" fill="#fff"/>
                     </svg>
                     <span class="collaborative-icon-tooltip">Similar profiles likes it</span>

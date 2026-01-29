@@ -9,12 +9,13 @@
     border-left: 3px solid var(--color-collaborative);
 }
 
-/* Collaborative Icon Tooltip */
+/* Collaborative Icon Tooltip - visible overflow, theme-aware colors */
 .collaborative-icon-wrapper {
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    overflow: visible;
 }
 
 .collaborative-icon-wrapper:hover .collaborative-icon-tooltip {
@@ -28,8 +29,8 @@
     bottom: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%) translateY(4px);
-    background-color: var(--color-text);
-    color: white;
+    background-color: var(--color-tooltip-bg, var(--color-text));
+    color: var(--color-tooltip-text, var(--color-bg));
     padding: 6px 10px;
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
@@ -49,7 +50,23 @@
     left: 50%;
     transform: translateX(-50%);
     border: 5px solid transparent;
-    border-top-color: var(--color-text);
+    border-top-color: var(--color-tooltip-bg, var(--color-text));
+}
+
+/* Let tooltip escape card/list clipping in list and card views */
+.view-section .trail-card-with-map,
+.view-section .trail-card.modern,
+.view-section .trail-item {
+    overflow: visible;
+}
+.trail-card-with-map .trail-card-map-container {
+    overflow: hidden;
+}
+.card-heading,
+.card-heading__meta,
+.trail-card-list-actions,
+.trail-card-content {
+    overflow: visible;
 }
 
 /* CSS Custom Properties (Design Tokens) - Nature theme (green + brown) */
@@ -1981,7 +1998,7 @@ body {
     flex-shrink: 0;
 }
 
-/* Collaborative icon SVG (star in circle) */
+/* Collaborative icon SVG (star in circle) - list & cards */
 .collaborative-icon {
     flex-shrink: 0;
     display: inline-block;
@@ -1989,6 +2006,9 @@ body {
     width: 20px;
     height: 20px;
     cursor: help;
+}
+.collaborative-icon circle {
+    fill: rgb(14, 165, 233);
 }
 
 /* Badge & alert variants */
@@ -2594,14 +2614,17 @@ body {
 
 .difficulty-easy {
     background-color: var(--color-secondary) !important;
+    color: #fffef9 !important;
 }
 
 .difficulty-medium {
     background-color: var(--color-accent) !important;
+    color: #fffef9 !important;
 }
 
 .difficulty-hard {
     background-color: var(--color-danger) !important;
+    color: #fffef9 !important;
 }
 
 /* Trail Description */

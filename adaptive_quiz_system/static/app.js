@@ -508,6 +508,9 @@ class MapManager {
                             }
                         } else {
                             explanationDiv.style.display = 'none';
+                            if (whyBtn && typeof whyBtn.blur === 'function') {
+                                whyBtn.blur();
+                            }
                         }
                     });
                 }
