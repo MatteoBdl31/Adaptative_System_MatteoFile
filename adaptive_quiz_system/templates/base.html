@@ -32,8 +32,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block extra_head %}{% endblock %}
 </head>
-<body class="{% block page_class %}{% endblock %}">
-    <header class="app-header" role="banner">
+<body class="{% block page_class %}{% endblock %}" data-nav-active="{{ nav_active }}">
+    <header class="app-header" role="banner" id="app-header">
         <div class="app-header__container">
             <div class="app-header__brand">
                 <a href="{{ url_for('demo') }}" class="app-header__logo">
@@ -41,18 +41,36 @@
                     <span class="app-header__logo-text">Adaptive Trails</span>
                 </a>
             </div>
-            <nav class="app-header__nav" role="navigation" aria-label="Main navigation">
-                {% set nav_active = request.endpoint %}
-                {% set nav_my_trails_active = nav_active == 'my_trails' or nav_active == 'profile_trail_detail' %}
+            <div class="app-header__mobile-actions">
+                <a href="{{ url_for('settings') }}" class="app-header__nav-link app-header__nav-link--icon app-header__nav-link--mobile-settings{% if nav_active == 'settings' %} app-header__nav-link--active{% endif %}" aria-label="{{ _('nav.settings') }}" title="{{ _('nav.settings') }}">
+                    <span class="app-header__mobile-settings-icon app-header__mobile-settings-icon--outline" aria-hidden="true">
+                        <svg class="app-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </span>
+                    <span class="app-header__mobile-settings-icon app-header__mobile-settings-icon--filled" aria-hidden="true">
+                        <svg class="app-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.43 12.98c.04-.32.07-.64.07-.98 0-.34-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/></svg>
+                    </span>
+                </a>
+                <button type="button" class="app-header__menu-btn" id="app-header-menu-btn" aria-label="{{ _('nav.menu_open') }}" aria-expanded="false" aria-controls="app-header-nav" data-label-open="{{ _('nav.menu_open') }}" data-label-close="{{ _('nav.menu_close') }}">
+                    <span class="app-header__menu-btn-icon app-header__menu-btn-icon--open" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </span>
+                    <span class="app-header__menu-btn-icon app-header__menu-btn-icon--close" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </span>
+                </button>
+            </div>
+            <nav class="app-header__nav" id="app-header-nav" role="navigation" aria-label="Main navigation">
                 <a href="{{ url_for('demo') }}" class="app-header__nav-link{% if nav_active == 'demo' %} app-header__nav-link--active{% endif %}">{{ _('nav.demo') }}</a>
                 <a href="{{ url_for('all_trails') }}" class="app-header__nav-link{% if nav_active == 'all_trails' %} app-header__nav-link--active{% endif %}">{{ _('nav.all_trails') }}</a>
                 <a href="{{ url_for('my_trails', user_id=101) }}" class="app-header__nav-link{% if nav_my_trails_active %} app-header__nav-link--active{% endif %}" id="header-my-trails-link">{{ _('nav.my_trails') }}</a>
                 <a href="{{ url_for('profile', user_id=101) }}" class="app-header__nav-link{% if nav_active == 'profile' %} app-header__nav-link--active{% endif %}" id="header-profile-link">{{ _('nav.profile') }}</a>
                 <a href="{{ url_for('settings') }}" class="app-header__nav-link app-header__nav-link--icon{% if nav_active == 'settings' %} app-header__nav-link--active{% endif %}" aria-label="{{ _('nav.settings') }}" title="{{ _('nav.settings') }}">
-                    <svg class="app-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                    </svg>
+                    <span class="app-header__mobile-settings-icon app-header__mobile-settings-icon--outline" aria-hidden="true">
+                        <svg class="app-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </span>
+                    <span class="app-header__mobile-settings-icon app-header__mobile-settings-icon--filled" aria-hidden="true">
+                        <svg class="app-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.43 12.98c.04-.32.07-.64.07-.98 0-.34-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65z"/></svg>
+                    </span>
                 </a>
             </nav>
         </div>
@@ -93,6 +111,49 @@
                 setTimeout(function() { toast.remove(); }, 350);
             }, durationMs);
         };
+    </script>
+    <script>
+        (function() {
+            var header = document.getElementById('app-header');
+            var menuBtn = document.getElementById('app-header-menu-btn');
+            var nav = document.getElementById('app-header-nav');
+            if (!header || !menuBtn || !nav) return;
+            function setOpen(open) {
+                header.classList.toggle('app-header--menu-open', open);
+                menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                menuBtn.setAttribute('aria-label', open ? (menuBtn.getAttribute('data-label-close') || 'Close menu') : (menuBtn.getAttribute('data-label-open') || 'Open menu'));
+            }
+            menuBtn.addEventListener('click', function() { setOpen(!header.classList.contains('app-header--menu-open')); });
+            nav.querySelectorAll('.app-header__nav-link').forEach(function(link) {
+                link.addEventListener('click', function() { setOpen(false); });
+            });
+        })();
+    </script>
+    <script>
+        (function() {
+            function isSettingsPage() {
+                var path = window.location.pathname || '';
+                return path === '/settings' || path.endsWith('/settings');
+            }
+            function isSettingsLink(el) {
+                if (!el || el.nodeName !== 'A') return false;
+                var href = (el.getAttribute('href') || '');
+                return href === '{{ url_for("settings") }}' || href.endsWith('/settings');
+            }
+            document.addEventListener('click', function(e) {
+                if (!isSettingsPage()) return;
+                var link = e.target.closest('a[href*="settings"]');
+                if (!link || !isSettingsLink(link)) return;
+                e.preventDefault();
+                var referrer = document.referrer || '';
+                var settingsPath = '{{ url_for("settings") }}';
+                if (referrer && referrer !== '' && referrer.indexOf(settingsPath) === -1) {
+                    window.location.href = referrer;
+                } else {
+                    window.location.href = '{{ url_for("demo") }}';
+                }
+            }, true);
+        })();
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>

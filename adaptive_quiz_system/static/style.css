@@ -581,7 +581,71 @@ body {
     margin-left: var(--space-xs, 0.25rem);
 }
 
-/* Responsive: App Header */
+/* Settings icon: filled when active (desktop and mobile) */
+.app-header__nav-link--icon .app-header__mobile-settings-icon--filled {
+    display: none;
+}
+.app-header__nav-link--icon.app-header__nav-link--active .app-header__mobile-settings-icon--outline {
+    display: none;
+}
+.app-header__nav-link--icon.app-header__nav-link--active .app-header__mobile-settings-icon--filled {
+    display: block;
+    color: var(--color-border);
+}
+
+/* Mobile actions (settings + hamburger) - hidden on desktop */
+.app-header__mobile-actions {
+    display: none;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+/* Mobile menu button (hamburger) - hidden on desktop */
+.app-header__menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    touch-action: manipulation;
+}
+.app-header__menu-btn:hover,
+.app-header__menu-btn:focus {
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text);
+}
+.app-header__menu-btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+.app-header__menu-btn-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+}
+.app-header__menu-btn-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.app-header__menu-btn-icon--close {
+    display: none;
+}
+.app-header--menu-open .app-header__menu-btn-icon--open {
+    display: none;
+}
+.app-header--menu-open .app-header__menu-btn-icon--close {
+    display: block;
+}
+
+/* Responsive: App Header - mobile menu */
 @media (max-width: 768px) {
     :root {
         --container-padding: var(--space-md);
@@ -589,13 +653,74 @@ body {
     }
 
     .app-header__container {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .app-header__mobile-actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .app-header__mobile-settings-icon {
+        display: block;
+        width: 20px;
+        height: 20px;
+    }
+    .app-header__mobile-settings-icon--filled {
+        display: none;
+    }
+    .app-header__nav-link--mobile-settings.app-header__nav-link--active {
+        background-color: transparent;
+    }
+    .app-header__nav-link--mobile-settings.app-header__nav-link--active .app-header__mobile-settings-icon--outline {
+        display: none;
+    }
+    .app-header__nav-link--mobile-settings.app-header__nav-link--active .app-header__mobile-settings-icon--filled {
+        display: block;
+        color: var(--color-border);
+    }
+
+    .app-header__menu-btn {
+        display: inline-flex;
     }
 
     .app-header__nav {
+        display: none;
         width: 100%;
-        flex-wrap: wrap;
+        order: 3;
+        flex-direction: column;
+        gap: 0;
+        padding-top: var(--space-sm);
+        margin-top: var(--space-sm);
+        border-top: 1px solid var(--color-border);
+    }
+
+    .app-header--menu-open .app-header__nav {
+        display: flex;
+    }
+
+    .app-header__nav-link {
+        width: 100%;
+        min-height: 44px;
+        justify-content: flex-start;
+        padding-left: var(--space-md);
+        padding-right: var(--space-md);
+    }
+    .app-header__nav-link--active:not(.app-header__nav-link--icon)::after {
+        left: 0;
+        right: auto;
+        width: 4px;
+        height: auto;
+        top: 50%;
+        bottom: auto;
+        transform: translateY(-50%);
+    }
+}
+
+@media (min-width: 769px) {
+    .app-header__nav {
+        display: flex;
     }
 }
 
@@ -7198,11 +7323,7 @@ body.komoot-style.trail-detail-page {
             padding: var(--space-xl) var(--container-padding);
         }
 
-  /* System dark: must come after .demo-page gradient rules so it wins in cascade */
-  @media (prefers-color-scheme: dark) {
-    .demo-page { background: var(--color-bg); }
-  }
-
+  /* Solid dark background only when user explicitly chose dark theme (not system preference) */
   .demo-header {
             text-align: center;
             margin-bottom: var(--space-2xl);
@@ -7276,6 +7397,36 @@ body.komoot-style.trail-detail-page {
             justify-content: flex-end;
             padding-top: var(--space-lg);
             border-top: 1px solid var(--color-border);
+        }
+
+        @media (max-width: 768px) {
+  .demo-container {
+                padding-left: var(--space-md);
+                padding-right: var(--space-md);
+                overflow-x: hidden;
+                box-sizing: border-box;
+            }
+  .demo-controls {
+                padding: var(--space-md);
+                overflow-x: hidden;
+            }
+  .demo-form {
+                min-width: 0;
+                max-width: 100%;
+            }
+  .user-scenario__fields {
+                grid-template-columns: 1fr;
+            }
+  .demo-actions {
+                flex-wrap: wrap;
+                justify-content: stretch;
+                gap: var(--space-sm);
+            }
+  .demo-actions .btn {
+                flex: 1 1 100%;
+                min-width: 0;
+                max-width: 100%;
+            }
         }
 
   .demo-results {
