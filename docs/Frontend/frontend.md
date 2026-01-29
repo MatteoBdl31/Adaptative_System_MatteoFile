@@ -21,9 +21,8 @@
 | `static/app.js` | Shared app utilities, API client, map manager, view helpers | multiple |
 | `static/demo.js` | Demo mode, comparison, form handling, maps, recommendations | `demo.html` |
 | `static/profile.js` | Dashboard switching and charts | `profile.html` |
-| `static/trail_list.js` | Saved/started/completed trail lists, filters, actions | `profile.html` |
+| `static/trail_list.js` | Saved/started/completed trail lists, filters, actions, upload of performance data (smartwatch JSON) | `my_trails.html` |
 | `static/trail_detail_page.js` | Detail page data rendering, map, charts, recommendations UI | `profile_trail_detail.html` |
-| `static/upload.js` | Upload performance data and matching | `profile.html` |
 
 ### Adaptive Navigation Implementation
 
