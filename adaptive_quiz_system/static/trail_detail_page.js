@@ -79,22 +79,23 @@ const TrailDetailPage = (function() {
         }
         
         if (actionButtonsEl) {
+            /* Icons: Heroicons (MIT) outline 24x24 - https://heroicons.com */
             let buttonsHTML = '';
             buttonsHTML += `<button class="btn btn-primary">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z"/>
+                <svg class="trail-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
                 Navigate
             </button>`;
             buttonsHTML += `<button class="btn btn-secondary">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 2h-3a4 4 0 00-4 4v3a4 4 0 004 4h3v-2h-3V6h3V2zM2 2h3a4 4 0 014 4v3a4 4 0 01-4 4H2v-2h3V6H2V2z"/>
+                <svg class="trail-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
                 </svg>
                 Share
             </button>`;
             buttonsHTML += `<button class="btn btn-secondary">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M10 2l2.5 6.5L19 9.5l-5 4.5 1.5 7-5.5-3.5L5 21.5l1.5-7-5-4.5 6.5-1L10 2z"/>
+                <svg class="trail-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
                 </svg>
                 Like
             </button>`;
@@ -1011,6 +1012,30 @@ const TrailDetailPage = (function() {
         })).filter(p => p.timeMinutes !== null && p.timeMinutes !== undefined); // Filter out invalid points
     }
     
+    function getChartThemeOptions() {
+        const root = document.documentElement;
+        const style = root && typeof getComputedStyle === 'function' ? getComputedStyle(root) : null;
+        const textColor = style ? (style.getPropertyValue('--color-text-secondary') || style.getPropertyValue('--color-text') || '#5c5346').trim() : '#5c5346';
+        let gridColor = style ? (style.getPropertyValue('--color-border') || 'rgba(0,0,0,0.1)').trim() : 'rgba(0,0,0,0.1)';
+        if (gridColor.indexOf('rgba') === -1 && gridColor.indexOf('#') === 0) {
+            const hex = gridColor.slice(1);
+            const r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16);
+            gridColor = 'rgba(' + r + ',' + g + ',' + b + ',0.25)';
+        } else if (gridColor.indexOf('rgba') === -1) {
+            gridColor = 'rgba(0,0,0,0.08)';
+        }
+        return {
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor }, grid: { color: gridColor } }
+            },
+            plugins: {
+                title: { color: textColor },
+                legend: { labels: { color: textColor } }
+            }
+        };
+    }
+    
     function renderPerformanceChart() {
         const canvas = document.getElementById('performance-chart');
         if (!canvas || typeof Chart === 'undefined') return;
@@ -1096,6 +1121,7 @@ const TrailDetailPage = (function() {
             });
         });
         
+        const themeOpts = getChartThemeOptions();
         const ctx = canvas.getContext('2d');
         performanceChart = new Chart(ctx, {
             type: 'line',
@@ -1112,6 +1138,7 @@ const TrailDetailPage = (function() {
                 plugins: {
                     title: {
                         display: true,
+                        color: themeOpts.plugins.title.color,
                         text: (() => {
                             const hasPredicted = completionEntries.some(c => c.isPredicted);
                             const hasActual = completionEntries.some(c => !c.isPredicted);
@@ -1126,7 +1153,8 @@ const TrailDetailPage = (function() {
                     },
                     legend: {
                         display: true,
-                        position: 'top'
+                        position: 'top',
+                        labels: { color: themeOpts.plugins.legend.labels.color }
                     },
                     tooltip: {
                         callbacks: {
@@ -1150,23 +1178,18 @@ const TrailDetailPage = (function() {
                     x: {
                         type: 'linear',
                         position: 'bottom',
-                        title: {
-                            display: true,
-                            text: 'Time (minutes)'
-                        },
+                        title: { display: true, text: 'Time (minutes)', color: themeOpts.plugins.title.color },
                         min: 0,
-                        max: maxDuration
+                        max: maxDuration,
+                        ticks: { color: themeOpts.scales.x.ticks.color },
+                        grid: { color: themeOpts.scales.x.grid.color }
                     },
                     y: {
                         type: 'linear',
                         position: 'left',
-                        title: {
-                            display: true,
-                            text: getMetricLabel(currentMetric)
-                        },
-                        grid: {
-                            drawOnChartArea: true
-                        }
+                        title: { display: true, text: getMetricLabel(currentMetric), color: themeOpts.plugins.title.color },
+                        grid: { drawOnChartArea: true, color: themeOpts.scales.y.grid.color },
+                        ticks: { color: themeOpts.scales.y.ticks.color }
                     },
                 }
             }

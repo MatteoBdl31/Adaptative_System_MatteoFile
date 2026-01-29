@@ -586,11 +586,19 @@ const TrailListManager = (function() {
     }
     
     function attachTrailActions(container, status) {
+        // Whole card click: navigate to trail detail (same as "View Details")
+        container.querySelectorAll('.trail-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (e.target.closest('button') || e.target.closest('a')) return;
+                const trailId = this.getAttribute('data-trail-id');
+                if (trailId) window.location.href = `/profile/${currentUserId}/trail/${trailId}`;
+            });
+        });
         // View details buttons
         container.querySelectorAll('.btn-view-details').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
                 const trailId = this.getAttribute('data-trail-id');
-                // Navigate to trail detail page
                 window.location.href = `/profile/${currentUserId}/trail/${trailId}`;
             });
         });

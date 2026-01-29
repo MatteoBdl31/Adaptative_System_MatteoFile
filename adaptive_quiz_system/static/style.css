@@ -286,6 +286,34 @@
   .demo-page {
         background: var(--color-bg);
     }
+  .btn-secondary {
+        background-color: var(--color-surface-elevated);
+        color: var(--color-text);
+        border-color: var(--color-border-light);
+    }
+  .btn-secondary:hover:not(:disabled) {
+        background-color: #3d4638;
+        border-color: var(--color-border-light);
+    }
+  .trail-stat-badge:not(.difficulty-easy):not(.difficulty-medium):not(.difficulty-hard) {
+        background: var(--color-surface-elevated);
+        border-color: var(--color-border-light);
+    }
+  .trail-detail-nav-bar {
+        background: var(--color-surface);
+        border-bottom-color: var(--color-border);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+  .trail-nav-tab {
+        color: var(--color-text-secondary);
+    }
+  .trail-nav-tab:hover {
+        color: var(--color-text);
+        background: var(--color-bg-tertiary);
+    }
+  .trail-nav-tab.active {
+        color: var(--color-text);
+    }
 }
 
 /* Theme override via Settings (data-theme on <html>) */
@@ -316,6 +344,40 @@ html[data-theme="dark"] {
 }
 html[data-theme="dark"] .demo-page {
     background: var(--color-bg);
+}
+html[data-theme="dark"] .btn-secondary {
+    background-color: var(--color-surface-elevated);
+    color: var(--color-text);
+    border-color: var(--color-border-light);
+}
+html[data-theme="dark"] .btn-secondary:hover:not(:disabled) {
+    background-color: #3d4638;
+    border-color: var(--color-border-light);
+}
+html[data-theme="dark"] .trail-stat-badge:not(.difficulty-easy):not(.difficulty-medium):not(.difficulty-hard) {
+    background: var(--color-surface-elevated);
+    border-color: var(--color-border-light);
+}
+html[data-theme="dark"] .trail-detail-nav-bar {
+    background: var(--color-surface);
+    border-bottom-color: var(--color-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+html[data-theme="dark"] .trail-nav-tab {
+    color: var(--color-text-secondary);
+}
+html[data-theme="dark"] .trail-nav-tab:hover {
+    color: var(--color-text);
+    background: var(--color-bg-tertiary);
+}
+html[data-theme="dark"] .trail-nav-tab.active {
+    color: var(--color-text);
+}
+/* Chart containers same as .metric-item (bg + border) */
+html[data-theme="dark"] .chart-container.performance-chart,
+html[data-theme="dark"] .chart-container.elevation-chart {
+    background: var(--color-bg-secondary);
+    border-color: var(--color-border);
 }
 
 /* Badge profile name lisible en dark mode (--color-link trop sombre sur fond surface-elevated) */
@@ -3490,6 +3552,10 @@ select:focus-visible {
     transition: var(--transition-base);
 }
 
+.trail-management-section .trail-card {
+    cursor: pointer;
+}
+
 .trail-card:hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
@@ -3856,6 +3922,18 @@ section.trail-detail-section h3 {
     gap: var(--space-md);
     flex-wrap: wrap;
     align-items: center;
+}
+.trail-detail-action-buttons .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.trail-detail-action-buttons .btn svg,
+.trail-detail-action-buttons .trail-action-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: block;
 }
 
 .trail-action-btn {
@@ -5286,6 +5364,10 @@ section.trail-detail-section h4 {
     position: relative;
     overflow: hidden;
     animation: fadeIn 0.3s ease-in;
+}
+
+.trail-management-section .trail-card {
+    cursor: pointer;
 }
 
 @keyframes fadeIn {
