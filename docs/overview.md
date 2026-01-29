@@ -60,6 +60,6 @@
 - Backend details: `docs/backend.md`
 - Recommendation engine: `docs/recommendation_engine.md`
 - Data pipeline: `docs/data_pipeline.md`
-- Frontend details: `docs/frontend.md`
+- Frontend details: `docs/Frontend/frontend.md`
 - Operations: `docs/operations.md`
 - Functional documentation: `docs/functional.md`

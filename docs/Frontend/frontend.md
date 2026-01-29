@@ -8,7 +8,8 @@
 - `base.html`: global layout, navigation, and CSS include.
 - `demo.html`: demo mode, comparison UI, and trail recommendations.
 - `trail_detail.html`: trail detail view from demo.
-- `profile.html`: profile dashboard and trail management.
+- `profile.html`: profile dashboard.
+- `my_trails.html`: My Trails (saved/started/completed), upload of performance data (smartwatch JSON).
 - `profile_trail_detail.html`: extended detail view with analytics.
 - `all_trails.html`: global trails list and map view.
 - `recommendations.html`: dedicated recommendations page with collaborative section.

@@ -1,4 +1,4 @@
-﻿# Adaptive Trail Recommender - Documentation Index
+# Adaptive Trail Recommender - Documentation Index
 
 ## Overview
 
@@ -58,7 +58,7 @@ Trail data ingestion, shapefile processing, database seeding, and data generatio
 - External API dependencies
 - Failure modes and fallbacks
 
-### [Frontend](frontend.md)
+### [Frontend](Frontend/frontend.md)
 Templates, JavaScript modules, client-side data flow, and UI components.
 
 **Key topics:**
@@ -102,15 +102,15 @@ Features, use cases, UML diagrams, user workflows, and business rules.
 ### Development
 - **Backend development**: [Backend](backend.md) Ã¢â€ â€™ [Architecture](architecture.md)
 - **Recommendation logic**: [Recommendation Engine](recommendation_engine.md)
-- **Frontend development**: [Frontend](frontend.md) Ã¢â€ â€™ [Backend](backend.md) (for API reference)
+- **Frontend development**: [Frontend](Frontend/frontend.md) Ã¢â€ â€™ [Backend](backend.md) (for API reference)
 - **Data management**: [Data Pipeline](data_pipeline.md)
 
 ### Understanding System Behavior
 - **How recommendations work**: [Recommendation Engine](recommendation_engine.md) Ã¢â€ â€™ [Architecture](architecture.md)
 - **Data flow**: [Architecture](architecture.md) Ã¢â€ â€™ [Data Pipeline](data_pipeline.md)
-- **API usage**: [Backend](backend.md) Ã¢â€ â€™ [Frontend](frontend.md)
+- **API usage**: [Backend](backend.md) Ã¢â€ â€™ [Frontend](Frontend/frontend.md)
 - **Features and use cases**: [Functional Documentation](functional.md)
-- **User workflows**: [Functional Documentation](functional.md) â†’ [Frontend](frontend.md)
+- **User workflows**: [Functional Documentation](functional.md) â†’ [Frontend](Frontend/frontend.md)
 
 ### Troubleshooting
 - **Setup issues**: [Operations](operations.md)

@@ -13,7 +13,10 @@
 | GET | `/trail/<user_id>/<trail_id>` | Trail detail view | `trail_detail.html` |
 | POST | `/trail/<user_id>/<trail_id>/complete` | Record completion | (redirect) |
 | GET | `/profile/<user_id>` | Profile dashboard | `profile.html` |
+| GET | `/profile/<user_id>/my-trails` | My Trails (saved/started/completed) | `my_trails.html` |
 | GET | `/profile/<user_id>/trail/<trail_id>` | Profile trail detail | `profile_trail_detail.html` |
+| GET | `/settings` | Settings (theme, language, accessibility) | `settings.html` |
+| GET/POST | `/set-locale` | Set locale cookie (redirect) | (redirect only) |
 | GET | `/dashboard/<user_id>` | Legacy dashboard view | `dashboard.html` |
 | GET | `/admin/rules` | Rules inspection | `admin_rules.html` |
 | GET | `/trails` | All trails map/list | `all_trails.html` |
