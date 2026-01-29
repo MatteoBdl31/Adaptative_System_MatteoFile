@@ -243,7 +243,16 @@
         const elevationProfile = {{ (trail.elevation_profile or [])|tojson }};
         const mapEnabled = Boolean({{ 'true' if trail.latitude and trail.longitude else 'false' }});
 
+        function getTileLayerOptions() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (dark) {
+                return { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19 };
+            }
+            return { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '© OpenStreetMap contributors', maxZoom: 19 };
+        }
+
         if (mapEnabled && typeof L !== 'undefined') {
+            const tileOpts = getTileLayerOptions();
             // Hero map (simplified, non-interactive)
             const heroMapEl = document.getElementById('trail-hero-map');
             if (heroMapEl) {
@@ -257,9 +266,7 @@
                     boxZoom: false,
                     keyboard: false
                 });
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19
-                }).addTo(heroMap);
+                L.tileLayer(tileOpts.url, { attribution: tileOpts.attribution, maxZoom: tileOpts.maxZoom }).addTo(heroMap);
 
                 const lat = {{ trail.latitude or 0 }};
                 const lon = {{ trail.longitude or 0 }};
@@ -275,10 +282,7 @@
 
             // Main interactive map
             const mainMap = L.map('trail-map');
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(mainMap);
+            L.tileLayer(tileOpts.url, { attribution: tileOpts.attribution, maxZoom: tileOpts.maxZoom }).addTo(mainMap);
 
             const lat = {{ trail.latitude or 0 }};
             const lon = {{ trail.longitude or 0 }};

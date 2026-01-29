@@ -275,6 +275,14 @@
             }
         }
         
+        function getTileLayerOptions() {
+            var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (dark) {
+                return { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19 };
+            }
+            return { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '© OpenStreetMap contributors', maxZoom: 19 };
+        }
+        
         // Connection detection function
         function detectConnection() {
             return new Promise(function(resolve) {
@@ -493,10 +501,10 @@
                     // Initialize map
                     map = L.map('trails-map').setView([45.8, 6.5], 8);
                     
-                    // Add OpenStreetMap tiles
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                        maxZoom: 19
+                    var tileOpts = getTileLayerOptions();
+                    L.tileLayer(tileOpts.url, {
+                        attribution: tileOpts.attribution,
+                        maxZoom: tileOpts.maxZoom
                     }).addTo(map);
                     
                     // Invalidate map size to ensure it renders properly

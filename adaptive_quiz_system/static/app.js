@@ -93,6 +93,21 @@ class ApiClient {
 // Map Manager
 // ============================================
 
+/** Returns a Leaflet tile layer URL and options based on current theme (data-theme on html). */
+function getMapTileLayerOptions() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+        return {
+            url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            options: { attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19 }
+        };
+    }
+    return {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        options: { attribution: '© OpenStreetMap contributors', maxZoom: 19 }
+    };
+}
+
 class MapManager {
     constructor() {
         this.maps = new Map();
@@ -130,11 +145,8 @@ class MapManager {
         };
 
         const map = L.map(containerId, defaultOptions);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(map);
+        const tileCfg = getMapTileLayerOptions();
+        L.tileLayer(tileCfg.url, tileCfg.options).addTo(map);
 
         this.maps.set(containerId, map);
         return map;
