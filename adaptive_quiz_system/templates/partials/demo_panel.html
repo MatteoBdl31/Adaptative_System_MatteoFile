@@ -1,87 +1,26 @@
 {% set demo_user_id = result.scenario.user_id|default(result.user_id)|default(1) %}
 <div class="demo-panel panel-card" data-user-index="{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-connection="{{ result.context.get('connection', 'strong') }}" data-user-id="{{ demo_user_id }}">
-    <div class="panel-header">
-        <div class="result-panel__title-wrapper">
-            <h2 class="result-panel__title">{{ result.scenario.title }}</h2>
-            <button type="button" class="context-info-btn" aria-label="Show context information and recommendations" data-user-idx>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                    <path d="M8 11V8M8 5H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-            </button>
-        </div>
-        <span class="badge">{{ result.active_rules|length }} rules</span>
-    </div>
-
-    <!-- Context Info Modal with Tabs -->
-    <div class="context-modal" id="context-modal-idx" role="dialog" aria-labelledby="context-modal-title-idx" aria-hidden="true">
-        <div class="context-modal__backdrop"></div>
-        <div class="context-modal__content">
-            <div class="context-modal__header">
-                <h3 class="context-modal__title" id="context-modal-title-idx">Information</h3>
-                <button type="button" class="context-modal__close" aria-label="Close modal">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <div class="result-panel__content">
+        <div class="panel-header">
+            <div class="result-panel__title-wrapper">
+                <h2 class="result-panel__title">{{ result.scenario.title }}</h2>
+                <button type="button" class="context-info-btn" aria-label="Show context information and recommendations" data-user-idx>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <path d="M8 11V8M8 5H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
                 </button>
             </div>
-            <div class="context-modal__tabs">
-                <button type="button" class="context-modal__tab active" data-tab="context">Search Context</button>
-                <button type="button" class="context-modal__tab" data-tab="explanation">Why Recommended</button>
-            </div>
-            <div class="context-modal__body">
-                <!-- Context Tab -->
-                <div class="context-modal__tab-content active" data-content="context">
-                    <div class="context-modal__items">
-                        {% for key, value in result.context.items() %}
-                            {% if key not in ['hike_date', 'hike_start_date', 'hike_end_date'] %}
-                                {% if key == 'time_available' %}
-                                    {% set days = (value // (24 * 60)) %}
-                                    {% set hours = ((value % (24 * 60)) // 60) %}
-                                    <div class="context-modal__item">
-                                        <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
-                                        <span class="context-modal__value">{% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% endif %}{% if days > 0 and hours > 0 %} {% endif %}{% if hours > 0 %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}{% if days == 0 and hours == 0 %}0 hours{% endif %}</span>
-                                    </div>
-                                {% else %}
-                                    <div class="context-modal__item">
-                                        <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
-                                        <span class="context-modal__value">{{ value }}</span>
-                                    </div>
-                                {% endif %}
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-                <!-- Explanation Tab -->
-                <div class="context-modal__tab-content" data-content="explanation">
-                    <div class="explanation-content" id="explanation-content-idx">
-                        <div class="explanation-loading" id="explanation-loading-idx">
-                            <p><span class="spinner">⏳</span><br>Generating explanation...</p>
-                        </div>
-                        <div class="explanation-loaded" id="explanation-loaded-idx">
-                            <p class="explanation-text" id="explanation-text-idx"></p>
-                            <div class="explanation-details">
-                                <h4 class="explanation-details__title">Key Matching Factors:</h4>
-                                <ul class="explanation-details__list" id="explanation-factors-idx"></ul>
-                            </div>
-                        </div>
-                        <div class="explanation-error" id="explanation-error-idx">
-                            <p>Unable to generate explanation. Please try again later.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <span class="badge">{{ result.active_rules|length }} rules</span>
         </div>
-    </div>
 
-    {# View Toggle - Always show all 3 views (Map, List, Cards). List is default. #}
-    <div class="demo-view-toggle">
-        <button type="button" class="view-toggle-btn" data-view="map" data-panel-id="demo-panel-{{ result.scenario.user_id }}">🗺️ Map</button>
-        <button type="button" class="view-toggle-btn active" data-view="list" data-panel-id="demo-panel-{{ result.scenario.user_id }}">📋 List</button>
-        <button type="button" class="view-toggle-btn" data-view="cards" data-panel-id="demo-panel-{{ result.scenario.user_id }}">🃏 Cards</button>
-    </div>
+        <div class="demo-view-toggle">
+            <button type="button" class="view-toggle-btn" data-view="map" data-panel-id="demo-panel-{{ result.scenario.user_id }}">🗺️ Map</button>
+            <button type="button" class="view-toggle-btn active" data-view="list" data-panel-id="demo-panel-{{ result.scenario.user_id }}">📋 List</button>
+            <button type="button" class="view-toggle-btn" data-view="cards" data-panel-id="demo-panel-{{ result.scenario.user_id }}">🃏 Cards</button>
+        </div>
 
-    <div class="demo-results" data-panel-id="demo-panel-{{ result.scenario.user_id }}">
+        <div class="demo-results" data-panel-id="demo-panel-{{ result.scenario.user_id }}">
         {# Map View #}
         <div class="demo-view-section demo-view-map hidden" data-view="map">
             <div class="map-container">
@@ -531,6 +470,66 @@
                     </li>
                 {% endfor %}
             </ul>
+        </div>
+    </div>
+    </div><!-- /.result-panel__content -->
+
+    <!-- Context Info Modal with Tabs -->
+    <div class="context-modal" id="context-modal-idx" role="dialog" aria-labelledby="context-modal-title-idx" aria-hidden="true">
+        <div class="context-modal__backdrop"></div>
+        <div class="context-modal__content">
+            <div class="context-modal__header">
+                <h3 class="context-modal__title" id="context-modal-title-idx">Information</h3>
+                <button type="button" class="context-modal__close" aria-label="Close modal">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="context-modal__tabs">
+                <button type="button" class="context-modal__tab active" data-tab="context">Search Context</button>
+                <button type="button" class="context-modal__tab" data-tab="explanation">Why Recommended</button>
+            </div>
+            <div class="context-modal__body">
+                <div class="context-modal__tab-content active" data-content="context">
+                    <div class="context-modal__items">
+                        {% for key, value in result.context.items() %}
+                            {% if key not in ['hike_date', 'hike_start_date', 'hike_end_date'] %}
+                                {% if key == 'time_available' %}
+                                    {% set days = (value // (24 * 60)) %}
+                                    {% set hours = ((value % (24 * 60)) // 60) %}
+                                    <div class="context-modal__item">
+                                        <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
+                                        <span class="context-modal__value">{% if days > 0 %}{{ days }} day{{ 's' if days != 1 else '' }}{% endif %}{% if days > 0 and hours > 0 %} {% endif %}{% if hours > 0 %}{{ hours }} hour{{ 's' if hours != 1 else '' }}{% endif %}{% if days == 0 and hours == 0 %}0 hours{% endif %}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="context-modal__item">
+                                        <span class="context-modal__label">{{ key.replace('_', ' ').title() }}:</span>
+                                        <span class="context-modal__value">{{ value }}</span>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="context-modal__tab-content" data-content="explanation">
+                    <div class="explanation-content" id="explanation-content-idx">
+                        <div class="explanation-loading" id="explanation-loading-idx">
+                            <p><span class="spinner">⏳</span><br>Generating explanation...</p>
+                        </div>
+                        <div class="explanation-loaded" id="explanation-loaded-idx">
+                            <p class="explanation-text" id="explanation-text-idx"></p>
+                            <div class="explanation-details">
+                                <h4 class="explanation-details__title">Key Matching Factors:</h4>
+                                <ul class="explanation-details__list" id="explanation-factors-idx"></ul>
+                            </div>
+                        </div>
+                        <div class="explanation-error" id="explanation-error-idx">
+                            <p>Unable to generate explanation. Please try again later.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

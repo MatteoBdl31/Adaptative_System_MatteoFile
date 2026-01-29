@@ -2590,25 +2590,29 @@ html[data-theme="dark"] .trail-popup {
     line-height: var(--line-height-relaxed);
 }
 
-/* View Toggle */
+/* View Toggle - single bar, no wrap, square inner corners */
 .view-toggle {
     display: flex;
-    gap: var(--space-sm);
-    padding: var(--space-sm);
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 0;
     background-color: var(--color-bg-secondary);
     border-radius: var(--radius-lg);
+    overflow: hidden;
 }
 
 .view-toggle__button {
     flex: 1;
+    min-width: 0;
     padding: var(--space-sm) var(--space-md);
     background-color: transparent;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: 0;
     color: var(--color-text-secondary);
     font-weight: var(--font-weight-medium);
     cursor: pointer;
     transition: all var(--transition-base);
+    white-space: nowrap;
 }
 
 .view-toggle__button:hover {
@@ -2839,28 +2843,32 @@ html[data-theme="dark"] .trail-popup {
     font-size: var(--font-size-2xl);
 }
 
-/* View Toggle */
+/* View Toggle - single bar, no wrap, square inner corners */
 .view-toggle {
     display: flex;
-    gap: var(--space-sm);
-    padding: var(--space-sm);
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 0;
     background: white;
     border-radius: var(--radius-xl);
     margin-bottom: var(--space-xl);
     box-shadow: var(--shadow-xl);
+    overflow: hidden;
 }
 
 .view-toggle button {
     flex: 1;
+    min-width: 0;
     padding: var(--space-md) var(--space-lg);
     background-color: transparent;
     border: none;
-    border-radius: var(--radius-lg);
+    border-radius: 0;
     color: var(--color-text-secondary);
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition: all var(--transition-base);
+    white-space: nowrap;
 }
 
 .view-toggle button:hover {
@@ -7475,32 +7483,265 @@ body.komoot-style.trail-detail-page {
         }
 
         @media (max-width: 768px) {
-  .demo-container {
+  /* ========== Demo page mobile refont: same background, no multi-frame logic ========== */
+  .demo-page .demo-container {
                 padding-left: var(--space-md);
                 padding-right: var(--space-md);
                 overflow-x: hidden;
                 box-sizing: border-box;
             }
-  .demo-controls {
-                padding: var(--space-md);
-                overflow-x: hidden;
+  .demo-page .demo-header {
+                margin-bottom: var(--space-lg);
             }
-  .demo-form {
+  .demo-page .demo-header__title {
+                font-size: var(--font-size-2xl);
+            }
+  .demo-page .demo-header__subtitle {
+                font-size: var(--font-size-base);
+            }
+  /* Controls: no container box on mobile – section doesn't create a frame, content uses full width */
+  .demo-page .demo-controls {
+                display: contents;
+            }
+  .demo-page .demo-form {
                 min-width: 0;
+                width: 100%;
                 max-width: 100%;
             }
-  .user-scenario__fields {
+  .demo-page .user-scenarios {
+                width: 100%;
+            }
+  .demo-page .user-scenario {
+                width: 100%;
+                box-sizing: border-box;
+            }
+  .demo-page .user-scenario__fields {
                 grid-template-columns: 1fr;
             }
-  .demo-actions {
+  .demo-page .demo-actions {
                 flex-wrap: wrap;
                 justify-content: stretch;
                 gap: var(--space-sm);
             }
-  .demo-actions .btn {
+  .demo-page .demo-actions .btn {
                 flex: 1 1 100%;
                 min-width: 0;
                 max-width: 100%;
+            }
+  .demo-page .demo-actions {
+                margin-bottom: var(--space-lg);
+            }
+  .demo-page #demo-results {
+                margin-top: var(--space-md);
+            }
+
+  /* Results: single flow, no card frame */
+  .demo-page .demo-results {
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-md);
+                min-width: 0;
+                min-height: 55vh;
+            }
+  .demo-page .result-panel,
+  .demo-page .demo-panel.panel-card {
+                padding: 0;
+                min-width: 0;
+                overflow-x: hidden;
+                box-sizing: border-box;
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+  /* One row: title + badge + info + view toggle (no separate frames) */
+  .demo-page .demo-panel.panel-card {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: var(--space-sm);
+            }
+  .demo-page .panel-header,
+  .demo-page .result-panel__header {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: var(--space-sm);
+                margin-bottom: 0;
+                padding-bottom: 0;
+                border-bottom: none;
+                flex: 1 1 200px;
+                min-width: 0;
+            }
+  .demo-page .demo-panel .demo-view-toggle {
+                flex: 0 0 auto;
+            }
+  .demo-page .demo-panel .demo-results {
+                flex: 1 1 100%;
+                width: 100%;
+                min-width: 0;
+                margin-top: var(--space-sm);
+            }
+  .demo-page .demo-panel .context-modal {
+                /* keep modal out of flex flow */
+            }
+  html[data-theme="dark"] .demo-page .panel-header,
+  html[data-theme="dark"] .demo-page .result-panel__header {
+                border-bottom-color: rgba(255, 255, 255, 0.1);
+            }
+  .demo-page .result-panel__title-wrapper {
+                flex-wrap: wrap;
+                gap: var(--space-xs);
+                flex: 1;
+                min-width: 0;
+            }
+  .demo-page .result-panel__title,
+  .demo-page .panel-header .result-panel__title {
+                font-size: var(--font-size-base);
+                font-weight: var(--font-weight-semibold);
+                line-height: 1.25;
+                word-break: break-word;
+                color: white;
+            }
+  html[data-theme="dark"] .demo-page .result-panel__title,
+  html[data-theme="dark"] .demo-page .panel-header .result-panel__title {
+                color: var(--color-text);
+            }
+  .demo-page .panel-header .badge {
+                background: rgba(255, 255, 255, 0.25);
+                color: white;
+                font-size: var(--font-size-xs);
+            }
+  html[data-theme="dark"] .demo-page .panel-header .badge {
+                background: var(--color-bg-secondary);
+                color: var(--color-text);
+            }
+  .demo-page .panel-header .context-info-btn {
+                color: rgba(255, 255, 255, 0.9);
+            }
+  html[data-theme="dark"] .demo-page .panel-header .context-info-btn {
+                color: var(--color-text-secondary);
+            }
+  /* View toggle: single bar, no wrap, square inner corners */
+  .demo-page .demo-view-toggle,
+  .demo-page .view-toggle {
+                flex-wrap: nowrap;
+                gap: 0;
+                padding: 0;
+                margin: 0 0 var(--space-md) 0;
+                background: var(--color-bg-secondary);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-md);
+                overflow: hidden;
+            }
+  .demo-page .demo-view-toggle .view-toggle-btn,
+  .demo-page .view-toggle .view-toggle-btn,
+  .demo-page .view-toggle__button {
+                flex: 1;
+                min-width: 0;
+                padding: var(--space-md) var(--space-lg);
+                font-size: var(--font-size-base);
+                font-weight: var(--font-weight-semibold);
+                min-height: 44px;
+                white-space: nowrap;
+                background-color: transparent;
+                color: var(--color-text-secondary);
+                border: none;
+                border-radius: 0;
+            }
+  .demo-page .demo-view-toggle .view-toggle-btn:hover,
+  .demo-page .view-toggle .view-toggle-btn:hover,
+  .demo-page .view-toggle__button:hover {
+                background-color: var(--color-bg-tertiary);
+                color: var(--color-text);
+            }
+  .demo-page .demo-view-toggle .view-toggle-btn.active,
+  .demo-page .view-toggle .view-toggle-btn.active,
+  .demo-page .view-toggle__button.active {
+                background: var(--gradient-primary);
+                color: white;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            }
+  /* result-panel__content: same look as user-scenario, no gap before view-section */
+  .demo-page .result-panel__content {
+                background: var(--color-surface);
+                border: 2px solid var(--color-border);
+                border-radius: var(--radius-lg);
+                padding: var(--space-lg);
+            }
+  .demo-page .result-panel__content .result-panel__title,
+  .demo-page .result-panel__content .panel-header .result-panel__title {
+                color: var(--color-text);
+            }
+  .demo-page .result-panel__content .panel-header .badge,
+  .demo-page .result-panel__content .result-panel__header .badge {
+                background: var(--color-bg-secondary);
+                color: var(--color-text);
+            }
+  .demo-page .result-panel__content .context-info-btn {
+                color: var(--color-text-secondary);
+            }
+  .demo-page .result-panel__content .demo-view-toggle .view-toggle-btn,
+  .demo-page .result-panel__content .view-toggle .view-toggle__button {
+                background: var(--color-bg-secondary);
+                color: var(--color-text);
+            }
+  .demo-page .result-panel__content .demo-view-toggle .view-toggle-btn.active,
+  .demo-page .result-panel__content .view-toggle .view-toggle__button.active {
+                background: var(--color-primary);
+                color: white;
+            }
+  .demo-page .result-panel__content .demo-results,
+  .demo-page .result-panel__content .view-sections {
+                margin-top: 0;
+                margin-bottom: 0;
+            }
+  .demo-page .result-panel__content .demo-view-section,
+  .demo-page .result-panel__content .view-section {
+                margin-top: 0;
+            }
+  /* Map view: remove view-section wrapper so map takes full content width */
+  .demo-page .result-panel__content .view-section[data-view="map"].active,
+  .demo-page .result-panel__content .demo-view-section.demo-view-map.active {
+                display: contents;
+            }
+  .demo-page .result-panel__content .demo-results > .map-container,
+  .demo-page .result-panel__content .view-sections > .map-container {
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                box-sizing: border-box;
+            }
+  .demo-page .result-panel__content .demo-results > .map-container .demo-map,
+  .demo-page .result-panel__content .demo-results > .map-container .map-canvas,
+  .demo-page .result-panel__content .demo-results > .map-container .leaflet-container,
+  .demo-page .result-panel__content .view-sections > .map-container .demo-map,
+  .demo-page .result-panel__content .view-sections > .map-container .map-canvas,
+  .demo-page .result-panel__content .view-sections > .map-container .leaflet-container {
+                width: 100% !important;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+  /* Content area: surface already from parent, no extra box */
+  .demo-page .demo-results .demo-view-section,
+  .demo-page .demo-results .view-section,
+  .demo-page .result-panel__content .demo-view-section,
+  .demo-page .result-panel__content .view-section {
+                background: var(--color-surface);
+                border-radius: var(--radius-lg);
+                overflow: hidden;
+                box-shadow: var(--shadow-md);
+            }
+  .demo-page .demo-results .demo-view-section .result-section,
+  .demo-page .demo-results .view-section .result-section,
+  .demo-page .demo-results .trail-list,
+  .demo-page .demo-results .trail-grid,
+  .demo-page .demo-results .trails-grid {
+                background: var(--color-surface);
+            }
+  .demo-page .demo-results .demo-view-map .map-container,
+  .demo-page .demo-results .view-section[data-view="map"] .map-container {
+                border-radius: var(--radius-lg);
             }
 
   /* Result panel readability on narrow screens */
@@ -7534,17 +7775,36 @@ body.komoot-style.trail-detail-page {
             }
   .demo-view-toggle,
   .view-toggle {
-                flex-wrap: wrap;
-                gap: var(--space-xs);
-                padding: var(--space-xs);
+                flex-wrap: nowrap;
+                gap: 0;
+                padding: 0;
                 margin-bottom: var(--space-md);
+                overflow: hidden;
             }
   .demo-view-toggle .view-toggle-btn,
   .view-toggle__button {
-                font-size: var(--font-size-sm);
-                padding: var(--space-xs) var(--space-sm);
+                flex: 1;
+                min-width: 0;
+                padding: var(--space-md) var(--space-lg);
+                font-size: var(--font-size-base);
+                font-weight: var(--font-weight-semibold);
                 min-height: 44px;
                 white-space: nowrap;
+                background-color: transparent;
+                color: var(--color-text-secondary);
+                border: none;
+                border-radius: 0;
+            }
+  .demo-view-toggle .view-toggle-btn:hover,
+  .view-toggle__button:hover {
+                background-color: var(--color-bg-tertiary);
+                color: var(--color-text);
+            }
+  .demo-view-toggle .view-toggle-btn.active,
+  .view-toggle__button.active {
+                background: var(--gradient-primary);
+                color: white;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
             }
   .demo-results .trail-list {
                 gap: var(--space-md);
@@ -8122,11 +8382,19 @@ body.komoot-style.trail-detail-page {
 
   .view-toggle {
             display: flex;
-            gap: var(--space-sm);
+            flex-wrap: nowrap;
+            gap: 0;
             margin-bottom: var(--space-lg);
-            padding: var(--space-sm);
+            padding: 0;
             background: var(--color-bg-secondary);
             border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+  .view-toggle button,
+  .view-toggle .view-toggle__button {
+            border-radius: 0;
+            min-width: 0;
+            white-space: nowrap;
         }
 
   .view-section {

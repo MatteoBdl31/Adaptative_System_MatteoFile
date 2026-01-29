@@ -891,18 +891,25 @@
             `;
 
             panel.innerHTML = `
-                <div class="result-panel__header">
-                    <div class="result-panel__title-wrapper">
-                        <h2 class="result-panel__title">${result.scenario?.title || 'Custom Scenario'}</h2>
-                        <button type="button" class="context-info-btn" aria-label="Show context information and recommendations" data-user="${userId}">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                                <path d="M8 11V8M8 5H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                            </svg>
-                        </button>
+                <div class="result-panel__content">
+                    <div class="result-panel__header">
+                        <div class="result-panel__title-wrapper">
+                            <h2 class="result-panel__title">${result.scenario?.title || 'Custom Scenario'}</h2>
+                            <button type="button" class="context-info-btn" aria-label="Show context information and recommendations" data-user="${userId}">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                    <path d="M8 11V8M8 5H8.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="view-toggle">${viewToggleButtons}</div>
+                    <div class="view-sections" data-panel="${userId}">
+                        ${this.renderMapView(result, userId, userLabel, defaultView)}
+                        ${this.renderListView(result, userId, defaultView)}
+                        ${!isCompareMode ? this.renderCardsView(result, userId, defaultView) : ''}
                     </div>
                 </div>
-                <!-- Context Info Modal with Tabs -->
                 <div class="context-modal" id="context-modal-${userId}" role="dialog" aria-labelledby="context-modal-title-${userId}" aria-hidden="true">
                     <div class="context-modal__backdrop"></div>
                     <div class="context-modal__content">
@@ -943,12 +950,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="view-toggle">${viewToggleButtons}</div>
-                <div class="view-sections" data-panel="${userId}">
-                    ${this.renderMapView(result, userId, userLabel, defaultView)}
-                    ${this.renderListView(result, userId, defaultView)}
-                    ${!isCompareMode ? this.renderCardsView(result, userId, defaultView) : ''}
                 </div>
                 <script type="application/json" class="trail-data" data-user="${userId}">
                     ${JSON.stringify({
