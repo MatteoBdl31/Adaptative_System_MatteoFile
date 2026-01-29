@@ -5,10 +5,16 @@ import os
 from typing import Optional
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, make_response
 
 # Load environment variables from .env file
 load_dotenv()
+
+# i18n: simple translations (en/fr)
+try:
+    from translations import get_translation, SUPPORTED_LOCALES, DEFAULT_LOCALE
+except ImportError:
+    from adaptive_quiz_system.translations import get_translation, SUPPORTED_LOCALES, DEFAULT_LOCALE
 
 from backend.db import (
     get_all_users,
@@ -150,6 +156,34 @@ app = Flask(
     template_folder=str(BASE_DIR / "templates"),
     static_folder=str(BASE_DIR / "static"),
 )
+
+LOCALE_COOKIE = "locale"
+
+
+def get_locale():
+    """Return current locale. Default: deduced from system (Accept-Language); overridden by user preference (cookie) when set in settings."""
+    user_locale = request.cookies.get(LOCALE_COOKIE)
+    if user_locale in SUPPORTED_LOCALES:
+        return user_locale
+    al = request.headers.get("Accept-Language", "")
+    for part in al.split(","):
+        part = part.split(";")[0].strip().lower()
+        if part.startswith("fr"):
+            return "fr"
+        if part.startswith("en"):
+            return "en"
+    return DEFAULT_LOCALE
+
+
+@app.context_processor
+def inject_locale():
+    """Inject locale and _() into all templates."""
+    locale = get_locale()
+
+    def _(key):
+        return get_translation(locale, key)
+
+    return {"locale": locale, "_": _}
 
 
 def format_duration(minutes):
@@ -913,6 +947,21 @@ def admin_rules():
 
     rules = get_rules()
     return render_template("admin_rules.html", rules=rules)
+
+
+@app.route("/set-locale", methods=["GET", "POST"])
+def set_locale():
+    """Set locale cookie and redirect back (used by settings language selector)."""
+    lang = request.args.get("lang") or (request.form.get("lang") if request.form else None)
+    if lang not in SUPPORTED_LOCALES:
+        lang = DEFAULT_LOCALE
+    settings_url = url_for("settings")
+    next_url = request.referrer or settings_url
+    if next_url and (next_url.rstrip("/").endswith(settings_url.rstrip("/")) or "/settings" in next_url):
+        next_url = settings_url + "#preferences"
+    resp = make_response(redirect(next_url))
+    resp.set_cookie(LOCALE_COOKIE, lang, max_age=365 * 24 * 60 * 60, samesite="Lax")
+    return resp
 
 
 @app.route("/settings")

@@ -1,20 +1,32 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="{{ 'fr' if locale == 'fr' else 'en' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Adaptive Trail Recommender - Personalized hiking trail recommendations based on context">
-    <title>{% block title %}Adaptive Trails{% endblock %}</title>
+    <title>{% block title %}{{ _('site.title') }}{% endblock %}</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏔️</text></svg>">
     <script>
         (function() {
-            var theme = localStorage.getItem('theme') || 'system';
             var root = document.documentElement;
+            var theme = localStorage.getItem('theme') || 'system';
             if (theme === 'system') {
                 root.removeAttribute('data-theme');
             } else {
                 root.setAttribute('data-theme', theme);
             }
+            var reduceMotion = localStorage.getItem('reduce-motion');
+            if (reduceMotion === null) {
+                reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? '1' : '0';
+            }
+            if (reduceMotion === '1') {
+                root.classList.add('reduce-motion');
+            } else {
+                root.classList.remove('reduce-motion');
+            }
+            var textSize = localStorage.getItem('text-size') || 'normal';
+            if (textSize !== 'small' && textSize !== 'large') textSize = 'normal';
+            root.classList.add('text-size-' + textSize);
         })();
     </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -32,11 +44,11 @@
             <nav class="app-header__nav" role="navigation" aria-label="Main navigation">
                 {% set nav_active = request.endpoint %}
                 {% set nav_my_trails_active = nav_active == 'my_trails' or nav_active == 'profile_trail_detail' %}
-                <a href="{{ url_for('demo') }}" class="app-header__nav-link{% if nav_active == 'demo' %} app-header__nav-link--active{% endif %}">Demo</a>
-                <a href="{{ url_for('all_trails') }}" class="app-header__nav-link{% if nav_active == 'all_trails' %} app-header__nav-link--active{% endif %}">All Trails</a>
-                <a href="{{ url_for('my_trails', user_id=101) }}" class="app-header__nav-link{% if nav_my_trails_active %} app-header__nav-link--active{% endif %}" id="header-my-trails-link">My Trails</a>
-                <a href="{{ url_for('profile', user_id=101) }}" class="app-header__nav-link{% if nav_active == 'profile' %} app-header__nav-link--active{% endif %}" id="header-profile-link">Profile</a>
-                <a href="{{ url_for('settings') }}" class="app-header__nav-link app-header__nav-link--icon{% if nav_active == 'settings' %} app-header__nav-link--active{% endif %}" aria-label="Settings" title="Settings">
+                <a href="{{ url_for('demo') }}" class="app-header__nav-link{% if nav_active == 'demo' %} app-header__nav-link--active{% endif %}">{{ _('nav.demo') }}</a>
+                <a href="{{ url_for('all_trails') }}" class="app-header__nav-link{% if nav_active == 'all_trails' %} app-header__nav-link--active{% endif %}">{{ _('nav.all_trails') }}</a>
+                <a href="{{ url_for('my_trails', user_id=101) }}" class="app-header__nav-link{% if nav_my_trails_active %} app-header__nav-link--active{% endif %}" id="header-my-trails-link">{{ _('nav.my_trails') }}</a>
+                <a href="{{ url_for('profile', user_id=101) }}" class="app-header__nav-link{% if nav_active == 'profile' %} app-header__nav-link--active{% endif %}" id="header-profile-link">{{ _('nav.profile') }}</a>
+                <a href="{{ url_for('settings') }}" class="app-header__nav-link app-header__nav-link--icon{% if nav_active == 'settings' %} app-header__nav-link--active{% endif %}" aria-label="{{ _('nav.settings') }}" title="{{ _('nav.settings') }}">
                     <svg class="app-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="12" r="3"/>
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -52,7 +64,7 @@
     
     <footer class="app-footer" role="contentinfo">
         <div class="app-footer__container">
-            <p class="app-footer__text">Adaptive Trail Recommender System</p>
+            <p class="app-footer__text">{{ _('footer.text') }}</p>
         </div>
     </footer>
     

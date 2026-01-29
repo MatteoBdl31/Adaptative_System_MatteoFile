@@ -414,15 +414,8 @@ const TrailListManager = (function() {
     function createDifficultyBadge(difficulty) {
         if (!difficulty) return '';
         const level = difficulty <= 3 ? 'easy' : difficulty <= 7 ? 'medium' : 'hard';
-        const colors = {
-            easy: { bg: '#2d6a4f20', color: '#2d6a4f', label: 'Easy' },
-            medium: { bg: '#f59e0b20', color: '#f59e0b', label: 'Medium' },
-            hard: { bg: '#ef444420', color: '#ef4444', label: 'Hard' }
-        };
-        const cfg = colors[level];
-        return `<span class="difficulty-badge difficulty-${level}" style="background-color: ${cfg.bg}; color: ${cfg.color}; border-color: ${cfg.color}">
-            ${cfg.label} (${difficulty}/10)
-        </span>`;
+        const labels = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+        return `<span class="difficulty-badge difficulty-${level}">${labels[level]} (${difficulty}/10)</span>`;
     }
     
     function createDateBadge(trail, status) {

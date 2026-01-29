@@ -165,6 +165,14 @@
     --color-error-bg: #f8d7da;
     --color-error-text: #842029;
     --color-error: #c23d3d;
+
+    /* Difficulty badges (same as map popup everywhere) */
+    --difficulty-easy-bg: var(--color-success-bg);
+    --difficulty-easy-text: var(--color-success-text);
+    --difficulty-medium-bg: var(--color-warning-bg);
+    --difficulty-medium-text: #92400e;
+    --difficulty-hard-bg: var(--color-error-bg);
+    --difficulty-hard-text: var(--color-error-text);
     
     /* Neutral Colors */
     --color-neutral-bg: #e8e0d5;
@@ -228,7 +236,7 @@
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
-    /* Transitions */
+    /* Transitions (overridden when .reduce-motion is set on html) */
     --transition-fast: 150ms ease;
     --transition-base: 200ms ease;
     --transition-slow: 300ms ease;
@@ -245,6 +253,43 @@
     /* Layout */
     --container-max-width: 1280px;
     --container-padding: var(--space-lg);
+}
+
+/* Reduce motion: user preference or prefers-reduced-motion (accessibility) */
+html.reduce-motion {
+    --transition-fast: 0s;
+    --transition-base: 0s;
+    --transition-slow: 0s;
+}
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+}
+
+/* Text size: user preference (normal = default = current sizes) */
+html.text-size-small {
+    --font-size-xs: 0.6875rem;
+    --font-size-sm: 0.8125rem;
+    --font-size-base: 0.9rem;
+    --font-size-lg: 1rem;
+    --font-size-xl: 1.125rem;
+    --font-size-2xl: 1.35rem;
+    --font-size-3xl: 1.8rem;
+    --font-size-4xl: 2.25rem;
+}
+html.text-size-large {
+    --font-size-xs: 0.875rem;
+    --font-size-sm: 1rem;
+    --font-size-base: 1.15rem;
+    --font-size-lg: 1.25rem;
+    --font-size-xl: 1.4375rem;
+    --font-size-2xl: 1.75rem;
+    --font-size-3xl: 2.25rem;
+    --font-size-4xl: 2.875rem;
 }
 
 /* ============================================
@@ -646,6 +691,47 @@ body {
 }
 .l-settings__radio {
     margin: 0;
+}
+
+.l-settings__option--checkbox {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+}
+.l-settings__checkbox {
+    margin: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+}
+.l-settings__fieldset--reduce-motion {
+    margin-top: var(--space-lg);
+}
+
+.l-settings__label {
+    display: block;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+    margin-bottom: var(--space-sm);
+}
+
+.l-settings__select {
+    display: block;
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    min-width: 12rem;
+    cursor: pointer;
+}
+
+.l-settings__hint {
+    margin-top: var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
 }
 
 /* Container */
@@ -2752,9 +2838,24 @@ body {
     color: var(--color-text);
 }
 
-/* Difficulty Badges – text color follows border (set inline in JS) */
+/* Difficulty Badges – same colors as map popup everywhere */
 .difficulty-badge {
     font-weight: var(--font-weight-bold);
+}
+.difficulty-badge.difficulty-easy {
+    background-color: var(--difficulty-easy-bg);
+    color: var(--difficulty-easy-text);
+    border: 1px solid var(--difficulty-easy-text);
+}
+.difficulty-badge.difficulty-medium {
+    background-color: var(--difficulty-medium-bg);
+    color: var(--difficulty-medium-text);
+    border: 1px solid var(--difficulty-medium-text);
+}
+.difficulty-badge.difficulty-hard {
+    background-color: var(--difficulty-hard-bg);
+    color: var(--difficulty-hard-text);
+    border: 1px solid var(--difficulty-hard-text);
 }
 
 
@@ -6373,18 +6474,18 @@ body.komoot-style.trail-detail-page {
 }
 
 .komoot-difficulty-easy {
-    background: #d1fae5;
-    color: var(--color-success-text);
+    background: var(--difficulty-easy-bg);
+    color: var(--difficulty-easy-text);
 }
 
 .komoot-difficulty-medium {
-    background: var(--color-warning-bg);
-    color: #92400e;
+    background: var(--difficulty-medium-bg);
+    color: var(--difficulty-medium-text);
 }
 
 .komoot-difficulty-hard {
-    background: var(--color-error-bg);
-    color: var(--color-error-text);
+    background: var(--difficulty-hard-bg);
+    color: var(--difficulty-hard-text);
 }
 
 /* Main Layout - Two Column */
@@ -7652,18 +7753,18 @@ body.komoot-style.trail-detail-page {
         }
 
   .trail-item__difficulty.difficulty-easy {
-            background-color: var(--color-success-bg);
-            color: var(--color-success-text);
+            background-color: var(--difficulty-easy-bg);
+            color: var(--difficulty-easy-text);
         }
 
   .trail-item__difficulty.difficulty-medium {
-            background-color: var(--color-warning-bg);
-            color: #92400e;
+            background-color: var(--difficulty-medium-bg);
+            color: var(--difficulty-medium-text);
         }
 
   .trail-item__difficulty.difficulty-hard {
-            background-color: var(--color-error-bg);
-            color: var(--color-error-text);
+            background-color: var(--difficulty-hard-bg);
+            color: var(--difficulty-hard-text);
         }
 
   .trail-item__description {

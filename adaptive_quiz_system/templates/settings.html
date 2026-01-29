@@ -1,34 +1,74 @@
 {% extends "base.html" %}
-{% block title %}Settings — Adaptive Trails{% endblock %}
+{% block title %}{{ _('settings.title') }} — {{ _('site.title') }}{% endblock %}
 {% block page_class %}settings-page{% endblock %}
 
 {% block content %}
 <div class="l-settings">
     <aside class="l-settings__sidebar" role="navigation" aria-label="Settings sections">
         <nav class="l-settings__nav">
-            <a href="#theme" class="l-settings__nav-item is-active" data-panel="theme" aria-current="page">Theme</a>
+            <a href="#theme" class="l-settings__nav-item is-active" data-panel="theme" aria-current="page">{{ _('settings.theme') }}</a>
+            <a href="#readability-accessibility" class="l-settings__nav-item" data-panel="readability-accessibility">{{ _('settings.readability_accessibility') }}</a>
+            <a href="#preferences" class="l-settings__nav-item" data-panel="preferences">{{ _('settings.preferences') }}</a>
         </nav>
     </aside>
     <div class="l-settings__main">
         <section class="l-settings__panel is-active" id="panel-theme" aria-labelledby="theme-heading">
-            <h1 id="theme-heading" class="l-settings__heading">Theme</h1>
+            <h1 id="theme-heading" class="l-settings__heading">{{ _('settings.theme') }}</h1>
             <fieldset class="l-settings__fieldset">
                 <legend class="u-visually-hidden">Appearance</legend>
                 <div class="l-settings__options">
                     <label class="l-settings__option">
                         <input type="radio" name="theme" value="light" class="l-settings__radio">
-                        <span class="l-settings__option-label">Light</span>
+                        <span class="l-settings__option-label">{{ _('settings.theme_light') }}</span>
                     </label>
                     <label class="l-settings__option">
                         <input type="radio" name="theme" value="dark" class="l-settings__radio">
-                        <span class="l-settings__option-label">Dark</span>
+                        <span class="l-settings__option-label">{{ _('settings.theme_dark') }}</span>
                     </label>
                     <label class="l-settings__option">
                         <input type="radio" name="theme" value="system" class="l-settings__radio" checked>
-                        <span class="l-settings__option-label">System</span>
+                        <span class="l-settings__option-label">{{ _('settings.theme_system') }}</span>
                     </label>
                 </div>
             </fieldset>
+            <div class="l-settings__fieldset l-settings__fieldset--reduce-motion">
+                <label class="l-settings__option l-settings__option--checkbox">
+                    <input type="checkbox" id="reduce-motion" name="reduce_motion" class="l-settings__checkbox" aria-describedby="reduce-motion-desc">
+                    <span class="l-settings__option-label">{{ _('settings.reduce_animations') }}</span>
+                </label>
+                <p id="reduce-motion-desc" class="l-settings__hint">{{ _('settings.reduce_animations_hint') }}</p>
+            </div>
+        </section>
+        <section class="l-settings__panel" id="panel-readability-accessibility" aria-labelledby="readability-accessibility-heading">
+            <h1 id="readability-accessibility-heading" class="l-settings__heading">{{ _('settings.readability_accessibility') }}</h1>
+            <fieldset class="l-settings__fieldset">
+                <legend class="l-settings__label">{{ _('settings.text_size') }}</legend>
+                <div class="l-settings__options">
+                    <label class="l-settings__option">
+                        <input type="radio" name="text_size" value="small" class="l-settings__radio">
+                        <span class="l-settings__option-label">{{ _('settings.text_size_small') }}</span>
+                    </label>
+                    <label class="l-settings__option">
+                        <input type="radio" name="text_size" value="normal" class="l-settings__radio" checked>
+                        <span class="l-settings__option-label">{{ _('settings.text_size_normal') }}</span>
+                    </label>
+                    <label class="l-settings__option">
+                        <input type="radio" name="text_size" value="large" class="l-settings__radio">
+                        <span class="l-settings__option-label">{{ _('settings.text_size_large') }}</span>
+                    </label>
+                </div>
+            </fieldset>
+        </section>
+        <section class="l-settings__panel" id="panel-preferences" aria-labelledby="preferences-heading">
+            <h1 id="preferences-heading" class="l-settings__heading">{{ _('settings.preferences') }}</h1>
+            <div class="l-settings__fieldset">
+                <label for="locale-select" class="l-settings__label">{{ _('settings.language') }}</label>
+                <select id="locale-select" class="l-settings__select" name="locale" aria-describedby="locale-desc">
+                    <option value="en" {% if locale == 'en' %}selected{% endif %}>{{ _('settings.language_en') }}</option>
+                    <option value="fr" {% if locale == 'fr' %}selected{% endif %}>{{ _('settings.language_fr') }}</option>
+                </select>
+                <p id="locale-desc" class="l-settings__hint">{{ _('settings.language_hint') }}</p>
+            </div>
         </section>
     </div>
 </div>
@@ -60,6 +100,110 @@
         apply(v);
     }
     [light, dark, system].forEach(function(el) { if (el) el.addEventListener('change', onChange); });
+    load();
+})();
+
+(function() {
+    var KEY = 'reduce-motion';
+    var root = document.documentElement;
+    var cb = document.getElementById('reduce-motion');
+    function apply(enable) {
+        if (enable) {
+            root.classList.add('reduce-motion');
+            if (cb) cb.checked = true;
+        } else {
+            root.classList.remove('reduce-motion');
+            if (cb) cb.checked = false;
+        }
+    }
+    function load() {
+        var v = localStorage.getItem(KEY);
+        if (v === null) {
+            v = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? '1' : '0';
+        }
+        apply(v === '1');
+    }
+    if (cb) {
+        cb.addEventListener('change', function() {
+            var v = cb.checked ? '1' : '0';
+            localStorage.setItem(KEY, v);
+            apply(cb.checked);
+        });
+    }
+    load();
+})();
+
+(function() {
+    var navItems = document.querySelectorAll('.l-settings__nav-item');
+    var panels = document.querySelectorAll('.l-settings__panel');
+    navItems.forEach(function(item) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            var panelId = item.getAttribute('data-panel');
+            if (!panelId) return;
+            navItems.forEach(function(n) { n.classList.remove('is-active'); n.removeAttribute('aria-current'); });
+            item.classList.add('is-active');
+            item.setAttribute('aria-current', 'page');
+            panels.forEach(function(p) {
+                var id = p.id;
+                var match = id === 'panel-' + panelId;
+                p.classList.toggle('is-active', match);
+            });
+            if (history.replaceState) history.replaceState(null, '', '#' + panelId);
+        });
+    });
+
+    var localeSelect = document.getElementById('locale-select');
+    if (localeSelect) {
+        localeSelect.addEventListener('change', function() {
+            var lang = localeSelect.value;
+            window.location.href = '{{ url_for("set_locale") }}?lang=' + encodeURIComponent(lang);
+        });
+    }
+
+    var hash = (window.location.hash || '').replace(/^#/, '');
+    if (hash === 'preferences') {
+        navItems.forEach(function(n) { n.classList.remove('is-active'); n.removeAttribute('aria-current'); });
+        panels.forEach(function(p) { p.classList.remove('is-active'); });
+        var prefNav = document.querySelector('.l-settings__nav-item[data-panel="preferences"]');
+        var prefPanel = document.getElementById('panel-preferences');
+        if (prefNav) { prefNav.classList.add('is-active'); prefNav.setAttribute('aria-current', 'page'); }
+        if (prefPanel) prefPanel.classList.add('is-active');
+    } else if (hash === 'readability-accessibility') {
+        navItems.forEach(function(n) { n.classList.remove('is-active'); n.removeAttribute('aria-current'); });
+        panels.forEach(function(p) { p.classList.remove('is-active'); });
+        var accNav = document.querySelector('.l-settings__nav-item[data-panel="readability-accessibility"]');
+        var accPanel = document.getElementById('panel-readability-accessibility');
+        if (accNav) { accNav.classList.add('is-active'); accNav.setAttribute('aria-current', 'page'); }
+        if (accPanel) accPanel.classList.add('is-active');
+    }
+})();
+
+(function() {
+    var KEY = 'text-size';
+    var root = document.documentElement;
+    var small = document.querySelector('input[name="text_size"][value="small"]');
+    var normal = document.querySelector('input[name="text_size"][value="normal"]');
+    var large = document.querySelector('input[name="text_size"][value="large"]');
+    function apply(v) {
+        root.classList.remove('text-size-small', 'text-size-normal', 'text-size-large');
+        root.classList.add('text-size-' + (v || 'normal'));
+        if (small) small.checked = (v === 'small');
+        if (normal) normal.checked = (v === 'normal' || !v);
+        if (large) large.checked = (v === 'large');
+    }
+    function load() {
+        var v = localStorage.getItem(KEY) || 'normal';
+        if (v !== 'small' && v !== 'large') v = 'normal';
+        apply(v);
+    }
+    function onChange() {
+        var el = document.querySelector('input[name="text_size"]:checked');
+        var v = el ? el.value : 'normal';
+        localStorage.setItem(KEY, v);
+        apply(v);
+    }
+    [small, normal, large].forEach(function(el) { if (el) el.addEventListener('change', onChange); });
     load();
 })();
 </script>
