@@ -145,9 +145,10 @@ class MapManager {
 
         const bounds = [];
         const { 
-            exactColor = '#40916c',   // --color-recommended (matches map legend)
-            suggestionColor = '#606c38', // --color-accent (matches map legend)
-            collaborativeColor = '#8b5a2b', // --color-collaborative (matches map legend)
+            exactColor = '#059669',   // --color-map-recommended (distinct green)
+            suggestionColor = '#ea580c', // --color-map-suggestion (orange, distinct from green)
+            collaborativeColor = '#8b5a2b', // --color-collaborative (dot)
+            collaborativeRingColor = '#0ea5e9', // --color-collaborative-ring (dashed border, sky blue)
             onMarkerClick = null 
         } = options;
 
@@ -198,7 +199,7 @@ class MapManager {
                                 transform: translate(-50%, -50%);
                                 width: 35px;
                                 height: 35px;
-                                border: 3px dashed ${collaborativeColor};
+                                border: 3px dashed ${collaborativeRingColor};
                                 border-radius: 50%;
                                 background-color: transparent;
                                 pointer-events: none;
@@ -390,11 +391,33 @@ class MapManager {
             
             marker.bindPopup(popupContent, {
                 maxWidth: 300,
-                className: 'trail-popup-wrapper'
+                className: 'trail-popup-wrapper',
+                closeOnClick: false,
+                autoClose: false
             });
+
+            let popupCloseTimer;
+            marker.on('mouseover', () => {
+                clearTimeout(popupCloseTimer);
+                marker.openPopup();
+            });
+            marker.on('mouseout', () => {
+                popupCloseTimer = setTimeout(() => marker.closePopup(), 150);
+            });
+            marker.off('click');
+            if (onMarkerClick && trail_id) {
+                marker.on('click', () => onMarkerClick(trail_id));
+            }
             
             // Store popup reference for later interaction setup
             marker.on('popupopen', () => {
+                const popupEl = marker.getPopup().getElement();
+                if (popupEl) {
+                    popupEl.addEventListener('mouseenter', () => clearTimeout(popupCloseTimer));
+                    popupEl.addEventListener('mouseleave', () => {
+                        popupCloseTimer = setTimeout(() => marker.closePopup(), 150);
+                    });
+                }
                 // Setup interactivity after popup opens
                 // Get polyline from stored trail data
                 const storedData = map._trailDataMap?.get(trail_id);
@@ -516,10 +539,6 @@ class MapManager {
                     });
                 }
             });
-            
-            if (onMarkerClick && trail_id) {
-                marker.on('click', () => onMarkerClick(trail_id));
-            }
 
             bounds.push([latitude, longitude]);
 

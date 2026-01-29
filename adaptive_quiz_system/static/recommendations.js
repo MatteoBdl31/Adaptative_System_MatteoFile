@@ -113,15 +113,16 @@
 
                     // Check if trail is collaborative
                     const isCollaborative = trail.is_collaborative || (trail.view_type && trail.view_type.includes('collaborative'));
-                    const collaborativeColor = '#8b5a2b';  // --color-collaborative (matches map legend)
+                    const collaborativeColor = '#8b5a2b';  // --color-collaborative (dot)
+                    const collaborativeRingColor = '#0ea5e9'; // --color-collaborative-ring (dashed border, sky blue)
                     const vt = trail.view_type;
 
                     // Determine icon color from view_type (matches map legend: recommended / suggestion / collaborative)
-                    let iconColor = '#606c38'; // --color-accent, default (suggested)
+                    let iconColor = '#ea580c'; // --color-map-suggestion (orange, distinct)
                     if (vt === 'recommended' || vt === 'exact' || (vt && vt.includes && vt.includes('recommended'))) {
-                        iconColor = '#40916c'; // --color-recommended
+                        iconColor = '#059669'; // --color-map-recommended (green)
                     } else if (vt === 'suggested' || (vt && vt.includes && vt.includes('suggested'))) {
-                        iconColor = '#606c38'; // --color-accent
+                        iconColor = '#ea580c'; // --color-map-suggestion
                     } else if (isCollaborative && vt === 'collaborative' && !(vt && vt.includes && (vt.includes('recommended') || vt.includes('suggested')))) {
                         iconColor = collaborativeColor; // only collaborative
                     }
@@ -139,7 +140,7 @@
                                         transform: translate(-50%, -50%);
                                         width: 35px;
                                         height: 35px;
-                                        border: 3px dashed ${collaborativeColor};
+                                        border: 3px dashed ${collaborativeRingColor};
                                         border-radius: 50%;
                                         background-color: transparent;
                                         pointer-events: none;

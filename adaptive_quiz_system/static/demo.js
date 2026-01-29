@@ -1010,13 +1010,9 @@
                                     <span class="map-legend__label">Suggestions</span>
                                 </div>
                                 <div class="map-legend__item">
-                                    <span class="map-legend__marker map-legend__marker--collaborative"></span>
-                                    <span class="map-legend__label">Collaborative</span>
-                                </div>
-                                <div class="map-legend__item">
                                     <span class="map-legend__marker map-legend__marker--with-ring">
                                         <svg width="18" height="18" viewBox="0 0 18 18">
-                                            <circle cx="9" cy="9" r="8" fill="none" stroke="#f71e50" stroke-width="2" stroke-dasharray="2 2" stroke-linecap="round"/>
+                                            <circle cx="9" cy="9" r="8" fill="none"/>
                                         </svg>
                                     </span>
                                     <span class="map-legend__label">Collaborative (with ring)</span>

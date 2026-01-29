@@ -78,6 +78,11 @@
     /* Semantic Colors - Status & Actions (nature-aligned) */
     --color-collaborative: #8b5a2b;
     --color-recommended: #40916c;
+    /* Map markers: distinct recommended (green) vs suggestions (orange) */
+    --color-map-recommended: #059669;
+    --color-map-suggestion: #ea580c;
+    /* Collaborative trail ring (dashed border on map + legend) */
+    --color-collaborative-ring: #0ea5e9;
     --color-link: #2d6a4f;
     --color-gradient-start: #2d6a4f;
     --color-gradient-end: #1b4332;
@@ -1877,6 +1882,13 @@ body {
     height: 100%;
     flex-shrink: 0;
 }
+.map-legend__marker--with-ring svg circle {
+    stroke: var(--color-collaborative-ring);
+    stroke-width: 2;
+    stroke-dasharray: 2 2;
+    stroke-linecap: round;
+    fill: none;
+}
 
 .map-legend__label {
     color: var(--color-text);
@@ -1913,14 +1925,21 @@ body {
     height: 100%;
     flex-shrink: 0;
 }
+.legend-marker--with-ring svg circle {
+    stroke: var(--color-collaborative-ring);
+    stroke-width: 2;
+    stroke-dasharray: 2 2;
+    stroke-linecap: round;
+    fill: none;
+}
 
-.legend-marker.exact-marker { background-color: var(--color-recommended); border: var(--border-white); box-shadow: 0 1px 3px var(--overlay-medium); }
-.legend-marker.suggestion-marker { background-color: var(--color-accent); border: var(--border-white); box-shadow: 0 1px 3px var(--overlay-medium); }
+.legend-marker.exact-marker { background-color: var(--color-map-recommended); border: var(--border-white); box-shadow: 0 1px 3px var(--overlay-medium); }
+.legend-marker.suggestion-marker { background-color: var(--color-map-suggestion); border: var(--border-white); box-shadow: 0 1px 3px var(--overlay-medium); }
 .legend-marker--collaborative { background: var(--color-collaborative); border: var(--border-white); box-shadow: 0 1px 3px var(--overlay-medium); }
 
 /* Map legend marker variants (demo.js) */
-.map-legend__marker--recommended { background-color: var(--color-recommended); }
-.map-legend__marker--suggestion { background-color: var(--color-accent); }
+.map-legend__marker--recommended { background-color: var(--color-map-recommended); }
+.map-legend__marker--suggestion { background-color: var(--color-map-suggestion); }
 .map-legend__marker--collaborative { background-color: var(--color-collaborative); }
 
 /* Trail explanation blocks */
