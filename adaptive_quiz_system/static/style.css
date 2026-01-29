@@ -7502,6 +7502,326 @@ body.komoot-style.trail-detail-page {
                 min-width: 0;
                 max-width: 100%;
             }
+
+  /* Result panel readability on narrow screens */
+  .demo-results {
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-lg);
+                min-width: 0;
+                min-height: 55vh;
+            }
+  .result-panel,
+  .demo-panel.panel-card {
+                padding: var(--space-md);
+                min-width: 0;
+                overflow-x: hidden;
+                box-sizing: border-box;
+            }
+  .result-panel__header,
+  .panel-header {
+                margin-bottom: var(--space-md);
+            }
+  .result-panel__title-wrapper {
+                flex-wrap: wrap;
+                gap: var(--space-xs);
+            }
+  .result-panel__title,
+  .panel-header .result-panel__title {
+                font-size: var(--font-size-xl);
+                line-height: 1.25;
+                word-break: break-word;
+            }
+  .demo-view-toggle,
+  .view-toggle {
+                flex-wrap: wrap;
+                gap: var(--space-xs);
+                padding: var(--space-xs);
+                margin-bottom: var(--space-md);
+            }
+  .demo-view-toggle .view-toggle-btn,
+  .view-toggle__button {
+                font-size: var(--font-size-sm);
+                padding: var(--space-xs) var(--space-sm);
+                min-height: 44px;
+                white-space: nowrap;
+            }
+  .demo-results .trail-list {
+                gap: var(--space-md);
+            }
+  .demo-results .trail-card.modern,
+  .demo-view-section .trail-card.modern {
+                padding: var(--space-md);
+            }
+  .demo-view-section.demo-view-list .card-heading,
+  .demo-view-section .card-heading {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-sm);
+            }
+  .demo-view-section .card-heading .trail-name-link,
+  .demo-view-section .trail-name-link {
+                word-break: break-word;
+                min-width: 0;
+            }
+  .demo-view-section .card-heading__meta {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                gap: var(--space-xs);
+            }
+  .demo-view-section .trail-stats,
+  .demo-results .trail-stats {
+                gap: var(--space-sm);
+                font-size: var(--font-size-xs);
+            }
+  .demo-view-section .trail-stats span,
+  .demo-results .trail-stats span {
+                padding: var(--space-xs) var(--space-sm);
+            }
+  .demo-results .result-section .section-header h3,
+  .demo-results .section-header h3 {
+                font-size: var(--font-size-lg);
+                word-break: break-word;
+            }
+  .demo-results .result-section {
+                margin-bottom: var(--space-lg);
+            }
+  .demo-view-section .map-legend,
+  .demo-results .view-section[data-view="map"] .map-legend {
+                font-size: var(--font-size-xs);
+                padding: var(--space-xs) var(--space-sm);
+                max-width: calc(100vw - var(--space-md) * 4);
+            }
+  .demo-view-section .map-legend .legend-item,
+  .demo-results .view-section[data-view="map"] .map-legend .legend-item {
+                font-size: var(--font-size-xs);
+            }
+
+  /* Map view on mobile: full width, map then legend below (legend stays inside section) */
+  .demo-results .demo-view-section.demo-view-map.active,
+  .demo-results .view-section[data-view="map"].active {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-height: 0;
+                margin-left: calc(-1 * var(--space-md));
+                margin-right: calc(-1 * var(--space-md));
+                width: calc(100% + 2 * var(--space-md));
+                max-width: 100vw;
+                box-sizing: border-box;
+            }
+  .demo-results .demo-view-section.demo-view-map .map-container,
+  .demo-results .view-section[data-view="map"] .map-container {
+                flex: 1;
+                min-height: 0;
+                border-radius: 0;
+                position: relative;
+            }
+  .demo-results .demo-view-section.demo-view-map .map-container .demo-map,
+  .demo-results .demo-view-section.demo-view-map .map-container .map-canvas,
+  .demo-results .demo-view-section.demo-view-map .map-container .leaflet-container,
+  .demo-results .view-section[data-view="map"] .map-container .demo-map,
+  .demo-results .view-section[data-view="map"] .map-container .map-canvas,
+  .demo-results .view-section[data-view="map"] .map-container .leaflet-container {
+                height: 100% !important;
+                min-height: 280px;
+            }
+  /* Legend below the map (outside overlay), visible on mobile */
+  .demo-results .demo-view-section.demo-view-map .map-legend,
+  .demo-results .view-section[data-view="map"] .map-legend,
+  .demo-container .map-legend {
+                position: static !important;
+                bottom: auto !important;
+                right: auto !important;
+                left: auto !important;
+                top: auto !important;
+                margin: var(--space-md) 0 0;
+                flex-shrink: 0;
+                width: auto;
+                max-width: none;
+                padding: var(--space-xs) var(--space-sm);
+                font-size: var(--font-size-xs);
+                background: var(--color-surface);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-md);
+                box-shadow: var(--shadow-md);
+            }
+  .demo-results .demo-view-section.demo-view-map .map-legend .legend-item,
+  .demo-results .view-section[data-view="map"] .map-legend .legend-item,
+  .demo-container .map-legend .legend-item {
+                font-size: var(--font-size-xs);
+                gap: var(--space-xs);
+            }
+  .demo-results .demo-view-section.demo-view-map .map-legend .legend-marker,
+  .demo-results .view-section[data-view="map"] .map-legend .legend-marker,
+  .demo-container .map-legend .legend-marker {
+                width: 10px;
+                height: 10px;
+            }
+  .demo-results .demo-view-section.demo-view-map .map-legend .legend-marker--with-ring,
+  .demo-results .view-section[data-view="map"] .map-legend .legend-marker--with-ring,
+  .demo-container .map-legend .legend-marker--with-ring {
+                width: 10px;
+                height: 10px;
+            }
+  .demo-results .demo-view-section.demo-view-map .map-legend .legend-marker--with-ring svg,
+  .demo-results .view-section[data-view="map"] .map-legend .legend-marker--with-ring svg,
+  .demo-container .map-legend .legend-marker--with-ring svg {
+                width: 10px;
+                height: 10px;
+            }
+
+  /* Trail popup (map marker): smaller and well organized on mobile */
+  .demo-container .trail-popup-wrapper .leaflet-popup-content-wrapper,
+  .trail-popup-wrapper .leaflet-popup-content-wrapper {
+                max-width: min(280px, 85vw);
+            }
+  .demo-container .trail-popup-wrapper .leaflet-popup-content,
+  .trail-popup-wrapper .leaflet-popup-content {
+                min-width: 0;
+                max-width: min(280px, 85vw);
+            }
+  .demo-container .trail-popup,
+  .trail-popup {
+                padding: var(--space-sm);
+            }
+  .demo-container .trail-popup__header,
+  .trail-popup__header {
+                flex-wrap: wrap;
+                gap: var(--space-xs);
+                margin-bottom: var(--space-xs);
+                padding-bottom: var(--space-xs);
+            }
+  .demo-container .trail-popup__title,
+  .demo-container .trail-popup__title-link,
+  .demo-container .trail-popup__title-wrap .trail-popup__title-link,
+  .trail-popup__title,
+  .trail-popup__title-link {
+                font-size: var(--font-size-base);
+                line-height: 1.25;
+                word-break: break-word;
+            }
+  .demo-container .trail-popup__difficulty,
+  .trail-popup__difficulty {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+  .demo-container .trail-popup__description,
+  .trail-popup__description {
+                font-size: var(--font-size-xs);
+                -webkit-line-clamp: 2;
+                line-clamp: 2;
+                margin-bottom: var(--space-xs);
+            }
+  .demo-container .trail-popup__stats,
+  .trail-popup__stats {
+                gap: 2px;
+                margin-top: var(--space-xs);
+                padding-top: var(--space-xs);
+            }
+  .demo-container .trail-popup__stat,
+  .trail-popup__stat {
+                font-size: var(--font-size-xs);
+                gap: var(--space-xs);
+            }
+  .demo-container .trail-popup__stat-icon,
+  .trail-popup__stat-icon {
+                font-size: var(--font-size-sm);
+            }
+  .demo-container .trail-popup__stat-label,
+  .trail-popup__stat-value,
+  .trail-popup__stat-label,
+  .trail-popup__stat-value {
+                font-size: var(--font-size-xs);
+            }
+  .demo-container .trail-popup__elevation,
+  .trail-popup__elevation {
+                margin-top: var(--space-xs);
+                padding-top: var(--space-xs);
+            }
+  .demo-container .trail-popup__elevation-header,
+  .trail-popup__elevation-header {
+                font-size: 10px;
+            }
+  .demo-container .trail-popup__elevation-chart,
+  .trail-popup__elevation-chart {
+                height: 60px;
+            }
+  /* Save Trail button in popup: smaller on mobile */
+  .demo-container .trail-popup-wrapper .btn-save-trail-map,
+  .trail-popup-wrapper .btn-save-trail-map {
+                font-size: var(--font-size-xs);
+                padding: var(--space-xs) var(--space-sm);
+                min-height: 32px;
+                height: auto;
+            }
+  /* Popup: let touch-drag pass through to map so user can pan (pane approach); keep buttons/links tappable */
+  .demo-container .leaflet-popup-pane {
+                pointer-events: none;
+            }
+  .demo-container .leaflet-popup-pane .trail-popup a,
+  .demo-container .leaflet-popup-pane .trail-popup button,
+  .demo-container .leaflet-popup-pane .trail-popup [role="button"],
+  .demo-container .leaflet-popup-pane .trail-popup .btn-save-trail-map,
+  .demo-container .leaflet-popup-pane .trail-popup .trail-explanation-btn {
+                pointer-events: auto;
+            }
+  .demo-results .display-settings,
+  .demo-results .rules-list {
+                font-size: var(--font-size-sm);
+                word-break: break-word;
+            }
+
+  /* Cards view: single column, no overflow, map taller on mobile */
+  .demo-results .view-section,
+  .demo-results .result-section {
+                min-width: 0;
+                overflow-x: hidden;
+            }
+  .demo-results .trail-grid,
+  .demo-results .trails-grid.modern {
+                grid-template-columns: 1fr;
+                gap: var(--space-md);
+                min-width: 0;
+            }
+  .demo-results .trail-card,
+  .demo-results .trail-card.recommended,
+  .demo-results .trail-card.suggested,
+  .demo-results .trail-card.modern {
+                min-width: 0;
+                max-width: 100%;
+                overflow: hidden;
+            }
+  .demo-results .trail-card__map-container,
+  .demo-results .demo-trail-card-map-container {
+                min-height: 220px;
+                height: 220px;
+                width: 100%;
+                flex-shrink: 0;
+            }
+  .demo-results .trail-card__mini-map,
+  .demo-results .demo-trail-mini-map {
+                min-height: 220px;
+                width: 100%;
+            }
+  .demo-results .trail-card__content,
+  .demo-results .demo-trail-card-content {
+                min-width: 0;
+                overflow: hidden;
+                padding: var(--space-md);
+            }
+  .demo-results .trail-card__description,
+  .demo-results .demo-trail-card-content .trail-description {
+                word-break: break-word;
+                -webkit-line-clamp: 4;
+                line-clamp: 4;
+            }
+  .demo-results .trail-card__title .trail-name-link,
+  .demo-results .demo-trail-card-content .card-heading .trail-name-link,
+  .demo-results .demo-trail-card-content h3 .trail-name-link {
+                word-break: break-word;
+            }
         }
 
   .demo-results {

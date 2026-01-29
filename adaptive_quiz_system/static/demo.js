@@ -1001,27 +1001,24 @@
             return `
                 <div class="view-section ${isActive ? 'active' : ''}" data-view="map" data-panel="${userId}">
                     <div class="map-container">
-                        <div class="map-canvas" id="demo-map-${userId}"></div>
-                        <div class="map-legend">
-                            <div class="map-legend__title">Trail Types</div>
-                            <div class="map-legend__items">
-                                <div class="map-legend__item">
-                                    <span class="map-legend__marker map-legend__marker--recommended"></span>
-                                    <span class="map-legend__label">Recommended</span>
-                                </div>
-                                <div class="map-legend__item">
-                                    <span class="map-legend__marker map-legend__marker--suggestion"></span>
-                                    <span class="map-legend__label">Suggestions</span>
-                                </div>
-                                <div class="map-legend__item">
-                                    <span class="map-legend__marker map-legend__marker--with-ring">
-                                        <svg width="18" height="18" viewBox="0 0 18 18">
-                                            <circle cx="9" cy="9" r="8" fill="none"/>
-                                        </svg>
-                                    </span>
-                                    <span class="map-legend__label">Collaborative (with ring)</span>
-                                </div>
-                            </div>
+                        <div class="map-canvas demo-map" id="demo-map-${userId}"></div>
+                    </div>
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <span class="legend-marker exact-marker"></span>
+                            <span>Recommended</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-marker suggestion-marker"></span>
+                            <span>Suggestions</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-marker legend-marker--with-ring">
+                                <svg width="18" height="18" viewBox="0 0 18 18">
+                                    <circle cx="9" cy="9" r="8" fill="none"/>
+                                </svg>
+                            </span>
+                            <span>Collaborative (with ring)</span>
                         </div>
                     </div>
                 </div>
