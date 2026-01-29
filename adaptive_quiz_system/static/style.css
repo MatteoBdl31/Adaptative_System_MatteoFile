@@ -1096,6 +1096,24 @@ body {
     min-width: 250px;
 }
 
+html[data-theme="dark"] .trail-popup-wrapper .leaflet-popup-content-wrapper {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xl);
+}
+html[data-theme="dark"] .trail-popup-wrapper .leaflet-popup-content {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+html[data-theme="dark"] .trail-popup-wrapper .leaflet-popup-tip {
+    background: var(--color-surface);
+}
+html[data-theme="dark"] .trail-popup {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
 /* ============================================
    COMPONENTS (BEM Convention - .c-*)
    ============================================

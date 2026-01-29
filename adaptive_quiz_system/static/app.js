@@ -399,10 +399,19 @@ class MapManager {
             let popupCloseTimer;
             marker.on('mouseover', () => {
                 clearTimeout(popupCloseTimer);
+                if (!map._popupRestoreView) {
+                    map._popupRestoreView = { center: map.getCenter(), zoom: map.getZoom() };
+                }
                 marker.openPopup();
             });
             marker.on('mouseout', () => {
                 popupCloseTimer = setTimeout(() => marker.closePopup(), 150);
+            });
+            marker.on('popupclose', () => {
+                if (map._popupRestoreView) {
+                    map.setView(map._popupRestoreView.center, map._popupRestoreView.zoom, { animate: true });
+                    map._popupRestoreView = null;
+                }
             });
             marker.off('click');
             if (onMarkerClick && trail_id) {
