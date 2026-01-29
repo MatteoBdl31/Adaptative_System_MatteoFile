@@ -645,12 +645,12 @@
                 profileLink.style.display = 'none';
             }
             
-            // Also update header profile link if this is user A (primary user)
+            // Also update header profile and my-trails links if this is user A (primary user)
             if (userIndex === 'a' && selectedUserId) {
                 const headerProfileLink = document.getElementById('header-profile-link');
-                if (headerProfileLink) {
-                    headerProfileLink.href = `/profile/${selectedUserId}`;
-                }
+                if (headerProfileLink) headerProfileLink.href = `/profile/${selectedUserId}`;
+                const headerMyTrailsLink = document.getElementById('header-my-trails-link');
+                if (headerMyTrailsLink) headerMyTrailsLink.href = `/profile/${selectedUserId}/my-trails`;
             }
         }
 

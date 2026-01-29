@@ -387,6 +387,9 @@ body {
 .app-header__nav-link--icon .app-header__icon {
     display: block;
 }
+.app-header__nav-link--icon .app-header__nav-link-text {
+    margin-left: var(--space-xs, 0.25rem);
+}
 
 /* Responsive: App Header */
 @media (max-width: 768px) {
@@ -3031,9 +3034,13 @@ select:focus-visible {
     font-weight: var(--font-weight-medium);
 }
 
-/* Dashboard Section: confines sticky switcher to this block so it unsticks when My Trails is in view */
+/* Dashboard Section: confines sticky switcher to this block */
 .dashboard-section {
     position: relative;
+}
+
+.profile-my-trails-cta {
+    margin-top: var(--space-xl);
 }
 
 /* Dashboard Switcher */
@@ -4967,6 +4974,7 @@ section.trail-detail-section h4 {
     border-radius: var(--radius-md);
     cursor: pointer;
     font-size: var(--font-size-sm);
+    color: var(--color-text);
     transition: var(--transition-base);
 }
 
@@ -4994,6 +5002,7 @@ section.trail-detail-section h4 {
     border-radius: var(--radius-md);
     background: var(--color-surface);
     font-size: var(--font-size-sm);
+    color: var(--color-text);
     cursor: pointer;
 }
 

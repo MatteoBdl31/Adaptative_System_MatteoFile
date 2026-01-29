@@ -32,6 +32,7 @@
             <nav class="app-header__nav" role="navigation" aria-label="Main navigation">
                 <a href="{{ url_for('demo') }}" class="app-header__nav-link">Demo</a>
                 <a href="{{ url_for('all_trails') }}" class="app-header__nav-link">All Trails</a>
+                <a href="{{ url_for('my_trails', user_id=101) }}" class="app-header__nav-link" id="header-my-trails-link">My Trails</a>
                 <a href="{{ url_for('profile', user_id=101) }}" class="app-header__nav-link" id="header-profile-link">Profile</a>
                 <a href="{{ url_for('settings') }}" class="app-header__nav-link app-header__nav-link--icon" aria-label="Settings" title="Settings">
                     <svg class="app-header__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

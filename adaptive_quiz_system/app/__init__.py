@@ -792,6 +792,16 @@ def profile(user_id):
     return render_template("profile.html", user=user, users=users)
 
 
+@app.route("/profile/<int:user_id>/my-trails")
+def my_trails(user_id):
+    """Dedicated My Trails page (saved / started / completed)."""
+    user = get_user(user_id)
+    if not user:
+        return "User not found", 404
+    users = get_all_users()
+    return render_template("my_trails.html", user=user, users=users)
+
+
 @app.route("/profile/<int:user_id>/trail/<trail_id>")
 def profile_trail_detail(user_id, trail_id):
     """Trail detail page for profile view - single page layout"""

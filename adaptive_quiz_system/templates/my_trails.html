@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}My Trails{% endblock %}
+{% block content %}
+    <div class="container profile-container">
+        <div class="profile-header">
+            <div class="user-selector-section">
+                <label for="user-select">Select User:</label>
+                <select id="user-select" class="user-select">
+                    {% for u in users %}
+                    <option value="{{ u.id }}" {% if u.id == user.id %}selected{% endif %}>
+                        {{ u.name }}{% if u.detected_profile %} ({{ u.detected_profile|profile_name_en }}){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="profile-info-header">
+                <h1>{{ user.name }}'s Trails</h1>
+                {% if user.detected_profile %}
+                <span class="profile-badge">{{ user.detected_profile|profile_name_en }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Trail Management Section -->
+        <div class="trail-management-section">
+            <div class="trail-section-header">
+                <h2>My Trails</h2>
+                <div class="view-mode-toggle">
+                    <button class="view-mode-btn active" data-view="grid" title="Grid View">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="5" height="5"></rect>
+                            <rect x="12" y="3" width="5" height="5"></rect>
+                            <rect x="3" y="12" width="5" height="5"></rect>
+                            <rect x="12" y="12" width="5" height="5"></rect>
+                        </svg>
+                    </button>
+                    <button class="view-mode-btn" data-view="list" title="List View">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="5" x2="17" y2="5"></line>
+                            <line x1="3" y1="10" x2="17" y2="10"></line>
+                            <line x1="3" y1="15" x2="17" y2="15"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="trail-controls-bar">
+                <div class="search-container">
+                    <input type="text" id="trail-search" class="trail-search-input" placeholder="Search trails...">
+                    <svg class="search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="8" cy="8" r="6"></circle>
+                        <line x1="13" y1="13" x2="16" y2="16"></line>
+                    </svg>
+                </div>
+                <div class="filter-sort-container">
+                    <button class="btn-filter-toggle" id="filter-toggle">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="3,6 8,6 10,10 15,10"></polygon>
+                        </svg>
+                        Filters
+                        <span id="filter-count" class="filter-count">0</span>
+                    </button>
+                    <select id="trail-sort" class="trail-sort-select">
+                        <option value="date-desc">Date (Newest)</option>
+                        <option value="date-asc">Date (Oldest)</option>
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="distance-asc">Distance (Shortest)</option>
+                        <option value="distance-desc">Distance (Longest)</option>
+                        <option value="difficulty-asc">Difficulty (Easiest)</option>
+                        <option value="difficulty-desc">Difficulty (Hardest)</option>
+                        <option value="rating-desc">Rating (Highest)</option>
+                        <option value="rating-asc">Rating (Lowest)</option>
+                        <option value="progress-desc">Progress (Highest)</option>
+                        <option value="progress-asc">Progress (Lowest)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="filter-panel" class="filter-panel" style="display: none;">
+                <div class="filter-section">
+                    <h4>Difficulty</h4>
+                    <div class="filter-options">
+                        <label><input type="checkbox" class="filter-checkbox" data-filter="difficulty" value="easy"> Easy</label>
+                        <label><input type="checkbox" class="filter-checkbox" data-filter="difficulty" value="medium"> Medium</label>
+                        <label><input type="checkbox" class="filter-checkbox" data-filter="difficulty" value="hard"> Hard</label>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>Distance</h4>
+                    <div class="filter-range">
+                        <input type="range" id="distance-min" min="0" max="50" value="0" step="1">
+                        <input type="range" id="distance-max" min="0" max="50" value="50" step="1">
+                        <div class="range-labels">
+                            <span id="distance-min-label">0</span> - <span id="distance-max-label">50</span> km
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <h4>Rating</h4>
+                    <div class="filter-options">
+                        <label><input type="checkbox" class="filter-checkbox" data-filter="rating" value="5"> ⭐⭐⭐⭐⭐</label>
+                        <label><input type="checkbox" class="filter-checkbox" data-filter="rating" value="4"> ⭐⭐⭐⭐</label>
+                        <label><input type="checkbox" class="filter-checkbox" data-filter="rating" value="3"> ⭐⭐⭐</label>
+                        <label><input type="checkbox" class="filter-checkbox" data-filter="rating" value="2"> ⭐⭐</label>
+                        <label><input type="checkbox" class="filter-checkbox" data-filter="rating" value="1"> ⭐</label>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-clear-filters">Clear All</button>
+                </div>
+            </div>
+            <div id="active-filters" class="active-filters" style="display: none;"></div>
+            <div class="trail-tabs">
+                <button class="trail-tab active" data-tab="saved">Saved <span id="saved-count" class="count">0</span></button>
+                <button class="trail-tab" data-tab="started">Started <span id="started-count" class="count">0</span></button>
+                <button class="trail-tab" data-tab="completed">Completed <span id="completed-count" class="count">0</span></button>
+            </div>
+            <div id="trail-lists" class="trail-lists">
+                <div id="saved-trails" class="trail-list active"></div>
+                <div id="started-trails" class="trail-list"></div>
+                <div id="completed-trails" class="trail-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="trail-detail-modal-template" style="display: none;">
+        {% include 'partials/trail_detail_modal.html' %}
+    </div>
+    <div id="trail-detail-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="trail-detail-content">
+                {% include 'partials/trail_detail_modal.html' %}
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='trail_list.js') }}"></script>
+    <script>
+        const currentUserId = {{ user.id }};
+        const currentUserProfile = "{{ user.detected_profile or '' }}";
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof TrailListManager !== 'undefined') {
+                TrailListManager.init(currentUserId, currentUserProfile);
+            }
+            var userSelect = document.getElementById('user-select');
+            if (userSelect) {
+                userSelect.addEventListener('change', function() {
+                    window.location.href = '/profile/' + this.value + '/my-trails';
+                });
+            }
+        });
+    </script>
+{% endblock %}
