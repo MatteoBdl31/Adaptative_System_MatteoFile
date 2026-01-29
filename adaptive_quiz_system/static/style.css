@@ -219,14 +219,15 @@
    - Cohérence: utilisation des mêmes breakpoints partout
    ============================================ */
 
-/* Dark Theme (nature: vert/marron foncé) */
+/* Dark Theme (nature: vert/marron foncé) - hiérarchie de superpositions comme en light */
 @media (prefers-color-scheme: dark) {
   :root {
+        /* Fond page → panneaux → cartes : 5 niveaux distincts */
         --color-bg: #1a1f16;
-        --color-bg-secondary: #252b1f;
-        --color-bg-tertiary: #2f3528;
-        --color-surface: #252b1f;
-        --color-surface-elevated: #2f3528;
+        --color-bg-secondary: #1e241a;
+        --color-bg-tertiary: #252b1f;
+        --color-surface: #2a3024;
+        --color-surface-elevated: #333d2e;
 
         --color-text: #e8e6e1;
         --color-text-secondary: #b8b4a8;
@@ -234,6 +235,9 @@
 
         --color-border: #3d4536;
         --color-border-light: #4a5342;
+    }
+  .demo-page {
+        background: var(--color-bg);
     }
 }
 
@@ -251,16 +255,28 @@ html[data-theme="light"] {
     --color-border-light: #e8e0d5;
 }
 html[data-theme="dark"] {
+    /* Même hiérarchie de superpositions qu’en prefers-color-scheme: dark */
     --color-bg: #1a1f16;
-    --color-bg-secondary: #252b1f;
-    --color-bg-tertiary: #2f3528;
-    --color-surface: #252b1f;
-    --color-surface-elevated: #2f3528;
+    --color-bg-secondary: #1e241a;
+    --color-bg-tertiary: #252b1f;
+    --color-surface: #2a3024;
+    --color-surface-elevated: #333d2e;
     --color-text: #e8e6e1;
     --color-text-secondary: #b8b4a8;
     --color-text-muted: #8a8578;
     --color-border: #3d4536;
     --color-border-light: #4a5342;
+}
+html[data-theme="dark"] .demo-page {
+    background: var(--color-bg);
+}
+
+/* Badge profile name lisible en dark mode (--color-link trop sombre sur fond surface-elevated) */
+@media (prefers-color-scheme: dark) {
+  .user-profile-badge__name { color: var(--color-text); }
+}
+html[data-theme="dark"] .user-profile-badge__name {
+    color: var(--color-text);
 }
 
 /* Base Styles */
@@ -297,7 +313,7 @@ body {
     height: auto !important;
 }
 
-/* Header */
+/* Header - theme-aware (light/dark via CSS variables) */
 .app-header {
     background-color: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
@@ -305,13 +321,6 @@ body {
     top: 0;
     z-index: var(--z-sticky);
     backdrop-filter: blur(10px);
-    background-color: rgba(255, 255, 255, 0.8);
-}
-
-@media (prefers-color-scheme: dark) {
-  .app-header {
-        background-color: rgba(30, 41, 59, 0.8);
-    }
 }
 
 .app-header__container {
@@ -679,7 +688,7 @@ body {
     font-size: var(--font-size-base);
     font-family: inherit;
     color: var(--color-text);
-    background-color: var(--color-bg);
+    background-color: var(--color-surface-elevated);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     transition: all var(--transition-base);
@@ -1811,7 +1820,8 @@ body {
 }
 
 .demo-page .app-header {
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: var(--color-surface);
+    backdrop-filter: blur(10px);
 }
 
 .demo-container {
@@ -1844,10 +1854,11 @@ body {
     position: absolute;
     bottom: 12px;
     right: 12px;
-    background: white;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
     z-index: 1000;
     font-size: var(--font-size-sm);
     pointer-events: none;
@@ -2038,12 +2049,14 @@ body {
     font-size: var(--font-size-sm);
 }
 
-/* User profile badge */
+/* User profile badge - theme-aware, un cran plus clair que le bloc user-scenario */
 .user-profile-badge {
     margin-top: 8px;
     padding: 8px 12px;
-    background-color: var(--color-neutral-bg);
+    background-color: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
     border-radius: 6px;
+    color: var(--color-text);
 }
 .user-profile-badge__name { color: var(--color-link); font-weight: 600; }
 
@@ -2209,7 +2222,7 @@ body {
 }
 
 .all-trails-page .app-header {
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: var(--color-surface);
     backdrop-filter: blur(10px);
 }
 
@@ -2407,10 +2420,11 @@ body {
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
-/* View Sections */
+/* View Sections - theme-aware */
 .view-section {
     display: none;
-    background: white;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-2xl);
     padding: var(--space-xl);
     box-shadow: var(--shadow-2xl);
@@ -3083,7 +3097,8 @@ select:focus-visible {
 
 .metric-card {
     padding: var(--space-lg);
-    background: var(--color-bg-secondary);
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     text-align: center;
 }
@@ -3277,7 +3292,7 @@ select:focus-visible {
     position: relative;
     height: 300px;
     padding: var(--space-md);
-    background: var(--color-surface);
+    background: var(--color-surface-elevated);
     border-radius: var(--radius-md);
     overflow: hidden;
     width: 100%;
@@ -3290,6 +3305,35 @@ select:focus-visible {
     max-width: 100% !important;
     height: auto !important;
     max-height: 100% !important;
+}
+
+/* HTML legend (theme-aware via CSS variables) */
+.chart-html-legend {
+    margin-top: var(--space-sm);
+}
+.chart-html-legend__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.chart-html-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+.chart-html-legend__box {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.chart-html-legend__label {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
 }
 
 .performance-trends .chart-container,
@@ -4025,7 +4069,7 @@ section.trail-detail-section h3 {
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
     border: 1px solid var(--color-border);
-    background: var(--color-surface);
+    background-color: var(--color-surface-elevated);
     color: var(--color-text);
     font-size: var(--font-size-sm);
     transition: var(--transition-base);
@@ -6812,7 +6856,7 @@ body.komoot-style.trail-detail-page {
         }
 
   .demo-page .app-header {
-            background-color: rgba(255, 255, 255, 0.95);
+            background-color: var(--color-surface);
             backdrop-filter: blur(10px);
         }
 
@@ -6821,6 +6865,11 @@ body.komoot-style.trail-detail-page {
             margin: 0 auto;
             padding: var(--space-xl) var(--container-padding);
         }
+
+  /* System dark: must come after .demo-page gradient rules so it wins in cascade */
+  @media (prefers-color-scheme: dark) {
+    .demo-page { background: var(--color-bg); }
+  }
 
   .demo-header {
             text-align: center;
@@ -6843,7 +6892,8 @@ body.komoot-style.trail-detail-page {
         }
 
   .demo-controls {
-            background: white;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
             border-radius: var(--radius-2xl);
             padding: var(--space-xl);
             margin-bottom: var(--space-xl);
@@ -6866,7 +6916,7 @@ body.komoot-style.trail-detail-page {
             border: 2px solid var(--color-border);
             border-radius: var(--radius-lg);
             padding: var(--space-lg);
-            background: var(--color-bg-secondary);
+            background: var(--color-surface);
         }
 
   .user-scenario__header {
@@ -6912,7 +6962,8 @@ body.komoot-style.trail-detail-page {
         }
 
   .result-panel {
-            background: white;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
             border-radius: var(--radius-xl);
             padding: var(--space-xl);
             box-shadow: var(--shadow-xl);

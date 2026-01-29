@@ -453,9 +453,7 @@
                                 var bounds = L.latLngBounds(latLngs);
                                 miniMap.fitBounds(bounds, {padding: [10, 10]});
                             }
-                        } catch(e) {
-                            console.log('Could not parse coordinates for mini map:', e);
-                        }
+                        } catch(e) { /* coordinates invalid */ }
                     }
                     
                     miniMaps[trailId] = miniMap;
@@ -492,11 +490,6 @@
             setTimeout(function() {
                 try {
                     // Check if container is visible
-                    var mapView = document.getElementById('map-view');
-                    if (mapView && !mapView.classList.contains('active')) {
-                        console.log('Map view is hidden, will initialize when shown');
-                    }
-                    
                     // Initialize map
                     map = L.map('trails-map').setView([45.8, 6.5], 8);
                     
@@ -508,13 +501,8 @@
                     
                     // Invalidate map size to ensure it renders properly
                     setTimeout(function() {
-                        if (map) {
-                            map.invalidateSize();
-                            console.log('Map size invalidated');
-                        }
+                        if (map) map.invalidateSize();
                     }, 200);
-                    
-                    console.log('Map initialized successfully');
                 } catch(e) {
                     console.error('Error initializing map:', e);
                     return;
@@ -560,10 +548,7 @@
                         if (typeof trail.coordinates === 'string') {
                             try {
                                 trail.coordinates = JSON.parse(trail.coordinates);
-                            } catch(e) {
-                                console.log('Could not parse coordinates for trail ' + trail.id + ':', e);
-                                trail.coordinates = null;
-                            }
+                            } catch(e) { trail.coordinates = null; }
                         }
                     }
                 });
@@ -630,10 +615,7 @@
                     if (typeof coordData === 'string') {
                         try {
                             coordData = JSON.parse(coordData);
-                        } catch(e) {
-                            console.log('Could not parse coordinates for trail ' + trail.id + ':', e);
-                            coordData = null;
-                        }
+                        } catch(e) { coordData = null; }
                     }
                     
                     if (coordData && coordData.coordinates && Array.isArray(coordData.coordinates)) {

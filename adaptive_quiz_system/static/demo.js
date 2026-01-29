@@ -99,7 +99,7 @@
                 const calendarBtn = document.createElement('button');
                 calendarBtn.type = 'button';
                 calendarBtn.innerHTML = '📅';
-                calendarBtn.style.cssText = 'background: none; border: 1px solid #ddd; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 1.2em; flex-shrink: 0;';
+                calendarBtn.style.cssText = 'background: none; border: 1px solid var(--color-border); border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 1.2em; flex-shrink: 0;';
                 calendarBtn.title = 'Open calendar';
                 calendarBtn.addEventListener('click', () => {
                     input.showPicker?.();
@@ -1590,30 +1590,24 @@
                     
                     if (conn && conn.effectiveType) {
                         const effectiveType = conn.effectiveType;
-                        console.log('Network effectiveType:', effectiveType);
-                        
                         // Map effectiveType to our connection strength levels
                         if (effectiveType === 'slow-2g' || effectiveType === '2g') {
                             this.state.connectionStrength = 'weak';
-                            console.log('Connection detected: weak (2g)');
                             this.updateConnectionIndicator('weak');
                             return 'weak';
                         } else if (effectiveType === '3g') {
                             this.state.connectionStrength = 'medium';
-                            console.log('Connection detected: medium (3g)');
                             this.updateConnectionIndicator('medium');
                             return 'medium';
                         } else if (effectiveType === '4g') {
                             // For 4g, test actual speed to determine if medium or strong
                             const isFast = await this.testConnectionSpeed();
                             this.state.connectionStrength = isFast ? 'strong' : 'medium';
-                            console.log('Connection detected:', isFast ? 'strong (fast 4g)' : 'medium (slow 4g)');
                             this.updateConnectionIndicator(this.state.connectionStrength);
                             return this.state.connectionStrength;
                         } else {
                             // Unknown or very fast connection (e.g., 5g, wifi)
                             this.state.connectionStrength = 'strong';
-                            console.log('Connection detected: strong (fast network)');
                             this.updateConnectionIndicator('strong');
                             return 'strong';
                         }
@@ -1623,7 +1617,6 @@
                 // Fallback: test connection speed with a small download
                 const isFast = await this.testConnectionSpeed();
                 this.state.connectionStrength = isFast ? 'strong' : 'medium';
-                console.log('Connection detected (fallback):', this.state.connectionStrength);
                 this.updateConnectionIndicator(this.state.connectionStrength);
                 return this.state.connectionStrength;
             } catch (error) {
@@ -1651,7 +1644,6 @@
                 
                 // If the HEAD request takes more than 500ms, consider it slow
                 const isFast = duration < 500;
-                console.log(`Connection speed test: ${duration.toFixed(0)}ms (${isFast ? 'fast' : 'slow'})`);
                 return isFast;
             } catch (error) {
                 console.warn('Connection speed test failed, assuming slow connection:', error);
@@ -1674,14 +1666,11 @@
             // - medium connection: cards view (some graphics, mini maps optional)
             // - weak connection: list view (lightweight, no maps)
             if (strength === 'strong') {
-                console.log('Default view: map (strong connection)');
                 return 'map';
             } else if (strength === 'medium') {
-                console.log('Default view: cards (medium connection)');
                 return 'cards';
             } else {
                 // Default to list for weak or unknown connection
-                console.log('Default view: list (weak connection)');
                 return 'list';
             }
         }

@@ -9,11 +9,180 @@ const ProfileManager = (function() {
     let currentUserId = null;
     let currentDashboard = null;
     let charts = {};
-    
+
+    function hexToRgba(hex, alpha) {
+        if (!hex || !hex.startsWith('#')) return 'rgba(0,0,0,' + (alpha != null ? alpha : 0.25) + ')';
+        var h = hex.slice(1);
+        if (h.length === 6) {
+            var r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+            return 'rgba(' + r + ',' + g + ',' + b + ',' + (alpha != null ? alpha : 1) + ')';
+        }
+        return 'rgba(0,0,0,0.25)';
+    }
+
+    /** Options Chart.js adaptées au thème (light/dark) via variables CSS. Met à jour Chart.defaults pour que les graphiques héritent des couleurs. */
+    function getChartThemeOptions() {
+        const root = document.documentElement;
+        const style = root && typeof getComputedStyle === 'function' ? getComputedStyle(root) : null;
+        const textColor = style ? (style.getPropertyValue('--color-text-secondary') || style.getPropertyValue('--color-text') || '#5c5346').trim() : '#5c5346';
+        const gridColor = style ? (style.getPropertyValue('--color-border') || 'rgba(0,0,0,0.1)').trim() : 'rgba(0,0,0,0.1)';
+        var gridColorAlpha = gridColor.startsWith('rgba') ? gridColor : (gridColor.startsWith('#') ? hexToRgba(gridColor, 0.25) : 'rgba(0,0,0,0.08)');
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.color = textColor;
+            Chart.defaults.borderColor = gridColorAlpha;
+            if (!Chart.defaults.plugins) Chart.defaults.plugins = {};
+            if (!Chart.defaults.plugins.legend) Chart.defaults.plugins.legend = {};
+            if (!Chart.defaults.plugins.legend.labels) Chart.defaults.plugins.legend.labels = {};
+            Chart.defaults.plugins.legend.labels.color = textColor;
+        }
+        return {
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColorAlpha } },
+                y: { ticks: { color: textColor }, grid: { color: gridColorAlpha } },
+                y1: { ticks: { color: textColor }, grid: { color: gridColorAlpha } }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        };
+    }
+
+    /** Détection fiable du mode sombre (data-theme + prefers-color-scheme + fallback CSS). */
+    function isDarkTheme() {
+        const theme = document.documentElement.getAttribute('data-theme');
+        if (theme === 'dark') return true;
+        if (theme === 'light') return false;
+        if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return true;
+        const style = document.documentElement && typeof getComputedStyle === 'function' ? getComputedStyle(document.documentElement) : null;
+        const bg = style ? (style.getPropertyValue('--color-bg') || '').trim() : '';
+        return !!(bg && (bg.startsWith('#1') || bg.startsWith('#2') || bg.startsWith('rgb(26') || bg.startsWith('rgb(30')));
+    }
+
+    /** Palettes graphiques alignées sur le thème rando/nature : light = verts/teal/terre, dark = mêmes teintes plus claires. */
+    function getChartDataPalette() {
+        const dark = isDarkTheme();
+        if (dark) {
+            return {
+                doughnut3: ['#52b788', '#2dd4bf', '#d4a574'],
+                doughnutStarted: ['#fb923c', '#52b788', '#2dd4bf'],
+                lineTeal: '#2dd4bf',
+                lineRed: '#fb923c',
+                lineBlue: '#52b788',
+                barFill: 'rgba(82, 183, 136, 0.6)'
+            };
+        }
+        return {
+            doughnut3: ['#2d6a4f', '#0d9488', '#b08968'],
+            doughnutStarted: ['#ea580c', '#2d6a4f', '#0d9488'],
+            lineTeal: '#0d9488',
+            lineRed: '#ea580c',
+            lineBlue: '#2d6a4f',
+            barFill: 'rgba(45, 106, 79, 0.5)'
+        };
+    }
+
+    function getOrCreateHtmlLegendContainer(chart) {
+        var parent = chart.canvas && chart.canvas.parentNode;
+        if (!parent) return null;
+        var existing = parent.querySelector('.chart-html-legend');
+        if (existing) return existing;
+        var div = document.createElement('div');
+        div.className = 'chart-html-legend';
+        chart.canvas.parentNode.insertBefore(div, chart.canvas.nextSibling);
+        return div;
+    }
+
+    function registerHtmlLegendPlugin() {
+        if (typeof Chart === 'undefined') return;
+        Chart.register({
+            id: 'profileHtmlLegend',
+            afterUpdate: function(chart) {
+                var container = getOrCreateHtmlLegendContainer(chart);
+                if (!container) return;
+                if (chart.options.plugins && chart.options.plugins.legend) chart.options.plugins.legend.display = false;
+                var list = container.querySelector('ul');
+                if (!list) {
+                    list = document.createElement('ul');
+                    list.className = 'chart-html-legend__list';
+                    container.appendChild(list);
+                }
+                while (list.firstChild) list.firstChild.remove();
+                var labelsOpt = chart.options.plugins.legend && chart.options.plugins.legend.labels;
+                var generateLabels = labelsOpt && labelsOpt.generateLabels;
+                if (!generateLabels && typeof Chart !== 'undefined' && Chart.defaults.plugins.legend.labels) generateLabels = Chart.defaults.plugins.legend.labels.generateLabels;
+                var items = generateLabels ? generateLabels(chart) : [];
+                items.forEach(function(item) {
+                    var li = document.createElement('li');
+                    li.className = 'chart-html-legend__item';
+                    li.style.cursor = 'pointer';
+                    li.onclick = function() {
+                        if (chart.config.type === 'pie' || chart.config.type === 'doughnut') {
+                            chart.toggleDataVisibility(item.index);
+                        } else {
+                            chart.setDatasetVisibility(item.datasetIndex, !chart.isDatasetVisible(item.datasetIndex));
+                        }
+                        chart.update();
+                    };
+                    var box = document.createElement('span');
+                    box.className = 'chart-html-legend__box';
+                    box.style.background = item.fillStyle || item.strokeStyle || '#999';
+                    box.style.borderColor = item.strokeStyle || 'transparent';
+                    if (item.lineWidth) box.style.borderWidth = item.lineWidth + 'px';
+                    var text = document.createElement('span');
+                    text.className = 'chart-html-legend__label';
+                    text.textContent = item.text;
+                    if (item.hidden) text.style.textDecoration = 'line-through';
+                    li.appendChild(box);
+                    li.appendChild(text);
+                    list.appendChild(li);
+                });
+            }
+        });
+    }
+
+    function registerChartThemePlugin() {
+        if (typeof Chart === 'undefined') return;
+        Chart.register({
+            id: 'profileThemePlugin',
+            beforeLayout: function(chart) {
+                var root = document.documentElement;
+                var style = root && typeof getComputedStyle === 'function' ? getComputedStyle(root) : null;
+                var textColor = style ? (style.getPropertyValue('--color-text-secondary') || style.getPropertyValue('--color-text') || '#5c5346').trim() : '#5c5346';
+                var gridColor = style ? (style.getPropertyValue('--color-border') || 'rgba(0,0,0,0.1)').trim() : 'rgba(0,0,0,0.1)';
+                var gridColorAlpha = gridColor.startsWith('rgba') ? gridColor : (gridColor.startsWith('#') ? hexToRgba(gridColor, 0.25) : 'rgba(0,0,0,0.08)');
+                if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) {
+                    chart.options.plugins.legend.labels.color = textColor;
+                    if (chart.options.plugins.legend.labels.font) chart.options.plugins.legend.labels.font.color = textColor;
+                    else chart.options.plugins.legend.labels.font = { color: textColor };
+                }
+                if (chart.options.scales) {
+                    ['x', 'y', 'y1'].forEach(function(scaleId) {
+                        if (chart.options.scales[scaleId]) {
+                            if (!chart.options.scales[scaleId].ticks) chart.options.scales[scaleId].ticks = {};
+                            chart.options.scales[scaleId].ticks.color = textColor;
+                            if (!chart.options.scales[scaleId].grid) chart.options.scales[scaleId].grid = {};
+                            chart.options.scales[scaleId].grid.color = gridColorAlpha;
+                        }
+                    });
+                }
+                var self = chart;
+                if (self.canvas && !self.canvas._chartThemeUpdated) {
+                    self.canvas._chartThemeUpdated = true;
+                    setTimeout(function() {
+                        if (self && typeof self.update === 'function') self.update('none');
+                    }, 10);
+                }
+            }
+        });
+    }
+
     function init(userId, defaultDashboard) {
         currentUserId = userId;
         currentDashboard = defaultDashboard;
-        
+        registerChartThemePlugin();
+        registerHtmlLegendPlugin();
         setupUserSelector();
         setupDashboardTabs();
         loadDashboard(defaultDashboard);
@@ -179,19 +348,20 @@ const ProfileManager = (function() {
         }
         const container = document.getElementById('speed-trends-chart-container');
         if (container) container.style.display = '';
+        const themeOpts = getChartThemeOptions();
+        const pal = getChartDataPalette();
         charts.speedTrends = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: data.map(d => formatDate(d.date)),
                 datasets: [
-                    { label: 'Avg speed (km/h)', data: data.map(d => d.avg), borderColor: 'rgb(75, 192, 192)', tension: 0.1 },
-                    { label: 'Max speed (km/h)', data: data.map(d => d.max), borderColor: 'rgb(255, 99, 132)', tension: 0.1 }
+                    { label: 'Avg speed (km/h)', data: data.map(d => d.avg), borderColor: pal.lineTeal, tension: 0.1 },
+                    { label: 'Max speed (km/h)', data: data.map(d => d.max), borderColor: pal.lineRed, tension: 0.1 }
                 ]
             },
             options: {
-                scales: {
-                    y: { beginAtZero: true }
-                }
+                ...themeOpts,
+                scales: { ...themeOpts.scales, y: { ...themeOpts.scales.y, beginAtZero: true } }
             }
         });
     }
@@ -292,6 +462,8 @@ const ProfileManager = (function() {
         if (charts.difficultyProgression) {
             charts.difficultyProgression.destroy();
         }
+        const themeOpts = getChartThemeOptions();
+        const pal = getChartDataPalette();
         charts.difficultyProgression = new Chart(ctx, {
             type: 'line',
             data: {
@@ -299,14 +471,13 @@ const ProfileManager = (function() {
                 datasets: [{
                     label: 'Difficulty',
                     data: data.map(d => d.difficulty),
-                    borderColor: 'rgb(75, 192, 192)',
+                    borderColor: pal.lineTeal,
                     tension: 0.1
                 }]
             },
             options: {
-                scales: {
-                    y: { beginAtZero: true }
-                }
+                ...themeOpts,
+                scales: { ...themeOpts.scales, y: { ...themeOpts.scales.y, beginAtZero: true } }
             }
         });
     }
@@ -521,6 +692,8 @@ const ProfileManager = (function() {
             charts.elevationOverTime.destroy();
         }
         
+        const themeOpts = getChartThemeOptions();
+        const pal = getChartDataPalette();
         charts.elevationOverTime = new Chart(ctx, {
             type: 'line',
             data: {
@@ -528,10 +701,11 @@ const ProfileManager = (function() {
                 datasets: [{
                     label: 'Elevation Gain',
                     data: data.map(d => d.elevation_gain),
-                    borderColor: 'rgb(75, 192, 192)',
+                    borderColor: pal.lineTeal,
                     tension: 0.1
                 }]
-            }
+            },
+            options: themeOpts
         });
     }
     
@@ -548,6 +722,8 @@ const ProfileManager = (function() {
         const labels = ELEVATION_BUCKET_ORDER;
         const values = ELEVATION_BUCKET_ORDER.map(k => (data[k] != null ? data[k] : 0));
         
+        const themeOpts = getChartThemeOptions();
+        const pal = getChartDataPalette();
         charts.elevationDist = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -555,9 +731,10 @@ const ProfileManager = (function() {
                 datasets: [{
                     label: 'Trails',
                     data: values,
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                    backgroundColor: pal.barFill
                 }]
-            }
+            },
+            options: themeOpts
         });
     }
     
@@ -569,15 +746,18 @@ const ProfileManager = (function() {
             charts.hrZones.destroy();
         }
         
+        const themeOpts = getChartThemeOptions();
+        const pal = getChartDataPalette();
         charts.hrZones = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Resting', 'Active', 'Peak'],
                 datasets: [{
                     data: [zones.resting || 0, zones.active || 0, zones.peak || 0],
-                    backgroundColor: ['#36A2EB', '#FFCE56', '#FF6384']
+                    backgroundColor: pal.doughnut3
                 }]
-            }
+            },
+            options: themeOpts
         });
     }
     
@@ -589,6 +769,8 @@ const ProfileManager = (function() {
             charts.distanceOverTime.destroy();
         }
         
+        const themeOpts = getChartThemeOptions();
+        const pal = getChartDataPalette();
         charts.distanceOverTime = new Chart(ctx, {
             type: 'line',
             data: {
@@ -596,10 +778,11 @@ const ProfileManager = (function() {
                 datasets: [{
                     label: 'Distance',
                     data: data.map(d => d.distance),
-                    borderColor: 'rgb(255, 99, 132)',
+                    borderColor: pal.lineRed,
                     tension: 0.1
                 }]
-            }
+            },
+            options: themeOpts
         });
     }
     
@@ -611,38 +794,35 @@ const ProfileManager = (function() {
             charts.startedVsCompleted.destroy();
         }
         
-        charts.startedVsCompleted = new Chart(ctx, {
+        const themeOpts = getChartThemeOptions();
+        const pal = getChartDataPalette();
+        var chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Started', 'Completed', 'Saved'],
                 datasets: [{
                     data: [data.started || 0, data.completed || 0, data.saved || 0],
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    backgroundColor: pal.doughnutStarted
                 }]
             },
             options: {
+                ...themeOpts,
                 responsive: true,
                 maintainAspectRatio: true,
                 aspectRatio: 2,
                 layout: {
-                    padding: {
-                        top: 10,
-                        bottom: 10,
-                        left: 10,
-                        right: 10
-                    }
+                    padding: { top: 10, bottom: 10, left: 10, right: 10 }
                 },
                 plugins: {
+                    ...themeOpts.plugins,
                     legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 10,
-                            boxWidth: 12
-                        }
+                        display: false,
+                        labels: { padding: 10, boxWidth: 12 }
                     }
                 }
             }
         });
+        charts.startedVsCompleted = chart;
     }
     
     function renderPerformanceTrendsChart(data) {
@@ -653,6 +833,8 @@ const ProfileManager = (function() {
             charts.performanceTrends.destroy();
         }
         
+        const themeOpts = getChartThemeOptions();
+        const pal = getChartDataPalette();
         charts.performanceTrends = new Chart(ctx, {
             type: 'line',
             data: {
@@ -660,47 +842,37 @@ const ProfileManager = (function() {
                 datasets: [{
                     label: 'Distance',
                     data: data.map(d => d.distance),
-                    borderColor: 'rgb(75, 192, 192)',
+                    borderColor: pal.lineTeal,
                     yAxisID: 'y'
                 }, {
                     label: 'Difficulty',
                     data: data.map(d => d.difficulty),
-                    borderColor: 'rgb(255, 99, 132)',
+                    borderColor: pal.lineRed,
                     yAxisID: 'y1'
                 }]
             },
             options: {
+                ...themeOpts,
                 responsive: true,
                 maintainAspectRatio: true,
                 aspectRatio: 2,
                 layout: {
-                    padding: {
-                        top: 10,
-                        bottom: 10,
-                        left: 10,
-                        right: 10
-                    }
+                    padding: { top: 10, bottom: 10, left: 10, right: 10 }
                 },
                 scales: {
+                    x: { ...themeOpts.scales.x, ticks: { ...themeOpts.scales.x.ticks, padding: 5 } },
                     y: { 
                         type: 'linear', 
                         position: 'left',
-                        ticks: {
-                            padding: 5
-                        }
+                        ...themeOpts.scales.y,
+                        ticks: { ...themeOpts.scales.y.ticks, padding: 5 }
                     },
                     y1: { 
                         type: 'linear', 
                         position: 'right', 
                         grid: { drawOnChartArea: false },
-                        ticks: {
-                            padding: 5
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            padding: 5
-                        }
+                        ...themeOpts.scales.y1,
+                        ticks: { ...themeOpts.scales.y1.ticks, padding: 5 }
                     }
                 }
             }

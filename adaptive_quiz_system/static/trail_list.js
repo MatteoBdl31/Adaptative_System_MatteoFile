@@ -946,7 +946,6 @@ const TrailListManager = (function() {
         if (!modalContentWrapper) {
             const template = document.getElementById('trail-detail-modal-template');
             if (template) {
-                console.log('Inserting template into modal content');
                 content.innerHTML = template.innerHTML;
                 // Clear cache since DOM structure changed
                 cachedElements = null;
@@ -956,7 +955,6 @@ const TrailListManager = (function() {
                     console.error('Template inserted but .trail-detail-modal-content not found');
                     return false;
                 }
-                console.log('Template successfully inserted');
                 return true;
             } else {
                 console.error('trail-detail-modal-template not found');
@@ -1107,8 +1105,6 @@ const TrailListManager = (function() {
                     return;
                 }
                 
-                console.log('Trail data loaded successfully:', trail.trail_id, trail.name);
-                
                 // Store trail data for lazy loading
                 if (typeof window._setCurrentTrailData === 'function') {
                     window._setCurrentTrailData(trail);
@@ -1173,10 +1169,7 @@ const TrailListManager = (function() {
                             completion_date: completedTrailData.completion_date,
                             photos: completedTrailData.photos || []
                         }
-                    }).then(data => {
-                        console.log('Using completed trail data for performance:', data);
-                        return data;
-                    }) : fetch(`/api/profile/${currentUserId}/trail/${trailId}/performance`)
+                    }).then(data => data) : fetch(`/api/profile/${currentUserId}/trail/${trailId}/performance`)
                         .then(r => {
                             if (!r.ok) {
                                 console.warn('Performance API returned', r.status);
@@ -1189,7 +1182,6 @@ const TrailListManager = (function() {
                             return { completed: false };
                         })
                 ]).then(([weather, performance]) => {
-                    console.log('Performance and weather data loaded:', { performance, weather });
                     // Render Performance and Weather sections as soon as data arrives
                     setTimeout(() => {
                         renderPerformanceSection(performance);
@@ -1966,7 +1958,6 @@ const TrailListManager = (function() {
     }
     
     function renderPerformanceSection(performance) {
-        console.log('renderPerformanceSection called with:', performance);
         const performanceSection = document.getElementById('trail-performance-section');
         if (!performanceSection) {
             console.error('Performance section element not found');
@@ -1978,21 +1969,17 @@ const TrailListManager = (function() {
         if (performance && performance.completed && performance.performance) {
             // Standard structure: {completed: true, performance: {...}}
             perf = performance.performance;
-            console.log('Using performance.performance data:', perf);
         } else if (performance && performance.completed) {
             // If performance itself is the data (shouldn't happen but handle it)
             perf = performance;
-            console.log('Using performance as data directly:', perf);
         } else if (performance && !performance.completed) {
             // Not completed, show message
-            console.log('Trail not completed, showing empty state');
             const summaryCards = performanceSection.querySelector('#performance-summary-cards');
             if (summaryCards) {
                 summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
             }
             return;
         } else {
-            console.log('No performance data provided:', performance);
             const summaryCards = performanceSection.querySelector('#performance-summary-cards');
             if (summaryCards) {
                 summaryCards.innerHTML = '<p>No performance data available. Complete this trail to see your metrics.</p>';
@@ -2001,8 +1988,6 @@ const TrailListManager = (function() {
         }
         
         if (perf) {
-            console.log('Rendering performance data:', perf);
-            
             // Summary cards (always visible)
             const summaryCards = performanceSection.querySelector('#performance-summary-cards');
             if (summaryCards) {
@@ -2082,7 +2067,6 @@ const TrailListManager = (function() {
     }
     
     function renderWeatherSection(weather) {
-        console.log('renderWeatherSection called with:', weather);
         const weatherSection = document.getElementById('trail-weather-section');
         if (!weatherSection) {
             console.error('Weather section element not found');
@@ -2152,7 +2136,6 @@ const TrailListManager = (function() {
     }
     
     function renderRecommendationsSection(recommendations) {
-        console.log('renderRecommendationsSection called with:', recommendations);
         const recommendationsSection = document.getElementById('trail-recommendations-section');
         if (!recommendationsSection) {
             console.error('Recommendations section element not found');
