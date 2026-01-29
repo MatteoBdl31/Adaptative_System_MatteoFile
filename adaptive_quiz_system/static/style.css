@@ -7574,7 +7574,8 @@ body.komoot-style.trail-detail-page {
                 min-width: 0;
             }
   .demo-page .demo-panel .demo-view-toggle {
-                flex: 0 0 auto;
+                flex: 1 1 0%;
+                min-width: 0;
             }
   .demo-page .demo-panel .demo-results {
                 flex: 1 1 100%;
@@ -7622,27 +7623,33 @@ body.komoot-style.trail-detail-page {
   html[data-theme="dark"] .demo-page .panel-header .context-info-btn {
                 color: var(--color-text-secondary);
             }
-  /* View toggle: single bar, no wrap, square inner corners */
+  /* View toggle: single bar, equal buttons, centered */
   .demo-page .demo-view-toggle,
   .demo-page .view-toggle {
+                display: flex;
                 flex-wrap: nowrap;
                 gap: 0;
                 padding: 0;
                 margin: 0 0 var(--space-md) 0;
+                width: 100%;
+                min-width: 0;
                 background: var(--color-bg-secondary);
-                border-radius: var(--radius-lg);
+                border-radius: var(--radius-md);
                 box-shadow: var(--shadow-md);
                 overflow: hidden;
             }
   .demo-page .demo-view-toggle .view-toggle-btn,
   .demo-page .view-toggle .view-toggle-btn,
   .demo-page .view-toggle__button {
-                flex: 1;
+                flex: 1 1 0%;
                 min-width: 0;
-                padding: var(--space-md) var(--space-lg);
-                font-size: var(--font-size-base);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: var(--space-sm) var(--space-md);
+                font-size: var(--font-size-sm);
                 font-weight: var(--font-weight-semibold);
-                min-height: 44px;
+                min-height: 36px;
                 white-space: nowrap;
                 background-color: transparent;
                 color: var(--color-text-secondary);
@@ -7775,20 +7782,27 @@ body.komoot-style.trail-detail-page {
             }
   .demo-view-toggle,
   .view-toggle {
+                display: flex;
                 flex-wrap: nowrap;
                 gap: 0;
                 padding: 0;
                 margin-bottom: var(--space-md);
+                width: 100%;
+                min-width: 0;
                 overflow: hidden;
+                border-radius: var(--radius-md);
             }
   .demo-view-toggle .view-toggle-btn,
   .view-toggle__button {
-                flex: 1;
+                flex: 1 1 0%;
                 min-width: 0;
-                padding: var(--space-md) var(--space-lg);
-                font-size: var(--font-size-base);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: var(--space-sm) var(--space-md);
+                font-size: var(--font-size-sm);
                 font-weight: var(--font-weight-semibold);
-                min-height: 44px;
+                min-height: 36px;
                 white-space: nowrap;
                 background-color: transparent;
                 color: var(--color-text-secondary);
