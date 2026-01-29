@@ -357,8 +357,8 @@ const TrailListManager = (function() {
                         <div class="trail-card-list-actions">
                             ${progressRing}
                             <div class="trail-actions">
-                                <button class="btn-view-details" data-trail-id="${trail.trail_id}">View</button>
                                 ${status === 'saved' ? '<button class="btn-start-trail" data-trail-id="' + trail.trail_id + '">Start Trail</button>' : ''}
+                                <button class="btn-view-details" data-trail-id="${trail.trail_id}">View</button>
                                 ${status === 'saved' ? '<button class="btn-unsave" data-trail-id="' + trail.trail_id + '">Remove</button>' : ''}
                                 ${status === 'started' ? '<button class="btn-complete-trail" data-trail-id="' + trail.trail_id + '">Complete</button>' : ''}
                             </div>
@@ -376,12 +376,6 @@ const TrailListManager = (function() {
                         ${statusBadge}
                         ${difficultyBadge}
                     </div>
-                    <div class="trail-card-quick-actions">
-                        ${status === 'saved' ? '<button class="btn-quick-action btn-start-quick" data-trail-id="' + trail.trail_id + '" title="Start Trail">▶️</button>' : ''}
-                        ${status === 'saved' ? '<button class="btn-quick-action btn-unsave-card" data-trail-id="' + trail.trail_id + '" title="Remove">×</button>' : ''}
-                        ${status === 'started' ? '<button class="btn-quick-action btn-continue-quick" data-trail-id="' + trail.trail_id + '" title="Continue">▶️</button>' : ''}
-                        ${status === 'started' ? '<button class="btn-quick-action btn-complete-quick" data-trail-id="' + trail.trail_id + '" title="Complete Trail">✓</button>' : ''}
-                    </div>
                 </div>
                 <div class="trail-card-body">
                     <h3 class="trail-name">${escapeHtml(trail.name || trail.trail_id)}</h3>
@@ -396,8 +390,8 @@ const TrailListManager = (function() {
                     ${performanceIndicators}
                     ${dateBadge}
                     <div class="trail-actions">
-                        <button class="btn-view-details" data-trail-id="${trail.trail_id}">View Details</button>
                         ${status === 'saved' ? '<button class="btn-start-trail" data-trail-id="' + trail.trail_id + '">Start Trail</button>' : ''}
+                        <button class="btn-view-details" data-trail-id="${trail.trail_id}">View Details</button>
                         ${status === 'started' ? '<button class="btn-complete-trail" data-trail-id="' + trail.trail_id + '">Complete Trail</button>' : ''}
                     </div>
                 </div>
@@ -421,7 +415,7 @@ const TrailListManager = (function() {
         if (!difficulty) return '';
         const level = difficulty <= 3 ? 'easy' : difficulty <= 7 ? 'medium' : 'hard';
         const colors = {
-            easy: { bg: '#10b98120', color: '#10b981', label: 'Easy' },
+            easy: { bg: '#2d6a4f20', color: '#2d6a4f', label: 'Easy' },
             medium: { bg: '#f59e0b20', color: '#f59e0b', label: 'Medium' },
             hard: { bg: '#ef444420', color: '#ef4444', label: 'Hard' }
         };
@@ -639,8 +633,8 @@ const TrailListManager = (function() {
             });
         });
         
-        // Complete trail buttons (both regular and quick action)
-        const completeButtons = container.querySelectorAll('.btn-complete-trail, .btn-complete-quick');
+        // Complete trail buttons
+        const completeButtons = container.querySelectorAll('.btn-complete-trail');
         
         completeButtons.forEach((btn) => {
             const trailId = btn.getAttribute('data-trail-id');

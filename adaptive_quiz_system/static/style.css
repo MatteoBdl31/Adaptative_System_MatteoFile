@@ -2732,26 +2732,11 @@ body {
     color: var(--color-text);
 }
 
-/* Difficulty Badges */
+/* Difficulty Badges – text color follows border (set inline in JS) */
 .difficulty-badge {
     font-weight: var(--font-weight-bold);
-    color: white !important;
 }
 
-.difficulty-easy {
-    background-color: var(--color-secondary) !important;
-    color: #fffef9 !important;
-}
-
-.difficulty-medium {
-    background-color: var(--color-accent) !important;
-    color: #fffef9 !important;
-}
-
-.difficulty-hard {
-    background-color: var(--color-danger) !important;
-    color: #fffef9 !important;
-}
 
 /* Trail Description */
 .trail-description {
@@ -3624,12 +3609,14 @@ select:focus-visible {
 }
 
 .btn-view-details {
-    background: var(--color-primary);
-    color: white;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
 }
 
 .btn-view-details:hover {
-    background: var(--color-primary-dark);
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
 }
 
 .btn-unsave {
