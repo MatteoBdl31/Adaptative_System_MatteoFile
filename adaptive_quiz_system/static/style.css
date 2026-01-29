@@ -3307,7 +3307,7 @@ select:focus-visible {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .dashboard-metrics {
@@ -3512,26 +3512,32 @@ select:focus-visible {
 
 .chart-container {
     position: relative;
-    height: 300px;
+    min-height: 300px;
     padding: var(--space-md);
     background: var(--color-surface-elevated);
     border-radius: var(--radius-md);
-    overflow: hidden;
+    overflow: visible;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
 }
 
 .chart-container canvas {
     max-width: 100% !important;
     height: auto !important;
     max-height: 100% !important;
+    flex-shrink: 1;
 }
 
 /* HTML legend (theme-aware via CSS variables) */
 .chart-html-legend {
     margin-top: var(--space-sm);
+    flex-shrink: 0;
+    overflow: visible;
+    min-height: 0;
 }
 .chart-html-legend__list {
     display: flex;
@@ -3540,6 +3546,7 @@ select:focus-visible {
     list-style: none;
     margin: 0;
     padding: 0;
+    overflow: visible;
 }
 .chart-html-legend__item {
     display: inline-flex;
@@ -3562,7 +3569,7 @@ select:focus-visible {
 .started-vs-completed .chart-container {
     max-width: 100%;
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
     box-sizing: border-box;
 }
 
@@ -3570,7 +3577,7 @@ select:focus-visible {
 .started-vs-completed {
     width: 100%;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
     box-sizing: border-box;
 }
 
@@ -3588,6 +3595,48 @@ select:focus-visible {
 
 .performance-trends h3 {
     margin-bottom: var(--space-md);
+}
+
+/* Persistence dashboard: chart left, table right when width allows */
+@media (min-width: 900px) {
+    .dashboard-view.persistence-dashboard {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-xl);
+    }
+    .dashboard-view.persistence-dashboard .dashboard-metrics {
+        grid-column: 1 / -1;
+    }
+    .dashboard-view.persistence-dashboard .started-vs-completed {
+        grid-column: 1;
+    }
+    .dashboard-view.persistence-dashboard .persistence-abandoned {
+        grid-column: 2;
+    }
+    .dashboard-view.persistence-dashboard .persistence-difficulty-progression {
+        grid-column: 1;
+    }
+    .dashboard-view.persistence-dashboard .persistence-time-comparison {
+        grid-column: 2;
+    }
+}
+
+/* Performance dashboard: chart left, vs predictions right when width allows */
+@media (min-width: 900px) {
+    .dashboard-view.performance-dashboard {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-xl);
+    }
+    .dashboard-view.performance-dashboard .dashboard-metrics {
+        grid-column: 1 / -1;
+    }
+    .dashboard-view.performance-dashboard .performance-trends {
+        grid-column: 1;
+    }
+    .dashboard-view.performance-dashboard .performance-vs-predictions {
+        grid-column: 2;
+    }
 }
 
 /* Trail Management */
