@@ -659,7 +659,12 @@ body {
 
     .app-header__mobile-actions {
         display: flex;
-        gap: 6px;
+        gap: 2px;
+    }
+    .app-header__menu-btn {
+        padding-left: 10px;
+        padding-right: 10px;
+        box-sizing: border-box;
     }
 
     .app-header__mobile-settings-icon {
@@ -873,6 +878,75 @@ body {
     margin-top: var(--space-sm);
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
+}
+
+/* Settings page - mobile */
+@media (max-width: 768px) {
+    .l-settings {
+        flex-direction: column;
+    }
+    .l-settings__sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        padding: 0;
+        background-color: var(--color-bg-secondary);
+    }
+    .l-settings__nav {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding: 0;
+    }
+    .l-settings__nav::-webkit-scrollbar {
+        display: none;
+    }
+    .l-settings__nav-item {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: var(--space-md) var(--space-lg);
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        border: none;
+        border-bottom: 3px solid transparent;
+        margin: 0;
+        background: transparent;
+    }
+    .l-settings__nav-item.is-active {
+        color: var(--color-primary);
+        font-weight: var(--font-weight-semibold, 600);
+        border-bottom-color: var(--color-primary);
+        border-left: none;
+    }
+    .l-settings__main {
+        padding: var(--space-md);
+    }
+    .l-settings__heading {
+        font-size: var(--font-size-xl);
+        margin-bottom: var(--space-md);
+    }
+    .l-settings__options {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    .l-settings__option {
+        min-height: 44px;
+        padding: var(--space-sm) 0;
+    }
+    .l-settings__select {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        box-sizing: border-box;
+    }
+    .l-settings__fieldset--reduce-motion {
+        margin-top: var(--space-md);
+    }
 }
 
 /* Container */
@@ -7335,6 +7409,7 @@ body.komoot-style.trail-detail-page {
             font-weight: var(--font-weight-bold);
             margin-bottom: var(--space-md);
             color: white;
+            line-height: 1.2;
         }
 
   .demo-header__subtitle {

@@ -641,7 +641,7 @@
             
             if (profileLink && selectedUserId) {
                 profileLink.href = `/profile/${selectedUserId}`;
-                profileLink.style.display = 'inline-block';
+                profileLink.style.display = 'inline-flex';
             } else if (profileLink) {
                 profileLink.style.display = 'none';
             }
