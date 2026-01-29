@@ -1,0 +1,83 @@
+================================================================================
+  ENVIRONMENT SETUP GUIDE — Adaptive Trail Recommender
+================================================================================
+
+This guide explains how to set up the environment to run the application
+on a local machine.
+
+--------------------------------------------------------------------------------
+1. PREREQUISITES
+--------------------------------------------------------------------------------
+- Python 3.10 or higher (3.11+ recommended)
+- Internet connection (for pip and APIs: weather, optionally OpenAI/OpenRouter)
+
+--------------------------------------------------------------------------------
+2. VIRTUAL ENVIRONMENT (RECOMMENDED)
+--------------------------------------------------------------------------------
+From the project root (Adaptative_System_MatteoFile folder):
+
+  python3 -m venv .venv
+
+Then activate the environment:
+  - macOS / Linux:   source .venv/bin/activate
+  - Windows:         .venv\Scripts\activate
+
+Install dependencies:
+  pip install -r requirements.txt
+  pip install -r adaptive_quiz_system/requirements.txt
+
+--------------------------------------------------------------------------------
+3. DATA (SHAPEFILE)
+--------------------------------------------------------------------------------
+The shapefile files (French hiking trails) are already included in this zip:
+  adaptive_quiz_system/data/source/
+    - hiking_foot_routes_lineLine.shp
+    - hiking_foot_routes_lineLine.shx
+    - hiking_foot_routes_lineLine.dbf
+    - hiking_foot_routes_lineLine.prj
+
+SQLite databases (users.db, trails.db, rules.db) are already generated; you can
+run the application without regenerating trails. To regenerate trails:
+  cd adaptive_quiz_system
+  python backend/init_db.py
+
+--------------------------------------------------------------------------------
+4. ENVIRONMENT VARIABLES (OPTIONAL)
+--------------------------------------------------------------------------------
+A .env file (and/or .env.local) is provided for API keys used for AI explanations
+(OpenAI or OpenRouter). If present at the project root or in adaptive_quiz_system/,
+the application will use it automatically.
+
+Without an API key: the application runs normally; explanations use a rule-based
+fallback.
+
+--------------------------------------------------------------------------------
+5. RUNNING THE APPLICATION
+--------------------------------------------------------------------------------
+From the project root (Adaptative_System_MatteoFile), with the virtual
+environment activated:
+
+  cd adaptive_quiz_system
+  python run.py
+
+Or from the project root (without cd):
+  .venv/bin/python adaptive_quiz_system/run.py   (macOS/Linux)
+  .venv\Scripts\python adaptive_quiz_system/run.py   (Windows)
+
+The application listens on:  http://127.0.0.1:5001
+
+Main pages:
+  - Demo (recommendations):  http://127.0.0.1:5001/demo
+  - All trails:              http://127.0.0.1:5001/trails
+  - Profile (e.g. user 1):    http://127.0.0.1:5001/profile/1
+
+--------------------------------------------------------------------------------
+6. TROUBLESHOOTING
+--------------------------------------------------------------------------------
+- "Flask is not installed": activate .venv then run pip install -r ... again
+- Port 5001 already in use: change the port in adaptive_quiz_system/run.py
+- Map or weather empty: check internet connection (Open-Meteo API, Leaflet)
+- Trail-related errors: databases are included; if needed, run
+  python adaptive_quiz_system/backend/init_db.py
+
+================================================================================
