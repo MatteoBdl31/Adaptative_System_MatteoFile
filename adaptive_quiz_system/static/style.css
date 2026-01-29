@@ -487,6 +487,26 @@ body {
     background-color: var(--color-bg-secondary);
 }
 
+.app-header__nav-link--active {
+    color: var(--color-primary);
+    font-weight: var(--font-weight-semibold, 600);
+    background-color: var(--color-bg-secondary);
+}
+.app-header__nav-link--active:not(.app-header__nav-link--icon)::after {
+    content: '';
+    display: block;
+    position: absolute;
+    left: var(--space-md);
+    right: var(--space-md);
+    bottom: var(--space-xs);
+    height: 2px;
+    background: var(--color-primary);
+    border-radius: 1px;
+}
+.app-header__nav-link {
+    position: relative;
+}
+
 .app-header__nav-link--icon {
     padding: var(--space-sm);
     display: inline-flex;
