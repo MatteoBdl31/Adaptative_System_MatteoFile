@@ -54,6 +54,32 @@
         </div>
     </footer>
     
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <script>
+        window.showToast = function(message, durationMs, options) {
+            durationMs = durationMs == null ? 3500 : durationMs;
+            options = options || {};
+            var container = document.getElementById('toast-container');
+            if (!container) return;
+            var toast = document.createElement('div');
+            toast.className = 'toast';
+            var text = document.createTextNode(message);
+            toast.appendChild(text);
+            if (options.linkUrl && options.linkText) {
+                var link = document.createElement('a');
+                link.href = options.linkUrl;
+                link.className = 'toast__link';
+                link.textContent = options.linkText;
+                toast.appendChild(link);
+            }
+            container.appendChild(toast);
+            requestAnimationFrame(function() { toast.classList.add('toast--visible'); });
+            setTimeout(function() {
+                toast.classList.remove('toast--visible');
+                setTimeout(function() { toast.remove(); }, 350);
+            }, durationMs);
+        };
+    </script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -820,9 +820,15 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ trail_id: tid })
-                }).then(function(r) { return r.json(); }).then(function(d) {
-                    if (d.success) { saveBtn.textContent = 'Saved!'; saveBtn.disabled = true; }
-                    else { saveBtn.textContent = 'Already saved'; saveBtn.disabled = true; }
+                }).then(function(r) { return r.json();                 }).then(function(d) {
+                    if (d.success) {
+                        saveBtn.textContent = 'Saved!';
+                        saveBtn.disabled = true;
+                        if (typeof window.showToast === 'function') window.showToast('Trail added to My Trails successfully.', 3500, { linkUrl: '/profile/' + uid + '/trail/' + tid, linkText: 'View trail' });
+                    } else {
+                        saveBtn.textContent = 'Already saved';
+                        saveBtn.disabled = true;
+                    }
                 }).catch(function() { saveBtn.textContent = 'Error'; });
             }
         });

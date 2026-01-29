@@ -313,6 +313,7 @@
                             if (d.success) {
                                 saveTrailBtn.textContent = 'Saved!';
                                 saveTrailBtn.disabled = true;
+                                if (typeof window.showToast === 'function') window.showToast('Trail added to My Trails successfully.', 3500, { linkUrl: '/profile/' + userId + '/trail/' + trailId, linkText: 'View trail' });
                             } else {
                                 saveTrailBtn.textContent = 'Already saved';
                                 saveTrailBtn.disabled = true;

@@ -533,6 +533,7 @@ class MapManager {
                                 if (d.success) {
                                     this.textContent = 'Saved!';
                                     this.disabled = true;
+                                    if (typeof window.showToast === 'function') window.showToast('Trail added to My Trails successfully.', 3500, { linkUrl: '/profile/' + uid + '/trail/' + tid, linkText: 'View trail' });
                                 } else {
                                     this.textContent = 'Already saved';
                                     this.disabled = true;

@@ -2311,10 +2311,10 @@ const TrailListManager = (function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Trail saved successfully!');
+                if (typeof window.showToast === 'function') window.showToast('Trail added to My Trails successfully.', 3500, { linkUrl: '/profile/' + currentUserId + '/trail/' + trailId, linkText: 'View trail' });
                 loadTrails();
             } else {
-                alert('Trail is already saved');
+                if (typeof window.showToast === 'function') window.showToast('Trail is already in My Trails.', 3500, { linkUrl: '/profile/' + currentUserId + '/trail/' + trailId, linkText: 'View trail' });
             }
         })
         .catch(error => {
