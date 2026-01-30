@@ -1003,8 +1003,7 @@
                 <div class="view-section ${isActive ? 'active' : ''}" data-view="map" data-panel="${userId}">
                     <div class="map-container">
                         <div class="map-canvas demo-map" id="demo-map-${userId}"></div>
-                    </div>
-                    <div class="map-legend">
+                        <div class="map-legend">
                         <div class="legend-item">
                             <span class="legend-marker exact-marker"></span>
                             <span>Recommended</span>
@@ -1020,6 +1019,7 @@
                                 </svg>
                             </span>
                             <span>Collaborative (with ring)</span>
+                        </div>
                         </div>
                     </div>
                 </div>

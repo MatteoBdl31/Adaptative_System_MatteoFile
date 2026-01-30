@@ -25,8 +25,7 @@
         <div class="demo-view-section demo-view-map hidden" data-view="map">
             <div class="map-container">
                 <div class="demo-map" id="demo-map-{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-user-id="{{ result.scenario.user_id|default(result.user_id|default('1')) }}" data-user-label="{{ result.user_label|default('User') }}"></div>
-            </div>
-            <div class="map-legend">
+                <div class="map-legend">
                 <div class="legend-item">
                     <span class="legend-marker exact-marker"></span>
                     <span>Exact Match</span>
@@ -42,6 +41,7 @@
                         </svg>
                     </span>
                     <span>Collaborative (with ring)</span>
+                </div>
                 </div>
             </div>
         </div>
